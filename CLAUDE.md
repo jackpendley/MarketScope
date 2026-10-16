@@ -72,7 +72,8 @@ The developer (Jack) is building it to move into a backend/full-stack software e
 - `packages/shared`: domain types, odds math, formatting, exact-line comparison, provider Zod schemas, normalizer. Synthetic fixture at `@marketscope/shared/fixtures`.
 - `packages/db`: Drizzle schema (`src/schema.ts`), committed SQL migrations (`drizzle/`), client, and test helpers (`@marketscope/db/testing`).
 - Local Postgres: Homebrew `postgresql@17`, with DBs `marketscope_dev` and `marketscope_test`. Tests use `TEST_DATABASE_URL` (default: local test DB). Root `pnpm test` runs packages sequentially because they share the test DB.
-- `docs/`: ROADMAP, PROJECT_STATUS, DECISIONS, ARCHITECTURE, API, DATA_DICTIONARY, PROVIDER_COVERAGE, PRODUCT_SPEC.
+- `docs/`: ROADMAP, PROJECT_STATUS, DECISIONS, ARCHITECTURE, API, DEPLOYMENT, DATA_DICTIONARY, PROVIDER_COVERAGE, PRODUCT_SPEC.
+- **Deployed site is private** (Basic auth via `apps/web/proxy.ts`, ADR-022). The Odds API terms forbid exposing our JSON API publicly; keep `/api/*` protected even if the UI is opened up later.
 
 Workspace packages export TypeScript source directly. There's no build step: Next uses `transpilePackages`, and the collector uses `tsx`.
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { requiresTls } from "./client";
+import { requiresTls, usesTransactionPooler } from "./client";
 
 describe("requiresTls", () => {
   it("requires TLS for remote hosts", () => {
@@ -13,5 +13,17 @@ describe("requiresTls", () => {
   });
   it("defers to an explicit sslmode", () => {
     expect(requiresTls("postgresql://db.example.com/x?sslmode=verify-full")).toBe(false);
+  });
+});
+
+describe("usesTransactionPooler", () => {
+  it("detects the Supabase transaction pooler port", () => {
+    expect(
+      usesTransactionPooler("postgresql://aws-0-us-east-1.pooler.supabase.com:6543/postgres"),
+    ).toBe(true);
+    expect(
+      usesTransactionPooler("postgresql://aws-0-us-east-1.pooler.supabase.com:5432/postgres"),
+    ).toBe(false);
+    expect(usesTransactionPooler("postgres://localhost/marketscope_dev")).toBe(false);
   });
 });

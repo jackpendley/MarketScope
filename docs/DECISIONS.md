@@ -180,3 +180,24 @@ AWS Lambda + EventBridge remains an optional later upgrade (Phase 3).
 - Every page shows a "Synthetic data: not real odds" banner when synthetic rows are present.
 
 **Consequences:** UI work and Playwright tests are reproducible without touching production or spending credits.
+
+## ADR-022 — Odds API terms review; private deployment (2026-10-16)
+
+**Terms review** (https://the-odds-api.com/terms-and-conditions.html, read 2026-10-16; not legal advice):
+
+- **Allowed:**
+  - Displaying data in a website or app, including commercially, as long as the data isn't "the primary product being sold or redistributed".
+  - "Storing our data and retaining it indefinitely" (this covers `ingestion_payloads`).
+  - Research, analytical dashboards, and training ML models.
+- **Prohibited:** reselling or redistributing the data "as a standalone data product", including "through your own API, data feed, downloadable files", or as a competing raw-data source.
+- **Optional:** attribution. **Encouraged:** responsible-gambling messaging. Brand names may be used for identification only.
+
+**Decision:**
+
+- Deploy privately for now. `proxy.ts` enforces HTTP Basic auth on every page and API route whenever `BASIC_AUTH_PASSWORD` is set. That covers `/api/*` too, because a public JSON API would be redistribution.
+- `/api/health/live` stays open; it returns no data.
+- Comparisons are constant-time over SHA-256 digests.
+- Auth is app-level rather than Vercel Deployment Protection, so it works on any plan and protects the production domain too.
+- A site-wide footer adds the not-betting-advice notice, "Gamble responsibly. 21+ where legal. 1-800-GAMBLER", and a statement that MarketScope isn't affiliated with any sportsbook.
+
+**Consequences:** For a portfolio launch, the UI could go public (permitted) while `/api/*` stays behind auth. Revisit the matcher then.

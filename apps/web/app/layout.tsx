@@ -45,6 +45,18 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           </div>
         </header>
         <main className="mx-auto max-w-7xl px-4 py-6">{children}</main>
+        <footer className="mx-auto max-w-7xl space-y-1 px-4 pb-8 pt-4 text-xs text-subtle">
+          <p>
+            MarketScope is an analytics and education project. It is not betting advice and does not
+            take or place wagers. Odds are periodic snapshots from The Odds API and may be outdated;
+            confirm prices with the sportsbook. Sportsbook names identify data sources only;
+            MarketScope is not affiliated with or endorsed by any sportsbook.
+          </p>
+          <p>
+            Gamble responsibly. 21+ where legal. If you or someone you know has a gambling problem,
+            call 1-800-GAMBLER.
+          </p>
+        </footer>
       </body>
     </html>
   );

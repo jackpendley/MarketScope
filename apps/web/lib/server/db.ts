@@ -17,7 +17,9 @@ export function getDb(): Database {
         "DATABASE_URL is not set. Copy apps/web/.env.example to apps/web/.env.local.",
       );
     }
-    globalForDb.marketscopeDb = createDb(url, { max: 5 });
+    // Serverless (Vercel) runs many short-lived instances: one connection each, and let
+    // the pooler fan out. Long-running servers keep a small pool.
+    globalForDb.marketscopeDb = createDb(url, { max: process.env.VERCEL ? 1 : 5 });
   }
   return globalForDb.marketscopeDb.db;
 }
