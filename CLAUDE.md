@@ -63,12 +63,12 @@ The developer (Jack) is building it to move into a backend/full-stack software e
 
 ## Repo map
 
-- `apps/web`: Next.js 16 App Router, React 19, Tailwind 4, TS strict. Read `apps/web/AGENTS.md`: Next 16 differs from older versions, so check the bundled docs in `node_modules/next/dist/docs/` before using unfamiliar APIs.
+- `apps/web`: Next.js 16 App Router, React 19, Tailwind 4, TS strict. Pages call `lib/server/*` (server-only) → `@marketscope/db` queries; `/api/*` wraps the same functions (`docs/API.md`). Needs `apps/web/.env.local` with `DATABASE_URL` only. Read `apps/web/AGENTS.md`: Next 16 differs from older versions, so check the bundled docs in `node_modules/next/dist/docs/` before using unfamiliar APIs.
 - `apps/collector`: Node worker run via `tsx`. Config (Zod env), The Odds API client (retries, quota headers, redaction), `collect.ts` (claim → budget guard → fetch → one transaction), and scripts.
 - `packages/shared`: domain types, odds math, formatting, exact-line comparison, provider Zod schemas, normalizer. Synthetic fixture at `@marketscope/shared/fixtures`.
 - `packages/db`: Drizzle schema (`src/schema.ts`), committed SQL migrations (`drizzle/`), client, and test helpers (`@marketscope/db/testing`).
 - Local Postgres: Homebrew `postgresql@17`, with DBs `marketscope_dev` and `marketscope_test`. Tests use `TEST_DATABASE_URL` (default: local test DB). Root `pnpm test` runs packages sequentially because they share the test DB.
-- `docs/`: ROADMAP, PROJECT_STATUS, DECISIONS, ARCHITECTURE, DATA_DICTIONARY, PROVIDER_COVERAGE, PRODUCT_SPEC.
+- `docs/`: ROADMAP, PROJECT_STATUS, DECISIONS, ARCHITECTURE, API, DATA_DICTIONARY, PROVIDER_COVERAGE, PRODUCT_SPEC.
 
 Workspace packages export TypeScript source directly. There's no build step: Next uses `transpilePackages`, and the collector uses `tsx`.
 

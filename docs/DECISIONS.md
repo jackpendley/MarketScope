@@ -100,3 +100,25 @@ All books in one run come from a single request, so "contemporaneous" means "sam
 
 **Decision:** No separate `(ingestion_run_id)` index. The unique constraint `(ingestion_run_id, event_id, bookmaker_key, market_type, selection)` already provides a B-tree whose leading column is `ingestion_run_id`, so "all rows of run X" can use it. The history index `(event_id, market_type, selection, bookmaker_key, observed_at DESC)` serves both per-book history and latest-quote-per-book (`DISTINCT ON`).
 **Consequences:** One fewer index to maintain on the hottest write path. Revisit with `EXPLAIN ANALYZE` once Phase 2 queries exist.
+
+## ADR-015 — Read path: server components call the query layer; API routes wrap the same functions (2026-10-16)
+
+**Decision:** Pages (`/nfl`, `/nfl/games/[id]`) call `apps/web/lib/server/games.ts` → `@marketscope/db` queries directly. The `/api/*` route handlers wrap the same functions for external clients. Pages never make HTTP calls to their own API.
+
+- DB-backed pages call `connection()`, so they render per request and the build never needs a database.
+- `@marketscope/db` splits its entry points: runtime (`.`), `./migrate` (filesystem access, never bundled into the web app), and `./testing`.
+
+**Consequences:** One data path, two presentations. The web app gets `DATABASE_URL` only (ADR-003).
+
+## ADR-016 — Latest quote = DISTINCT ON; absent books are stale, not current (2026-10-16)
+
+**Decision:** "Latest odds" is the newest observation per (event, market, selection, book), via `DISTINCT ON`. The column order matches `odds_observations_history_idx`, and `EXPLAIN` confirmed the index is used per event.
+
+- A book missing from a game's **newest snapshot** still has an older row. The UI shows it italic as "last seen …" and the API flags it `stale: true`. It is never ranked for best price and never counted in consensus.
+- Consensus (`calculateConsensusSpread`) is the median home spread across current, pregame, displayed feeds, and needs ≥ 3 books. An even count can produce a quarter point, which is documented as a summary statistic, not a bettable line.
+
+## ADR-017 — No shadcn/ui yet; filters are a server-rendered GET form (2026-10-16)
+
+**Context:** The spec suggests shadcn/ui "where useful". The board needs dense tables, a select, and checkboxes.
+**Decision:** Plain Tailwind and native form controls for now. Filters (`q`, `market`, `days`, `books`) live in URL search params, submitted with a GET form and parsed on the server (`lib/board-filters.ts`). That needs no client JavaScript, and URLs are shareable.
+**Consequences:** Fewer dependencies. Revisit when Market Replay needs interactive client components (charts, time cursor).

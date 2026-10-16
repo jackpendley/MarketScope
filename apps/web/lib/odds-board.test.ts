@@ -6,6 +6,7 @@ import {
 } from "@marketscope/shared";
 import { SYNTHETIC_NFL_ODDS, SYNTHETIC_OBSERVED_AT } from "@marketscope/shared/fixtures";
 import { describe, expect, it } from "vitest";
+import type { NormalizedQuote } from "@marketscope/shared";
 import { buildEventBoard, type BoardCell } from "./odds-board";
 
 const { events } = parseOddsResponse(SYNTHETIC_NFL_ODDS);
@@ -109,5 +110,80 @@ describe("buildEventBoard", () => {
 
   it("reports the displayed feed's latest market update", () => {
     expect(column(bufMia, "fanduel").latestUpdate).toBe("2026-10-15T17:40:31.000Z");
+  });
+
+  it("computes consensus from current pregame books and ignores the hidden IN feed", () => {
+    // Home spreads shown: DK −3.5, FD −3, MGM −3.5, HR(AZ) −3.5 → median −3.5 over 4 books.
+    expect(bufMia.consensus).toEqual({
+      homePoint: -3.5,
+      bookmakerKeys: ["betmgm", "draftkings", "fanduel", "hardrockbet_az"],
+    });
+  });
+
+  it("reports no consensus once the game has started", () => {
+    expect(board("synthetic-evt-003").consensus).toMatchObject({ homePoint: null });
+  });
+});
+
+describe("buildEventBoard — stale books across snapshots", () => {
+  const event = {
+    providerEventId: "evt",
+    sportKey: "americanfootball_nfl",
+    homeTeam: "Green Bay Packers",
+    awayTeam: "Dallas Cowboys",
+    commenceTime: "2026-10-19T00:20:00.000Z",
+  };
+  const quote = (
+    bookmakerKey: string,
+    americanPrice: number,
+    observedAt: string,
+  ): NormalizedQuote => ({
+    providerEventId: "evt",
+    bookmakerKey,
+    market: "spreads",
+    selection: "HOME",
+    point: -1.5,
+    americanPrice,
+    bookmakerUpdatedAt: null,
+    observedAt,
+    isLive: false,
+  });
+  const OLD = "2026-10-16T01:00:00.000Z";
+  const NEW = "2026-10-16T07:00:00.000Z";
+
+  const b = buildEventBoard(
+    {
+      gameId: "game-1",
+      event,
+      quotes: [
+        quote("draftkings", -110, NEW),
+        quote("fanduel", -108, NEW),
+        // BetMGM missed the newest snapshot. Its old −100 would "win" if it were compared.
+        quote("betmgm", -100, OLD),
+      ],
+    },
+    BOARD_BOOKS,
+  );
+
+  it("marks the absent book stale and never ranks its old price", () => {
+    expect(b.latestObservedAt).toBe(NEW);
+    expect(column(b, "betmgm").stale).toBe(true);
+    expect(cell(b, "spreads", "HOME", "betmgm")).toMatchObject({
+      stale: true,
+      isBest: false,
+      observedAt: OLD,
+    });
+    expect(cell(b, "spreads", "HOME", "fanduel")).toMatchObject({ stale: false, isBest: true });
+  });
+
+  it("excludes stale books from consensus", () => {
+    expect(b.consensus).toMatchObject({
+      homePoint: null,
+      bookmakerKeys: ["draftkings", "fanduel"],
+    });
+  });
+
+  it("carries the internal game id", () => {
+    expect(b.gameId).toBe("game-1");
   });
 });

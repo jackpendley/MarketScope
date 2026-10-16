@@ -1,0 +1,225 @@
+// Calls the route handlers directly against the test database: validation, envelopes,
+// status codes, freshness metadata, and stale-book handling.
+import { createDb, events, ingestionRuns, oddsObservations } from "@marketscope/db";
+import { resetDatabase, TEST_DATABASE_URL } from "@marketscope/db/testing";
+import { NextRequest } from "next/server";
+import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import { GET as getGameOdds } from "@/app/api/games/[id]/odds/route";
+import { GET as getGames } from "@/app/api/games/route";
+import { GET as getDataHealth } from "@/app/api/health/data/route";
+import { isConnectionError } from "@/lib/server/api";
+
+const { db, sql, close } = createDb(TEST_DATABASE_URL, { max: 2 });
+afterAll(() => close());
+
+const MIN = 60_000;
+const now = Date.now();
+const iso = (offsetMs: number) => new Date(now + offsetMs).toISOString();
+const OLD_SNAPSHOT = iso(-120 * MIN);
+const NEW_SNAPSHOT = iso(-30 * MIN);
+
+let gameId: string;
+
+beforeEach(async () => {
+  await resetDatabase(sql);
+  const [r1] = await db
+    .insert(ingestionRuns)
+    .values({
+      jobKey: "r1",
+      provider: "the-odds-api",
+      requestType: "live",
+      status: "completed",
+      startedAt: OLD_SNAPSHOT,
+    })
+    .returning({ id: ingestionRuns.id });
+  const [r2] = await db
+    .insert(ingestionRuns)
+    .values({
+      jobKey: "r2",
+      provider: "the-odds-api",
+      requestType: "live",
+      status: "completed",
+      startedAt: NEW_SNAPSHOT,
+      creditsRemaining: 490,
+    })
+    .returning({ id: ingestionRuns.id });
+  const [game] = await db
+    .insert(events)
+    .values([
+      {
+        providerEventId: "soon",
+        sportKey: "americanfootball_nfl",
+        season: 2026,
+        homeTeam: "Green Bay Packers",
+        awayTeam: "Dallas Cowboys",
+        commenceTimeUtc: iso(2 * 24 * 60 * MIN),
+      },
+      {
+        providerEventId: "far",
+        sportKey: "americanfootball_nfl",
+        season: 2026,
+        homeTeam: "Chicago Bears",
+        awayTeam: "New England Patriots",
+        commenceTimeUtc: iso(20 * 24 * 60 * MIN),
+      },
+    ])
+    .returning({ id: events.id });
+  gameId = game!.id;
+
+  const base = {
+    eventId: gameId,
+    marketType: "spreads" as const,
+    selection: "HOME" as const,
+    isLive: false,
+  };
+  await db.insert(oddsObservations).values([
+    {
+      ...base,
+      ingestionRunId: r1!.id,
+      bookmakerKey: "fanduel",
+      point: -1.5,
+      americanPrice: -100,
+      observedAt: OLD_SNAPSHOT,
+    },
+    {
+      ...base,
+      ingestionRunId: r2!.id,
+      bookmakerKey: "draftkings",
+      point: -1.5,
+      americanPrice: -105,
+      observedAt: NEW_SNAPSHOT,
+      bookmakerUpdatedAt: iso(-35 * MIN),
+    },
+    {
+      ...base,
+      ingestionRunId: r2!.id,
+      bookmakerKey: "betmgm",
+      point: -1,
+      americanPrice: -110,
+      observedAt: NEW_SNAPSHOT,
+    },
+    {
+      ...base,
+      ingestionRunId: r2!.id,
+      bookmakerKey: "hardrockbet",
+      point: -1.5,
+      americanPrice: -108,
+      observedAt: NEW_SNAPSHOT,
+    },
+  ]);
+});
+
+const request = (path: string) => new NextRequest(`http://localhost${path}`);
+const ctx = (id: string) => ({ params: Promise.resolve({ id }) });
+
+describe("GET /api/games", () => {
+  it("returns games in the default 7-day window with coverage", async () => {
+    const res = await getGames(request("/api/games"));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.meta).toMatchObject({
+      count: 1,
+      limit: 50,
+      source: expect.stringContaining("snapshots"),
+    });
+    expect(body.data).toHaveLength(1);
+    expect(body.data[0]).toMatchObject({
+      id: gameId,
+      homeTeam: "Green Bay Packers",
+      started: false,
+      coverage: {
+        latestObservedAt: NEW_SNAPSHOT,
+        feedsInLatestSnapshot: ["draftkings", "betmgm", "hardrockbet"],
+        feedsMissing: ["fanduel", "williamhill_us", "hardrockbet_az"],
+      },
+    });
+  });
+
+  it("honors an explicit window", async () => {
+    const res = await getGames(request(`/api/games?from=${iso(0)}&to=${iso(30 * 24 * 60 * MIN)}`));
+    expect((await res.json()).data).toHaveLength(2);
+  });
+
+  it.each([
+    ["from=yesterday", "from"],
+    ["limit=0", "limit"],
+    ["limit=500", "limit"],
+    [`from=${iso(0)}&to=${iso(-60 * MIN)}`, "to"],
+    [`from=${iso(0)}&to=${iso(40 * 24 * 60 * MIN)}`, "to"],
+  ])("rejects %s with 400", async (query, path) => {
+    const res = await getGames(request(`/api/games?${query}`));
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error.code).toBe("INVALID_PARAMETERS");
+    expect(body.error.details.map((d: { path: string }) => d.path)).toContain(path);
+  });
+
+  it("rejects unknown parameters instead of silently ignoring them", async () => {
+    const res = await getGames(request("/api/games?week=7"));
+    expect(res.status).toBe(400);
+  });
+});
+
+describe("GET /api/games/:id/odds", () => {
+  it("returns latest quotes with collection age, book-update age, and stale flags", async () => {
+    const res = await getGameOdds(request(`/api/games/${gameId}/odds`), ctx(gameId));
+    expect(res.status).toBe(200);
+    const { data, meta } = await res.json();
+
+    const dk = data.quotes.find((q: { bookmakerKey: string }) => q.bookmakerKey === "draftkings");
+    expect(dk.freshness).toMatchObject({ label: "snapshot", stale: false });
+    expect(dk.freshness.collectionAgeMinutes).toBeCloseTo(30, 0);
+    expect(dk.freshness.bookUpdateAgeMinutes).toBeCloseTo(35, 0);
+
+    const fd = data.quotes.find((q: { bookmakerKey: string }) => q.bookmakerKey === "fanduel");
+    expect(fd.freshness.stale).toBe(true);
+
+    // Consensus uses current, displayed feeds only: DK −1.5, MGM −1, HR(IN) −1.5 → −1.5.
+    expect(data.consensus).toEqual({
+      homePoint: -1.5,
+      bookmakerKeys: ["betmgm", "draftkings", "hardrockbet"],
+    });
+    expect(meta.coverage.feedsMissing).toContain("fanduel");
+    expect(meta.recentThresholdMinutes).toBe(15);
+  });
+
+  it("returns 400 for a malformed id", async () => {
+    const res = await getGameOdds(request("/api/games/abc/odds"), ctx("abc"));
+    expect(res.status).toBe(400);
+    expect((await res.json()).error.code).toBe("INVALID_PARAMETERS");
+  });
+
+  it("returns 404 for an unknown game", async () => {
+    const id = "00000000-0000-4000-8000-000000000000";
+    const res = await getGameOdds(request(`/api/games/${id}/odds`), ctx(id));
+    expect(res.status).toBe(404);
+    expect((await res.json()).error.code).toBe("NOT_FOUND");
+  });
+});
+
+describe("GET /api/health/data", () => {
+  it("summarizes the latest completed run", async () => {
+    const res = await getDataHealth();
+    const { data } = await res.json();
+    expect(data.status).toBe("ok");
+    expect(data.latestCompletedRun).toMatchObject({ creditsRemaining: 490 });
+    expect(data.latestCompletedRun.ageMinutes).toBeGreaterThanOrEqual(29);
+    expect(data.recentRuns).toHaveLength(2);
+  });
+
+  it("reports no-data on an empty database", async () => {
+    await resetDatabase(sql);
+    const { data } = await (await getDataHealth()).json();
+    expect(data).toMatchObject({ status: "no-data", latestCompletedRun: null });
+  });
+});
+
+describe("isConnectionError", () => {
+  it("detects connection failures nested in error causes", () => {
+    const err = new Error("query failed", {
+      cause: Object.assign(new Error("refused"), { code: "ECONNREFUSED" }),
+    });
+    expect(isConnectionError(err)).toBe(true);
+    expect(isConnectionError(new Error("syntax error"))).toBe(false);
+  });
+});

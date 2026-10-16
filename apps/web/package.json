@@ -12,10 +12,13 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@marketscope/db": "workspace:*",
     "@marketscope/shared": "workspace:*",
     "next": "16.4.2",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "server-only": "^0.0.1",
+    "zod": "^4.6.0"
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "^4",
