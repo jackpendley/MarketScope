@@ -16,6 +16,25 @@ jobs:
   quality:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          # Ephemeral CI container: trust auth means no password exists to leak or flag.
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_DB: marketscope_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      TEST_DATABASE_URL: postgres://postgres@localhost:5432/marketscope_test
+
     steps:
       - uses: actions/checkout@v7
 
@@ -31,5 +50,16 @@ jobs:
       - run: pnpm format:check
       - run: pnpm lint
       - run: pnpm typecheck
+
+      # Fails if src/schema.ts changed without a committed migration.
+      - name: Check migrations match schema
+        run: |
+          pnpm --filter @marketscope/db db:generate
+          if [ -n "$(git status --porcelain packages/db/drizzle)" ]; then
+            echo "::error::Schema changed without a migration. Run 'pnpm --filter @marketscope/db db:generate' and commit the result."
+            git status --porcelain packages/db/drizzle
+            exit 1
+          fi
+
       - run: pnpm test
       - run: pnpm build

@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "collect:nfl": "node --env-file-if-exists=.env.local --import tsx src/scripts/collect-nfl.ts",
     "verify:provider": "node --env-file-if-exists=.env.local --import tsx src/scripts/verify-provider.ts",
     "probe:books": "node --env-file-if-exists=.env.local --import tsx src/scripts/probe-books.ts",
     "lint": "eslint .",
@@ -11,7 +12,9 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@marketscope/db": "workspace:*",
     "@marketscope/shared": "workspace:*",
+    "drizzle-orm": "^0.45.4",
     "zod": "^4.6.0"
   },
   "devDependencies": {

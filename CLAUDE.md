@@ -49,21 +49,25 @@ The developer (Jack) is building it to move into a backend/full-stack software e
 
 ## Commands (run from repo root)
 
-|                                                             |                                                           |
-| ----------------------------------------------------------- | --------------------------------------------------------- |
-| `pnpm install`                                              | install workspace (Node ≥ 22.12, pnpm 10)                 |
-| `pnpm dev`                                                  | Next.js dev server → http://localhost:3000/nfl            |
-| `pnpm lint` / `pnpm typecheck` / `pnpm test` / `pnpm build` | quality gates (CI runs these plus `format:check`)         |
-| `pnpm format`                                               | Prettier                                                  |
-| `pnpm verify:provider [--spend]`                            | Odds API check. Free without `--spend`; 3 credits with it |
-| `pnpm --filter @marketscope/<pkg> <script>`                 | run one package's script                                  |
+|                                                             |                                                                                |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `pnpm install`                                              | install workspace (Node ≥ 22.12, pnpm 10)                                      |
+| `pnpm dev`                                                  | Next.js dev server → http://localhost:3000/nfl                                 |
+| `pnpm lint` / `pnpm typecheck` / `pnpm test` / `pnpm build` | quality gates (CI runs these plus `format:check`)                              |
+| `pnpm format`                                               | Prettier                                                                       |
+| `pnpm verify:provider [--spend]`                            | Odds API check. Free without `--spend`; 3 credits with it                      |
+| `pnpm db:migrate`                                           | apply migrations to `packages/db/.env.local` `DATABASE_URL`                    |
+| `pnpm --filter @marketscope/db db:generate --name <x>`      | new migration from `schema.ts` changes (commit it; CI checks drift)            |
+| `pnpm collect:nfl [--scheduled \| --job-key K]`             | collect odds into Postgres (3 credits; budget-guarded, idempotent per job key) |
+| `pnpm --filter @marketscope/<pkg> <script>`                 | run one package's script                                                       |
 
 ## Repo map
 
 - `apps/web`: Next.js 16 App Router, React 19, Tailwind 4, TS strict. Read `apps/web/AGENTS.md`: Next 16 differs from older versions, so check the bundled docs in `node_modules/next/dist/docs/` before using unfamiliar APIs.
-- `apps/collector`: Node worker run via `tsx`. Config (Zod env), The Odds API client (retries, quota headers, redaction), and scripts.
+- `apps/collector`: Node worker run via `tsx`. Config (Zod env), The Odds API client (retries, quota headers, redaction), `collect.ts` (claim → budget guard → fetch → one transaction), and scripts.
 - `packages/shared`: domain types, odds math, formatting, exact-line comparison, provider Zod schemas, normalizer. Synthetic fixture at `@marketscope/shared/fixtures`.
-- `packages/db` (Phase 1): Drizzle schema, migrations, queries.
+- `packages/db`: Drizzle schema (`src/schema.ts`), committed SQL migrations (`drizzle/`), client, and test helpers (`@marketscope/db/testing`).
+- Local Postgres: Homebrew `postgresql@17`, with DBs `marketscope_dev` and `marketscope_test`. Tests use `TEST_DATABASE_URL` (default: local test DB). Root `pnpm test` runs packages sequentially because they share the test DB.
 - `docs/`: ROADMAP, PROJECT_STATUS, DECISIONS, ARCHITECTURE, DATA_DICTIONARY, PROVIDER_COVERAGE, PRODUCT_SPEC.
 
 Workspace packages export TypeScript source directly. There's no build step: Next uses `transpilePackages`, and the collector uses `tsx`.

@@ -11,7 +11,7 @@ MarketScope compares NFL odds across five sportsbooks (DraftKings, FanDuel, BetM
 - **Web:** Next.js 16 (App Router, server components), React 19, TypeScript (strict), Tailwind CSS 4
 - **Collector:** Node.js 22 worker (TypeScript via `tsx`), Zod-validated config and provider responses
 - **Shared:** pure-TypeScript domain logic (odds math, normalization, exact-line price comparison)
-- **Data (Phase 1):** PostgreSQL 17, Drizzle ORM and migrations
+- **Data:** PostgreSQL 17, Drizzle ORM, committed SQL migrations
 - **Quality:** Vitest, ESLint, Prettier, GitHub Actions CI
 - **Data source:** [The Odds API](https://the-odds-api.com/) v4
 
@@ -19,17 +19,25 @@ MarketScope compares NFL odds across five sportsbooks (DraftKings, FanDuel, BetM
 
 ```
 apps/web          Next.js app (odds board at /nfl)
-apps/collector    ingestion worker + provider verification script
+apps/collector    ingestion worker (collect:nfl) + provider verification
+packages/db       Drizzle schema, migrations, client
 packages/shared   domain types, odds math, normalizer, comparison, synthetic fixture
 docs/             roadmap, status, decisions, architecture, data dictionary, provider coverage
 ```
 
 ## Getting started
 
-Requirements: Node ≥ 22.12 (`nvm use`) and pnpm 10 (`corepack enable`).
+Requirements: Node ≥ 22.12 (`nvm use`), pnpm 10 (`corepack enable`), and PostgreSQL 17.
 
 ```bash
 pnpm install
+
+# Local database (macOS / Homebrew)
+brew install postgresql@17 && brew services start postgresql@17
+createdb marketscope_dev && createdb marketscope_test
+cp packages/db/.env.example packages/db/.env.local
+pnpm db:migrate
+
 pnpm dev            # http://localhost:3000/nfl
 ```
 
@@ -48,7 +56,10 @@ cp apps/collector/.env.example apps/collector/.env.local
 # edit apps/collector/.env.local and set ODDS_API_KEY (never commit it or paste it anywhere)
 pnpm verify:provider           # free: /sports + /events, 0 credits
 pnpm verify:provider --spend   # one /odds call, ~3 credits
+pnpm collect:nfl               # store a snapshot in Postgres (~3 credits)
 ```
+
+The collector is idempotent per job key (`--scheduled` uses one key per 6-hour slot) and refuses to run past the configured credit budget. Every run is recorded in `ingestion_runs`.
 
 Raw responses are saved to `fixtures/the-odds-api/local/`, which is gitignored. A price-free coverage summary is appended to [`docs/PROVIDER_COVERAGE.md`](docs/PROVIDER_COVERAGE.md).
 
