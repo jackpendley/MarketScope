@@ -8,6 +8,7 @@ import {
   latestCompletedRun,
   latestQuotesForEvents,
   listGames,
+  selectionHistory,
 } from "./odds";
 
 const { db, sql, close } = createDb(TEST_DATABASE_URL, { max: 2 });
@@ -200,5 +201,96 @@ describe("latestCompletedRun", () => {
     await run("ok", "2026-10-16T01:00:00Z");
     await run("bad", "2026-10-16T07:00:00Z", "failed");
     expect((await latestCompletedRun(db))?.jobKey).toBe("ok");
+  });
+});
+
+describe("selectionHistory", () => {
+  it("returns one selection's observations by book then time, excluding in-play by default", async () => {
+    const evt = await game("g1", "2026-10-18T17:00:00Z");
+    const r1 = await run("r1", "2026-10-16T01:00:00Z");
+    const r2 = await run("r2", "2026-10-16T07:00:00Z");
+    const r3 = await run("r3", "2026-10-18T18:00:00Z");
+    await observe([
+      {
+        ingestionRunId: r2,
+        eventId: evt,
+        point: -3,
+        americanPrice: -120,
+        observedAt: "2026-10-16T07:00:00Z",
+      },
+      {
+        ingestionRunId: r1,
+        eventId: evt,
+        point: -3.5,
+        americanPrice: -110,
+        observedAt: "2026-10-16T01:00:00Z",
+      },
+      {
+        ingestionRunId: r1,
+        eventId: evt,
+        bookmakerKey: "betmgm",
+        point: -3.5,
+        observedAt: "2026-10-16T01:00:00Z",
+      },
+      {
+        ingestionRunId: r1,
+        eventId: evt,
+        selection: "AWAY",
+        point: 3.5,
+        observedAt: "2026-10-16T01:00:00Z",
+      },
+      {
+        ingestionRunId: r3,
+        eventId: evt,
+        point: -7,
+        observedAt: "2026-10-18T18:00:00Z",
+        isLive: true,
+      },
+    ]);
+
+    const { rows, truncated } = await selectionHistory(db, {
+      eventId: evt,
+      market: "spreads",
+      selection: "HOME",
+    });
+    expect(truncated).toBe(false);
+    expect(rows.map((r) => [r.bookmakerKey, r.observedAt, r.point])).toEqual([
+      ["betmgm", "2026-10-16T01:00:00.000Z", -3.5],
+      ["draftkings", "2026-10-16T01:00:00.000Z", -3.5],
+      ["draftkings", "2026-10-16T07:00:00.000Z", -3],
+    ]);
+    expect(rows[0]!.source).toBe("the-odds-api");
+
+    const withLive = await selectionHistory(db, {
+      eventId: evt,
+      market: "spreads",
+      selection: "HOME",
+      includeLive: true,
+    });
+    expect(withLive.rows).toHaveLength(4);
+  });
+
+  it("filters by books and time window and reports truncation", async () => {
+    const evt = await game("g1", "2026-10-18T17:00:00Z");
+    const r1 = await run("r1", "2026-10-16T01:00:00Z");
+    const r2 = await run("r2", "2026-10-16T07:00:00Z");
+    await observe([
+      { ingestionRunId: r1, eventId: evt, observedAt: "2026-10-16T01:00:00Z" },
+      { ingestionRunId: r2, eventId: evt, observedAt: "2026-10-16T07:00:00Z" },
+      {
+        ingestionRunId: r2,
+        eventId: evt,
+        bookmakerKey: "fanduel",
+        observedAt: "2026-10-16T07:00:00Z",
+      },
+    ]);
+    const base = { eventId: evt, market: "spreads" as const, selection: "HOME" as const };
+    expect((await selectionHistory(db, { ...base, bookmakerKeys: ["fanduel"] })).rows).toHaveLength(
+      1,
+    );
+    expect(
+      (await selectionHistory(db, { ...base, from: "2026-10-16T06:00:00Z" })).rows,
+    ).toHaveLength(2);
+    expect(await selectionHistory(db, { ...base, limit: 2 })).toMatchObject({ truncated: true });
   });
 });

@@ -54,6 +54,12 @@ export interface CollectDeps {
     "MONTHLY_CREDIT_BUDGET" | "MAX_CREDITS_PER_RUN" | "MIN_CREDITS_REMAINING"
   >;
   log?: Logger;
+  /**
+   * Data provenance stored on the run and every observation. Defaults to the real
+   * provider. "synthetic" is reserved for generated demo/e2e data, which skips the
+   * credit-budget guard because it never calls the provider.
+   */
+  source?: string;
 }
 
 export type CollectOutcome =
@@ -88,9 +94,10 @@ export async function collectNflOdds(
 ): Promise<CollectOutcome> {
   const { db, client, config } = deps;
   const log = deps.log ?? silentLogger;
+  const source = deps.source ?? PROVIDER;
 
   // 1. Claim
-  const claim = await claimRun(db, jobKey);
+  const claim = await claimRun(db, jobKey, source);
   if (claim.kind !== "claimed") {
     log.info("collect.not_claimed", { jobKey, status: claim.kind, runId: claim.runId });
     return { status: claim.kind, runId: claim.runId };
@@ -100,7 +107,7 @@ export async function collectNflOdds(
 
   // 2. Budget guard (no credits spent if it trips)
   const cost = estimateOddsCost(MARKETS, COLLECTED_BOOKMAKER_KEYS);
-  const refusal = await checkBudget(db, cost, config);
+  const refusal = source === PROVIDER ? await checkBudget(db, cost, config) : null;
   if (refusal) {
     await db
       .update(ingestionRuns)
@@ -163,7 +170,7 @@ export async function collectNflOdds(
           bookmakerUpdatedAt: q.bookmakerUpdatedAt,
           observedAt: q.observedAt,
           isLive: q.isLive,
-          source: PROVIDER,
+          source,
         }));
       });
       for (let i = 0; i < rows.length; i += INSERT_CHUNK_SIZE) {
@@ -207,10 +214,10 @@ type Claim =
   | { kind: "claimed"; runId: string; attempt: number }
   | { kind: "already-completed" | "in-progress"; runId: string };
 
-async function claimRun(db: Database, jobKey: string): Promise<Claim> {
+async function claimRun(db: Database, jobKey: string, provider: string): Promise<Claim> {
   const [inserted] = await db
     .insert(ingestionRuns)
-    .values({ jobKey, provider: PROVIDER, requestType: "live" })
+    .values({ jobKey, provider, requestType: "live" })
     .onConflictDoNothing({ target: ingestionRuns.jobKey })
     .returning({ id: ingestionRuns.id, attempt: ingestionRuns.attempt });
   if (inserted) return { kind: "claimed", runId: inserted.id, attempt: inserted.attempt };

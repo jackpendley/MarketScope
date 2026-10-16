@@ -9,7 +9,7 @@ import type { EventBoard } from "@/lib/odds-board";
 import { MAX_GAMES } from "@/lib/params";
 import { isConnectionError } from "@/lib/server/api";
 import { DatabaseNotConfiguredError, getDb, quoteFreshnessMinutes } from "@/lib/server/db";
-import { loadGamesWithQuotes, toBoard } from "@/lib/server/games";
+import { hasSyntheticData, loadGamesWithQuotes, toBoard } from "@/lib/server/games";
 import { formatDateHeading } from "@/lib/time";
 
 export const metadata: Metadata = { title: "NFL Odds Board" };
@@ -26,7 +26,7 @@ async function loadBoard(days: number, now: Date) {
     }),
     latestCompletedRun(db),
   ]);
-  return { boards: games.map(toBoard), latestRun };
+  return { boards: games.map(toBoard), latestRun, synthetic: hasSyntheticData(games) };
 }
 
 function groupByDate(boards: EventBoard[]): [string, EventBoard[]][] {
@@ -79,6 +79,12 @@ export default async function NflOddsBoardPage(props: PageProps<"/nfl">) {
           = last-seen price from a book missing from the latest snapshot.
         </p>
       </div>
+
+      {data.synthetic && (
+        <Notice tone="warn" title="Synthetic data: not real odds.">
+          This database contains generated demo history for development and testing.
+        </Notice>
+      )}
 
       <BoardFilters values={filters} />
 

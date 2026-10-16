@@ -153,3 +153,30 @@ All books in one run come from a single request, so "contemporaneous" means "sam
 - The monthly budget sum is per database: local dev runs don't count toward Supabase's total. The provider-reported remaining-credits floor (`MIN_CREDITS_REMAINING`) is account-wide, so it still protects the quota.
 
 AWS Lambda + EventBridge remains an optional later upgrade (Phase 3).
+
+## ADR-020 — Line history semantics and charts (2026-10-16)
+
+**Decision:**
+
+- History is computed per book (`buildBookSeries`).
+  - A **change** is a different point or price from the previous observation. It's detected by value and reported as an interval, never an exact time.
+  - A **gap** is consecutive observations more than 12 h apart (2× the collection interval).
+  - The default `changes` resolution keeps first, last, changes, and gap edges, so downsampling never drops a movement.
+- Charts (Recharts, client component) use step-after lines and hold a value only _within_ a continuous segment:
+  - null before a book's first and after its last observation;
+  - null across gaps, so the line breaks.
+- Point and price are separate charts (never a dual axis).
+- Prices are plotted on a continuous scale (−110 → −10, +110 → +10), so moves through even money aren't exaggerated by the 200-point jump between −101 and +101. Ticks are labeled in American odds.
+- Each feed has a fixed color (`FEED_COLORS`). The palette was validated for CVD and contrast on the dark surface, and a legend, change dots, and change tables mean color is never the only cue.
+
+## ADR-021 — Synthetic history for demos and end-to-end tests (2026-10-16)
+
+**Context:** Real history accumulates slowly (4 snapshots a day), but the history UI and e2e tests need multi-day data now. Fabricated odds must never be mistaken for real data.
+**Decision:**
+
+- `generateSyntheticHistory` (deterministic PRNG) produces provider-shaped payloads.
+- `seed:synthetic` runs them through the **real collector** with `source = "synthetic"` and job keys `synthetic:<time>`. Synthetic runs skip the credit-budget guard.
+- The seed script refuses any database whose name lacks `e2e` or `demo`, and it doesn't read `.env.local`.
+- Every page shows a "Synthetic data: not real odds" banner when synthetic rows are present.
+
+**Consequences:** UI work and Playwright tests are reproducible without touching production or spending credits.
