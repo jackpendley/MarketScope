@@ -139,7 +139,7 @@ export default async function GamePage(props: PageProps<"/nfl/games/[id]">) {
 
       <section className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-surface px-4 py-3 text-sm">
         <div>
-          <h2 className="font-medium">Line history</h2>
+          <h2 className="font-medium">Line history &amp; replay</h2>
           <p className="text-muted">
             {stats.observations > 0 && stats.firstObservedAt ? (
               <>
@@ -157,7 +157,7 @@ export default async function GamePage(props: PageProps<"/nfl/games/[id]">) {
             href={`/nfl/games/${game.id}/history`}
             className="rounded border border-line px-3 py-1 text-accent hover:border-accent"
           >
-            View line history →
+            Open market replay →
           </Link>
         )}
       </section>

@@ -7,12 +7,11 @@ import {
   formatPoint,
   isMarket,
   MARKET_LABELS,
-  type LineChange,
   type Market,
   type Selection,
 } from "@marketscope/shared";
 import { DataUnavailable, Notice } from "@/components/data-states";
-import { HistoryCharts } from "@/components/history-charts";
+import { MarketReplay } from "@/components/market-replay";
 import {
   defaultSelection,
   gameIdSchema,
@@ -22,10 +21,15 @@ import {
 } from "@/lib/params";
 import { isConnectionError } from "@/lib/server/api";
 import { DatabaseNotConfiguredError, getDb } from "@/lib/server/db";
-import { loadGameHistory, type GameHistory } from "@/lib/server/history";
+import {
+  loadMarketReplay,
+  REPLAY_GAP_MINUTES,
+  selectionLabel,
+  type MarketReplayData,
+} from "@/lib/server/replay";
 import { formatKickoff, formatTimestamp } from "@/lib/time";
 
-export const metadata: Metadata = { title: "Line history" };
+export const metadata: Metadata = { title: "Market replay" };
 
 const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
 const VALID: Record<Market, Selection[]> = {
@@ -33,18 +37,9 @@ const VALID: Record<Market, Selection[]> = {
   h2h: ["HOME", "AWAY"],
   totals: ["OVER", "UNDER"],
 };
+const shortName = (team: string) => team.split(" ").at(-1) ?? team;
 
-function sideLabel(selection: Selection, home: string, away: string) {
-  return selection === "HOME"
-    ? home
-    : selection === "AWAY"
-      ? away
-      : selection === "OVER"
-        ? "Over"
-        : "Under";
-}
-
-export default async function HistoryPage(props: PageProps<"/nfl/games/[id]/history">) {
+export default async function MarketReplayPage(props: PageProps<"/nfl/games/[id]/history">) {
   await connection();
   const { id } = await props.params;
   if (!gameIdSchema.safeParse(id).success) notFound();
@@ -60,34 +55,31 @@ export default async function HistoryPage(props: PageProps<"/nfl/games/[id]/hist
   const rangeParam = (first(sp.range) ?? "all") as HistoryRange;
   const range: HistoryRange = rangeParam in HISTORY_RANGES ? rangeParam : "all";
 
-  let history: GameHistory | null;
+  const now = new Date();
+  let data: MarketReplayData | null;
   try {
-    history = await loadGameHistory(getDb(), id, {
+    data = await loadMarketReplay(getDb(), id, {
       market,
-      selection,
-      from: historyRangeStart(range, new Date()),
-      resolution: "changes",
-      gapMinutes: 12 * 60,
-      includeLive: false,
+      chartSelection: selection,
+      from: historyRangeStart(range, now),
     });
   } catch (err) {
     if (err instanceof DatabaseNotConfiguredError || isConnectionError(err))
       return <DataUnavailable />;
     throw err;
   }
-  if (!history) notFound();
+  if (!data) notFound();
 
-  const { game, series, sources, observations, truncated } = history;
-  const side = sideLabel(selection, game.homeTeam, game.awayTeam);
+  const { game, series, sources, truncated, selections, movements } = data;
+  const side = selectionLabel(selection, game);
+  const started = Date.parse(game.commenceTime) <= now.getTime();
+  const observations = selections.reduce((n, s) => n + s.observations.length, 0);
   const orientation =
     market === "spreads"
       ? `${side} spread (${selection === "HOME" ? "home" : "away"} team, as posted)`
       : market === "totals"
         ? "Total points line"
-        : null;
-  const changes = series
-    .flatMap((s) => s.changes.map((c) => ({ ...c, displayName: s.displayName })))
-    .sort((a, b) => b.intervalEnd.localeCompare(a.intervalEnd));
+        : "";
   const gaps = series.flatMap((s) => s.gaps.map((g) => ({ ...g, displayName: s.displayName })));
 
   return (
@@ -97,12 +89,12 @@ export default async function HistoryPage(props: PageProps<"/nfl/games/[id]/hist
           ← Game odds
         </Link>
         <h1 className="text-xl font-semibold tracking-tight">
-          Line history: {game.awayTeam} <span className="text-muted">@</span> {game.homeTeam}
+          Market replay: {game.awayTeam} <span className="text-muted">@</span> {game.homeTeam}
         </h1>
         <p className="text-sm text-muted">
           Kickoff <time dateTime={game.commenceTime}>{formatKickoff(game.commenceTime)}</time>
-          {" · "}Pregame observations only · changes are detected between snapshots, so each change
-          happened somewhere in the interval shown
+          {started && " (started)"} · Pregame observations only · changes are detected between
+          snapshots, so each one happened somewhere in the interval shown
         </p>
       </div>
 
@@ -131,7 +123,7 @@ export default async function HistoryPage(props: PageProps<"/nfl/games/[id]/hist
           </select>
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-xs text-muted">Side</span>
+          <span className="text-xs text-muted">Charted side</span>
           <select
             name="selection"
             defaultValue={selection}
@@ -139,7 +131,7 @@ export default async function HistoryPage(props: PageProps<"/nfl/games/[id]/hist
           >
             {VALID[market].map((s) => (
               <option key={s} value={s}>
-                {sideLabel(s, game.homeTeam, game.awayTeam)}
+                {selectionLabel(s, game)}
               </option>
             ))}
           </select>
@@ -166,7 +158,7 @@ export default async function HistoryPage(props: PageProps<"/nfl/games/[id]/hist
       </form>
 
       {observations === 0 ? (
-        <Notice title="No pregame observations for this selection in this range." />
+        <Notice title="No pregame observations for this market in this range." />
       ) : (
         <>
           {truncated && (
@@ -174,21 +166,22 @@ export default async function HistoryPage(props: PageProps<"/nfl/games/[id]/hist
               Too many observations to show at once; narrow the range.
             </Notice>
           )}
-          <HistoryCharts
-            series={series}
+          <MarketReplay
+            key={`${market}-${selection}-${range}`}
             market={market}
-            pointLabel={orientation ?? ""}
+            selections={selections}
+            series={series}
+            movements={movements}
+            homeTeamShort={shortName(game.homeTeam)}
+            awayTeamShort={shortName(game.awayTeam)}
+            pointLabel={orientation}
             priceLabel={`${side} price (American odds)`}
+            freshnessMinutes={REPLAY_GAP_MINUTES}
           />
-          <p className="text-xs text-subtle">
-            Stepped lines hold each book&apos;s last observed value until its next observation.
-            Lines break where a book went more than 12 hours without being observed. Dots mark
-            detected changes.
-          </p>
 
           <section className="space-y-2">
             <h2 className="text-sm font-medium uppercase tracking-wide text-muted">
-              By sportsbook
+              By sportsbook: {side}
             </h2>
             <div className="relative overflow-x-auto rounded-lg border border-line bg-surface">
               <table className="w-full min-w-[640px] text-sm">
@@ -201,7 +194,7 @@ export default async function HistoryPage(props: PageProps<"/nfl/games/[id]/hist
                       First observed
                     </th>
                     <th scope="col" className="px-3 py-2 font-medium">
-                      Last observed
+                      {started ? "Last observed pregame" : "Last observed"}
                     </th>
                     <th scope="col" className="px-3 py-2 text-right font-medium">
                       Snapshots
@@ -244,64 +237,9 @@ export default async function HistoryPage(props: PageProps<"/nfl/games/[id]/hist
             </div>
             <p className="text-xs text-subtle">
               &ldquo;First observed&rdquo; is MarketScope&apos;s earliest snapshot, not necessarily
-              the opening line. &ldquo;Last observed&rdquo; is not necessarily the closing line.
+              the opening line. &ldquo;Last observed{started ? " pregame" : ""}&rdquo; is not
+              necessarily the closing line.
             </p>
-          </section>
-
-          <section className="space-y-2">
-            <h2 className="text-sm font-medium uppercase tracking-wide text-muted">
-              Detected changes ({changes.length})
-            </h2>
-            {changes.length === 0 ? (
-              <p className="text-sm text-muted">No changes observed in this range.</p>
-            ) : (
-              <div className="relative overflow-x-auto rounded-lg border border-line bg-surface">
-                <table className="w-full min-w-[720px] text-sm">
-                  <thead>
-                    <tr className="text-left text-xs text-muted">
-                      <th scope="col" className="px-4 py-2 font-medium">
-                        Feed
-                      </th>
-                      <th scope="col" className="px-3 py-2 font-medium">
-                        Change
-                      </th>
-                      <th scope="col" className="px-3 py-2 font-medium">
-                        From → to
-                      </th>
-                      <th scope="col" className="px-3 py-2 font-medium">
-                        Happened between
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {changes.map((c, i) => (
-                      <tr key={i} className="border-t border-line/60">
-                        <td className="px-4 py-2">{c.displayName}</td>
-                        <td className="px-3 py-2">
-                          {changeLabel(c, market)}
-                          {c.acrossGap && (
-                            <span
-                              className="ml-2 rounded bg-warn/15 px-1.5 py-0.5 text-xs text-warn"
-                              title="The interval spans a data gap; timing is uncertain"
-                            >
-                              across gap
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-3 py-2 font-mono tabular-nums">
-                          {quote(c.fromPoint, c.fromPrice, market)}{" "}
-                          <span className="text-subtle">→</span>{" "}
-                          {quote(c.toPoint, c.toPrice, market)}
-                        </td>
-                        <td className="px-3 py-2 text-xs text-muted">
-                          {formatTimestamp(c.intervalStart)} – {formatTimestamp(c.intervalEnd)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
           </section>
 
           {gaps.length > 0 && (
@@ -331,13 +269,4 @@ function quote(point: number | null, price: number, market: Market) {
       <span>{formatAmericanOdds(price)}</span>
     </>
   );
-}
-
-function changeLabel(c: LineChange, market: Market): string {
-  if (c.type === "price") return "Price";
-  const delta = c.pointDelta ?? 0;
-  const size = `${Math.abs(delta)} pt${Math.abs(delta) === 1 ? "" : "s"}`;
-  const kind = c.type === "both" ? "Line + price" : "Line";
-  if (market === "totals") return `${kind}: total ${delta > 0 ? "up" : "down"} ${size}`;
-  return `${kind}: ${delta > 0 ? "+" : "−"}${size}`;
 }

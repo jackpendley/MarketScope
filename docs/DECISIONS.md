@@ -202,3 +202,19 @@ AWS Lambda + EventBridge remains an optional later upgrade (Phase 3).
 - A site-wide footer adds the not-betting-advice notice, "Gamble responsibly. 21+ where legal. 1-800-GAMBLER", and a statement that MarketScope isn't affiliated with any sportsbook.
 
 **Consequences:** For a portfolio launch, the UI could go public (permitted) while `/api/*` stays behind auth. Revisit the matcher then.
+
+## ADR-023 — Market replay semantics (2026-10-16)
+
+**Decision:**
+
+- **State at T** (`stateAt`): each book's latest observation at or before T. If it's older than the freshness window (12 h, the same as the gap threshold), the book is _stale_. It's shown as "last seen … (N h old)" and excluded from consensus and dispersion. Books with nothing yet show "no data yet". Nothing is carried forward silently, and nothing after T is ever used.
+- **Exact replay needs every observation.** The replay page loads `resolution: "all"`, because change-compressed series would make unchanged-but-observed books look stale.
+- **One feed per board book at T:** the preferred feed if it's fresh, otherwise any feed with data. Hard Rock AZ and IN are never both counted.
+- **Consensus at T:** the median line of fresh books (≥ 3), with dispersion (range, σ, mean absolute deviation, books ≥ 0.5 off) from `calculateBookDispersion`. Moneylines have no line consensus.
+- **Movements** (`describeMovement`) give direction in home orientation:
+  - The home spread rising (−3.5 → −2.5) moves _toward the away team_; AWAY series are sign-flipped so labels agree.
+  - Totals move up or down; price-only changes are labeled as such.
+- **Key numbers** (`detectKeyNumberCrossings`, 3 and 7) use signed values, so −3.5 → +3.5 crosses −3 and +3 while −1.5 → +1.5 crosses nothing. Events are classified as crossed, landed-on, or left. This is descriptive only.
+- The replay cursor steps through actual snapshot times only, never interpolated times.
+
+**Consequences:** The Signal Lab (Phase 5) can reuse `stateAt`, consensus, dispersion, and `describeMovement` directly.

@@ -8,6 +8,7 @@ import {
   latestCompletedRun,
   latestQuotesForEvents,
   listGames,
+  observationSummaries,
   selectionHistory,
 } from "./odds";
 
@@ -292,5 +293,34 @@ describe("selectionHistory", () => {
       (await selectionHistory(db, { ...base, from: "2026-10-16T06:00:00Z" })).rows,
     ).toHaveLength(2);
     expect(await selectionHistory(db, { ...base, limit: 2 })).toMatchObject({ truncated: true });
+  });
+});
+
+describe("observationSummaries", () => {
+  it("summarizes pregame history per game in one query", async () => {
+    const g1 = await game("g1", "2026-10-18T17:00:00Z");
+    const g2 = await game("g2", "2026-10-18T20:00:00Z");
+    const r1 = await run("r1", "2026-10-16T01:00:00Z");
+    const r2 = await run("r2", "2026-10-16T07:00:00Z");
+    await observe([
+      { ingestionRunId: r1, eventId: g1, observedAt: "2026-10-16T01:00:00Z" },
+      { ingestionRunId: r2, eventId: g1, observedAt: "2026-10-16T07:00:00Z" },
+      {
+        ingestionRunId: r2,
+        eventId: g1,
+        bookmakerKey: "fanduel",
+        observedAt: "2026-10-16T07:00:00Z",
+        isLive: true,
+      },
+    ]);
+    const map = await observationSummaries(db, [g1, g2]);
+    expect(map.get(g1)).toEqual({
+      observations: 2,
+      snapshots: 2,
+      firstObservedAt: "2026-10-16T01:00:00.000Z",
+      lastObservedAt: "2026-10-16T07:00:00.000Z",
+    });
+    expect(map.has(g2)).toBe(false);
+    expect(await observationSummaries(db, [])).toEqual(new Map());
   });
 });

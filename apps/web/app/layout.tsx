@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 // Only built features are links; planned sections are shown as clearly unavailable.
 const NAV: { label: string; href?: string }[] = [
   { label: "Odds Board", href: "/nfl" },
-  { label: "Market Replay" },
+  { label: "Market Replay", href: "/replay" },
   { label: "Signal Lab" },
   { label: "Research" },
   { label: "ML Lab" },

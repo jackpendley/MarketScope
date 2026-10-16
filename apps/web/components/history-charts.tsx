@@ -5,6 +5,7 @@ import {
   CartesianGrid,
   Line,
   LineChart,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -47,11 +48,14 @@ export function HistoryCharts({
   market,
   pointLabel,
   priceLabel,
+  cursor,
 }: {
   series: ChartSeries[];
   market: Market;
   pointLabel: string;
   priceLabel: string;
+  /** Replay cursor (ms since epoch), drawn as a vertical line on both charts. */
+  cursor?: number;
 }) {
   const [hidden, setHidden] = useState<ReadonlySet<string>>(new Set());
   const visible = useMemo(
@@ -93,9 +97,21 @@ export function HistoryCharts({
       </div>
 
       {market !== "h2h" && (
-        <ChartPanel title={pointLabel} series={visible} field="point" market={market} />
+        <ChartPanel
+          title={pointLabel}
+          series={visible}
+          field="point"
+          market={market}
+          cursor={cursor}
+        />
       )}
-      <ChartPanel title={priceLabel} series={visible} field="price" market={market} />
+      <ChartPanel
+        title={priceLabel}
+        series={visible}
+        field="price"
+        market={market}
+        cursor={cursor}
+      />
     </div>
   );
 }
@@ -105,11 +121,13 @@ function ChartPanel({
   series,
   field,
   market,
+  cursor,
 }: {
   title: string;
   series: ChartSeries[];
   field: ChartField;
   market: Market;
+  cursor?: number;
 }) {
   const { rows, keys } = useMemo(() => buildChartRows(series, field), [series, field]);
   const axis = useMemo(
@@ -163,6 +181,20 @@ function ChartPanel({
                 tick={{ fill: "#8b98a9", fontSize: 11 }}
                 width={52}
               />
+              {cursor !== undefined && (
+                <ReferenceLine
+                  x={cursor}
+                  stroke="#e6edf3"
+                  strokeDasharray="4 3"
+                  strokeWidth={1}
+                  label={{
+                    value: "replay",
+                    position: "insideTopRight",
+                    fill: "#8b98a9",
+                    fontSize: 10,
+                  }}
+                />
+              )}
               <Tooltip
                 cursor={{ stroke: "#8b98a9", strokeWidth: 1 }}
                 content={(props) => <HistoryTooltip {...props} series={series} format={format} />}
