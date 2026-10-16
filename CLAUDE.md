@@ -51,18 +51,19 @@ The developer (Jack) is building it to move into a backend/full-stack software e
 
 ## Commands (run from repo root)
 
-|                                                                                                                       |                                                                                |
-| --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| `pnpm install`                                                                                                        | install workspace (Node ≥ 22.12, pnpm 10)                                      |
-| `pnpm dev`                                                                                                            | Next.js dev server → http://localhost:3000/nfl                                 |
-| `pnpm lint` / `pnpm typecheck` / `pnpm test` / `pnpm build`                                                           | quality gates (CI runs these plus `format:check`)                              |
-| `pnpm format`                                                                                                         | Prettier                                                                       |
-| `pnpm verify:provider [--spend]`                                                                                      | Odds API check. Free without `--spend`; 3 credits with it                      |
-| `pnpm db:migrate`                                                                                                     | apply migrations to `packages/db/.env.local` `DATABASE_URL`                    |
-| `pnpm --filter @marketscope/db db:generate --name <x>`                                                                | new migration from `schema.ts` changes (commit it; CI checks drift)            |
-| `pnpm collect:nfl [--scheduled \| --job-key K]`                                                                       | collect odds into Postgres (3 credits; budget-guarded, idempotent per job key) |
-| `DATABASE_URL=postgres://localhost:5432/marketscope_demo pnpm --filter @marketscope/collector seed:synthetic --reset` | synthetic multi-day history for UI work (guarded: demo/e2e DBs only; ADR-021)  |
-| `pnpm --filter @marketscope/<pkg> <script>`                                                                           | run one package's script                                                       |
+|                                                                                                                       |                                                                                                            |
+| --------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `pnpm install`                                                                                                        | install workspace (Node ≥ 22.12, pnpm 10)                                                                  |
+| `pnpm dev`                                                                                                            | Next.js dev server → http://localhost:3000/nfl                                                             |
+| `pnpm lint` / `pnpm typecheck` / `pnpm test` / `pnpm build`                                                           | quality gates (CI runs these plus `format:check`)                                                          |
+| `pnpm format`                                                                                                         | Prettier                                                                                                   |
+| `pnpm --filter @marketscope/web build && pnpm --filter @marketscope/web test:e2e`                                     | Playwright e2e (seeds `marketscope_e2e_test` with synthetic history; `createdb marketscope_e2e_test` once) |
+| `pnpm verify:provider [--spend]`                                                                                      | Odds API check. Free without `--spend`; 3 credits with it                                                  |
+| `pnpm db:migrate`                                                                                                     | apply migrations to `packages/db/.env.local` `DATABASE_URL`                                                |
+| `pnpm --filter @marketscope/db db:generate --name <x>`                                                                | new migration from `schema.ts` changes (commit it; CI checks drift)                                        |
+| `pnpm collect:nfl [--scheduled \| --job-key K]`                                                                       | collect odds into Postgres (3 credits; budget-guarded, idempotent per job key)                             |
+| `DATABASE_URL=postgres://localhost:5432/marketscope_demo pnpm --filter @marketscope/collector seed:synthetic --reset` | synthetic multi-day history for UI work (guarded: demo/e2e DBs only; ADR-021)                              |
+| `pnpm --filter @marketscope/<pkg> <script>`                                                                           | run one package's script                                                                                   |
 
 ## Repo map
 

@@ -4,7 +4,7 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-16 (sessio
 
 ## Current milestone
 
-**Phase 3 is in progress. MS-011/012 (history API and line-history charts) are done; next come MS-015 (Playwright e2e) and MS-013 (deployment, ask first).**
+**Phase 3 is in progress. MS-011/012/015 are done (history API, charts, Playwright e2e in CI). Remaining: MS-013 deployment (ask first).**
 
 ## Done so far
 
@@ -22,11 +22,15 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-16 (sessio
   - `/nfl/games/[id]/history` with stepped Recharts line and price charts (palette validated for the dark theme), a change log, and gap lists (ADR-020).
   - Deterministic synthetic history through the real collector, guarded to demo/e2e DBs, with banners everywhere (ADR-021).
   - Local `marketscope_demo` is seeded with 18 synthetic snapshots for UI work.
+- **MS-015:**
+  - Playwright e2e: 10 desktop tests and 1 mobile test against `marketscope_e2e_test` (synthetic), plus a CI job.
+  - `/api/health/live` liveness endpoint.
+  - API error logs now record the driver's cause and code, not SQL text.
 - Decision: no `supabase-js` until a feature needs Auth, Realtime, or Storage.
 
 ## Tests
 
-All green: db 23, shared 152, collector 37, web 51. lint, typecheck, build, and migration-drift check pass.
+All green: db 23, shared 152, collector 37, web 51, e2e 11. lint, typecheck, build, and migration-drift check pass.
 
 ## Credits
 
@@ -49,5 +53,6 @@ Nothing blocking. Optional: mark the GitGuardian false-positive incident as reso
 
 ## Next task
 
-1. **MS-015:** Playwright smoke tests (board, detail, history, filters, missing-book states, mobile width) against a seeded `marketscope_e2e_test` DB, with a CI job.
-2. **MS-013:** review the Odds API terms, then propose a Vercel deployment with Deployment Protection. Ask before creating the project or setting env vars.
+**MS-013 deployment.** Review the Odds API terms, then propose Vercel (Deployment Protection on, Supabase `DATABASE_URL`). Ask before creating the project or setting env vars.
+
+After that: **Phase 4, Market Replay** (time cursor, key-number crossings, first/last-observed labels).

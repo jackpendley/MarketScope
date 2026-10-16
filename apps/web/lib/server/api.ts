@@ -48,7 +48,8 @@ export function handleUnexpected(err: unknown, route: string): Response {
       level: "error",
       event: "api.unexpected",
       route,
-      message: err instanceof Error ? err.message.slice(0, 300) : String(err),
+      // Drizzle errors embed the full SQL; log the driver's cause and code instead.
+      message: describeError(err),
     }),
   );
   return apiError(500, "INTERNAL_ERROR", "Unexpected server error.");
@@ -76,4 +77,12 @@ export function isConnectionError(err: unknown): boolean {
 /** Search params → plain object (repeated keys keep the last value). */
 export function searchParamsObject(url: string): Record<string, string> {
   return Object.fromEntries(new URL(url).searchParams.entries());
+}
+
+function describeError(err: unknown): string {
+  const cause = (err as { cause?: unknown })?.cause;
+  const source = cause instanceof Error ? cause : err;
+  const code = (source as { code?: string })?.code;
+  const message = source instanceof Error ? source.message : String(source);
+  return `${code ? `[${code}] ` : ""}${message}`.slice(0, 300);
 }

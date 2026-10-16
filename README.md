@@ -48,6 +48,14 @@ Quality checks (CI runs all of these):
 pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build
 ```
 
+End-to-end browser tests (Playwright, against a database seeded with **synthetic** history):
+
+```bash
+createdb marketscope_e2e_test
+pnpm --filter @marketscope/web exec playwright install chromium   # once
+pnpm --filter @marketscope/web build && pnpm --filter @marketscope/web test:e2e
+```
+
 ## Provider verification
 
 The collector needs a key from The Odds API (the free Starter plan works; Caesars requires a paid plan).
