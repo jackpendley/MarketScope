@@ -1,0 +1,36 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.*
+
+# builds and caches
+.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+next-env.d.ts
+
+# testing
+coverage/
+playwright-report/
+test-results/
+
+# env files: only the committed examples are allowed
+.env*
+!.env.example
+
+# real provider captures are never committed (public repo + provider terms)
+fixtures/**/local/
+
+# python research environment and data
+research/.venv/
+research/data/
+__pycache__/
+.ipynb_checkpoints/
+
+# misc
+.DS_Store
+*.pem
+*.log
+.vercel

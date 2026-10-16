@@ -1,0 +1,9 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+# Native build scripts pnpm should not run (we don't need sharp's or
+# unrs-resolver's postinstall output for development).
+ignoredBuiltDependencies:
+  - sharp
+  - unrs-resolver

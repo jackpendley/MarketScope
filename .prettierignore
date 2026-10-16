@@ -1,0 +1,4 @@
+pnpm-lock.yaml
+docs/PRODUCT_SPEC.md
+**/drizzle/meta/
+apps/web/AGENTS.md

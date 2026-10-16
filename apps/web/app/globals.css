@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+/* Dark-first design tokens. Utilities: bg-surface, text-muted, border-line, text-best, ... */
+@theme {
+  --color-canvas: #0b0f14;
+  --color-surface: #121821;
+  --color-surface-raised: #18202b;
+  --color-line: #263041;
+  --color-fg: #e6edf3;
+  --color-muted: #8b98a9;
+  --color-subtle: #5d6b7d;
+  --color-accent: #6aa8ff;
+  --color-best: #4cc38a;
+  --color-warn: #e5a50a;
+  --color-danger: #f0616d;
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+}

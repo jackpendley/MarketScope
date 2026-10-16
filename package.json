@@ -1,0 +1,27 @@
+{
+  "name": "marketscope",
+  "private": true,
+  "description": "NFL sportsbook market intelligence platform",
+  "type": "module",
+  "packageManager": "pnpm@10.8.1",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @marketscope/web dev",
+    "build": "pnpm -r --if-present build",
+    "lint": "pnpm -r --if-present lint",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "test": "pnpm -r --if-present test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "verify:provider": "pnpm --filter @marketscope/collector verify:provider"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9",
+    "eslint": "^9",
+    "prettier": "^3.9.0",
+    "typescript": "^5",
+    "typescript-eslint": "^8"
+  }
+}
