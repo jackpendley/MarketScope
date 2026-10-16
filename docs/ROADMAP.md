@@ -72,7 +72,7 @@ Status legend: `[x]` done · `[~]` in progress · `[ ]` not started
 
 **Setup:** `brew install postgresql@17 && brew services start postgresql@17`, then create `marketscope_dev` and `marketscope_test`.
 
-- [ ] **MS-004 `packages/db`.** Drizzle + postgres.js, with committed SQL migrations (`drizzle-kit generate` / `migrate`). Tables:
+- [x] **MS-004 `packages/db`.** Drizzle + postgres.js, with committed SQL migrations (`drizzle-kit generate` / `migrate`). Tables:
   - `events`: uuid PK, unique `provider_event_id`, sport_key, season, nullable week, home/away, `commence_time_utc`, timestamps. **No stored status**: derive it from `commence_time` until `/scores` is integrated.
   - `bookmakers`: the 5 books, seeded in a migration.
   - `ingestion_runs`: unique `job_key`, provider, request_type, requested/provider snapshot times, started/finished, status enum, credits used/remaining, events/quotes seen, attempt, http_status, duration_ms, error code/message (sanitized).
@@ -81,14 +81,15 @@ Status legend: `[x]` done · `[~]` in progress · `[ ]` not started
     - UNIQUE (run, event, book, market, selection).
     - CHECK: h2h ⇔ point IS NULL; selection valid for market; price ∉ (−100, 100).
     - Indexes: `(event_id, market_type, selection, bookmaker_key, observed_at DESC)` and `(ingestion_run_id)`.
-- [ ] **MS-005 `pnpm collect:nfl`**
+- [x] **MS-005 `pnpm collect:nfl`**
   1. **Budget guard:** monthly `sum(credits_used)` plus the estimate must stay ≤ `MONTHLY_CREDIT_BUDGET`, and the last remaining count must stay ≥ `MIN_CREDITS_REMAINING`.
   2. **Claim the run:** `INSERT … ON CONFLICT (job_key) DO NOTHING RETURNING`. The key is `live:nfl:<slot>` when scheduled, `manual:<uuid>` when run by hand.
      - If the key exists: completed → exit with no spend. Failed, or started more than 15 minutes ago → conditional reclaim (attempt+1).
   3. **Fetch** outside any transaction.
   4. **One transaction:** upsert events (update `commence_time` on flex), insert the payload and observations, mark the run completed.
   5. **On error:** record quota headers and a sanitized error in a separate statement.
-- [ ] **MS-006 Integration tests** against `marketscope_test`: fixture → DB, upsert, same `job_key` twice, rollback on failure, budget refusal. CI gets a `postgres:17` service.
+- [x] **MS-006 Integration tests** against `marketscope_test`: fixture → DB, upsert, same `job_key` twice, rollback on failure, budget refusal. CI gets a `postgres:17` service and a migration-drift check.
+  - **Accepted 2026-10-16:** two live runs into `marketscope_dev` produced two distinct sets of 468 observations (25 games, 4 feeds with data), 3 credits each. Re-running the same scheduled slot was a no-op.
   - _Accept:_ two runs, then SQL shows two distinct observation sets.
 - [ ] **MS-006b Scheduled collection** (needs Jack to create a free Supabase project, plus approval for the repo secrets). A GitHub Actions cron runs about 4×/day into the managed DB, so real history starts accumulating as early as possible.
 

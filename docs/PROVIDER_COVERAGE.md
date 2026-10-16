@@ -16,6 +16,7 @@
   - The deprecated bookmaker-level `last_update` is still present; we ignore it.
   - The in-progress game's `commence_time` had seconds (`00:15:50Z`), which suggests the provider updates it to the actual kickoff time. Event upserts must update `commence_time` (ADR-009 / MS-005).
 - Zero events failed schema validation.
+- **`last_update` is not a change marker** (observed 2026-10-16 in two runs 21 s apart): DraftKings' market `last_update` advanced while its line stayed the same. Treat it as "the book's market was refreshed", not "the price changed".
 
 ## Documentation review (2026-10-15)
 

@@ -60,4 +60,68 @@ Codes are defined in `NORMALIZATION_ISSUE_CODES`:
 
 ## Database tables
 
-Defined in Phase 1. See ROADMAP MS-004. This section will document each column once the migrations exist.
+Source of truth: `packages/db/src/schema.ts`. Migrations live in `packages/db/drizzle/` (committed SQL). Every timestamp is `timestamptz`, which stores an absolute instant. psql displays it in your session's time zone; the API will always emit ISO 8601 UTC.
+
+### `events`: one NFL game
+
+| Column                     | Type             | Notes                                                                                                                                                                                      |
+| -------------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `id`                       | uuid PK          | Internal ID used by all foreign keys                                                                                                                                                       |
+| `provider_event_id`        | text, **unique** | The Odds API event ID; the upsert key                                                                                                                                                      |
+| `sport_key`                | text             | `americanfootball_nfl`                                                                                                                                                                     |
+| `season`                   | int              | NFL season year; Jan/Feb games belong to the prior year (`nflSeasonForKickoff`)                                                                                                            |
+| `week`                     | int, nullable    | Not in the odds feed; filled later (ADR-009)                                                                                                                                               |
+| `home_team`, `away_team`   | text             | From the provider's home/away fields. **Never rewritten after insert**: if the provider flips orientation, that run's quotes for the game are dropped and counted as `EVENT_TEAMS_CHANGED` |
+| `commence_time_utc`        | timestamptz      | Updated on upsert (flexed games, actual kickoff)                                                                                                                                           |
+| `created_at`, `updated_at` | timestamptz      | `updated_at` changes only when the kickoff time changes                                                                                                                                    |
+
+Index: `commence_time_utc` (upcoming-games queries).
+
+### `bookmakers`: provider feeds
+
+`key` (PK, provider bookmaker key), `display_name`, `region_hint`, `is_primary` (the preferred feed of a board column), `enabled`. Seeded by migration `0001` and upserted by every collector run from `COLLECTED_BOOKMAKERS`.
+
+### `ingestion_runs`: one collection job (observability + idempotency)
+
+| Column                              | Notes                                                                                                                                    |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `job_key` (**unique**)              | `live:nfl:<slot start>` for scheduled runs, `manual:<uuid>` for manual ones                                                              |
+| `status`                            | `started` → `completed` / `failed` / `skipped` (budget guard)                                                                            |
+| `attempt`                           | Increments when a failed, skipped, or stale (`started` > 15 min) key is reclaimed                                                        |
+| `request_type`                      | `live` or `historical`. `requested_snapshot_at` / `provider_snapshot_at` are for historical imports (Phase 6)                            |
+| `http_status`, `duration_ms`        | Provider response metadata                                                                                                               |
+| `credits_used`, `credits_remaining` | From `x-requests-last` / `x-requests-remaining`. **Recorded even for failed runs**, because credits are spent once the provider responds |
+| `events_seen`, `quotes_seen`        | Counts for the run                                                                                                                       |
+| `issue_counts`                      | jsonb, normalization issues by code (plus `SCHEMA_REJECTED`, `EVENT_TEAMS_CHANGED`)                                                      |
+| `error_code`, `error_message`       | Sanitized: provider error code or `PERSISTENCE` / `BUDGET` / `UNEXPECTED`. Never contains URLs or credentials                            |
+
+Index: `started_at DESC` (latest runs, monthly budget sum).
+
+### `ingestion_payloads`: raw provider response per run
+
+`ingestion_run_id` (PK/FK, cascade delete), `received_at`, `payload` (jsonb). Lets a normalizer fix be re-applied to past runs without re-buying data.
+
+### `odds_observations`: append-only quote history
+
+| Column                                          | Notes                                                                |
+| ----------------------------------------------- | -------------------------------------------------------------------- |
+| `id`                                            | bigint identity                                                      |
+| `ingestion_run_id`, `event_id`, `bookmaker_key` | FKs                                                                  |
+| `market_type`, `selection`                      | Postgres enums                                                       |
+| `point`                                         | `numeric(5,1)`, exact (not float). NULL **iff** moneyline            |
+| `american_price`                                | int, never in (−100, 100)                                            |
+| `bookmaker_updated_at`                          | Provider market `last_update`. **Not a change marker** (see below)   |
+| `observed_at`                                   | When we received the response; identical for every row of a live run |
+| `is_live`                                       | Event had started at `observed_at`                                   |
+
+Constraints:
+
+- `UNIQUE (ingestion_run_id, event_id, bookmaker_key, market_type, selection)`: one row per selection per run.
+- `CHECK`s: point matches market; selection matches market; valid American price.
+
+Indexes:
+
+- The unique constraint above (which also serves "rows of run X", because it leads with `ingestion_run_id`).
+- `(event_id, market_type, selection, bookmaker_key, observed_at DESC)`: per-book history and latest quote.
+
+**Unchanged prices are stored on purpose.** Two runs that see the same line produce two rows. That is evidence the line was still there at the second time. Movement detection compares consecutive observations by **value** (point and price), never by `bookmaker_updated_at`. Live data on 2026-10-16 showed DraftKings' `last_update` advancing between runs while its line stayed at −1.5 (−105).

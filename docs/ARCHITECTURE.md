@@ -1,32 +1,32 @@
 # Architecture
 
-## Current state (Phase 0)
+## Current state (Phase 1)
 
 ```
  The Odds API ──HTTPS (key in query, server-only)──▶ apps/collector
-                                                     ├─ config.ts          Zod-validated env
+                                                     ├─ config.ts       Zod-validated env
                                                      ├─ providers/the-odds-api/client.ts
                                                      │    retries, backoff, quota headers, key redaction
-                                                     ├─ coverage.ts        price-free coverage summary
-                                                     └─ scripts/verify-provider.ts
-                                                            │ raw JSON → fixtures/the-odds-api/local/ (gitignored)
-                                                            │ summary  → docs/PROVIDER_COVERAGE.md
-                                                            ▼
-                         packages/shared  (pure TypeScript, no I/O)
-                         ├─ providers/the-odds-api/schema.ts     Zod: structure only
-                         ├─ providers/the-odds-api/normalize.ts  provider JSON → NormalizedQuote + issues
-                         ├─ domain.ts, bookmakers.ts             Market, Selection, target books
-                         ├─ odds.ts, format.ts                   odds math, display formatting
-                         ├─ compare.ts                           exact-line best-price groups
-                         └─ fixtures (synthetic, NOT real odds)
-                                                            ▲
+                                                     ├─ collect.ts      claim job_key → budget guard → fetch
+                                                     │                  → normalize → ONE transaction
+                                                     └─ scripts/        collect-nfl, verify-provider, probe-books
+                                                              │
+                         packages/shared (pure TS)            │ uses normalizer, bookmakers, season
+                         schema · normalize · compare · odds  │
+                                                              ▼
+                         packages/db  (Drizzle + postgres.js) ──▶ PostgreSQL 17
+                         schema.ts · drizzle/*.sql migrations      events · bookmakers · ingestion_runs
+                                                                   ingestion_payloads · odds_observations
+                                                                   (append-only)
+
  Browser ◀──HTML── apps/web (Next.js 16 App Router, server components)
-                   └─ /nfl  synthetic fixture → normalize → lib/odds-board.ts view model → table
+                   └─ /nfl  still renders the synthetic fixture; Phase 2 switches it to Postgres
 ```
 
 **Boundaries:**
 
 - **Provider adapter** (client + schema + normalizer) is the only code that knows The Odds API's shape. Everything downstream uses domain types.
+- **Persistence** (`packages/db`) owns the schema and migrations. Database constraints enforce the domain invariants a second time (point ⇔ market, selection ⇔ market, valid price, one row per selection per run).
 - **Pure domain logic** (`packages/shared`) has no I/O, so it's unit-testable and reusable by the web app, the collector, and later the signal engine.
 - **Presentation logic** (`apps/web/lib/odds-board.ts`) is a pure view-model builder, tested separately from React.
 

@@ -16,6 +16,8 @@ const envSchema = z.object({
   MAX_CREDITS_PER_RUN: z.coerce.number().int().positive().default(3),
   MIN_CREDITS_REMAINING: z.coerce.number().int().nonnegative().default(25),
   HTTP_TIMEOUT_MS: z.coerce.number().int().positive().default(15_000),
+  /** Scheduled runs share one job key per slot; 360 min = 4 slots per day. */
+  COLLECT_SLOT_MINUTES: z.coerce.number().int().positive().default(360),
 });
 
 export type CollectorConfig = z.infer<typeof envSchema>;
@@ -46,4 +48,14 @@ export function requireOddsApiKey(config: CollectorConfig): string {
     );
   }
   return config.ODDS_API_KEY;
+}
+
+export function requireDatabaseUrl(config: CollectorConfig): string {
+  if (!config.DATABASE_URL) {
+    throw new ConfigError(
+      "DATABASE_URL is not set. Add it to apps/collector/.env.local " +
+        "(local dev: postgres://localhost:5432/marketscope_dev).",
+    );
+  }
+  return config.DATABASE_URL;
 }

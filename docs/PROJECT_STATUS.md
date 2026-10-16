@@ -4,39 +4,45 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-16 (sessio
 
 ## Current milestone
 
-**Phase 0 is complete. Phase 1 (MS-004: database) is next.**
+**Phase 1 (MS-004–006) is complete. Next: MS-006b scheduled collection (needs Jack's Supabase project), then Phase 2 (read API + odds board from Postgres).**
 
 ## Done so far
 
-- **MS-001:** monorepo, Next.js 16.4, TS 5.9 strict, Tailwind 4, ESLint and Prettier, CI, docs, `CLAUDE.md`.
-- **MS-002:** collector config, Odds API client, `verify:provider`, `probe:books`.
-  - **Live-verified 2026-10-16:** 25 games, 3 credits per call. DraftKings and FanDuel complete; BetMGM current week only; Caesars absent (paid-only).
-  - Hard Rock AZ is empty, so we also collect the `hardrockbet` multi-state feed (ADR-012).
-- **MS-003:** normalizer, exact-line comparison, odds math (implemented by Claude), and the fixture-backed `/nfl` board with Hard Rock AZ-to-IN fallback.
-- Working rules changed (2026-10-16):
-  - No coding exercises for Jack.
-  - Claude merges its own PRs once CI is green.
-  - Claude spends Odds API credits within the collector's budget guards.
-  - The managed DB will be Supabase.
+- **Phase 0:** monorepo, CI, Odds API client and verification, normalizer, exact-line comparison, odds math, fixture-backed `/nfl`. Hard Rock AZ is empty, so the multi-state feed is the fallback (ADR-012).
+- **MS-004:** `packages/db` with a Drizzle schema and two committed migrations (`0000_init`, `0001_seed_bookmakers`).
+  - DB-level CHECK, UNIQUE, and FK constraints, each with an integration test.
+- **MS-005:** `pnpm collect:nfl`: claim by job key, then budget guard, then fetch outside any transaction, then one transaction (ADR-013).
+  - Scheduled keys are per 6-hour slot.
+  - Failed or stale runs are reclaimed with attempt + 1.
+- **MS-006:** 17 collector integration tests: happy path, history, idempotency, stale reclaim, kickoff update, home/away flip guard, provider failure and retry, mid-transaction rollback, budget guards.
+  - CI has a Postgres 17 service and a migration-drift check.
+- **Live acceptance:** two real runs into `marketscope_dev` gave 2 × 468 observations across 25 games.
+- **Finding:** the provider's `last_update` advances without price changes, so movement detection must compare values (DATA_DICTIONARY).
 
 ## Tests
 
-All green: shared 118, collector 15, web 9. lint, typecheck, and build pass.
+All green: db 9, shared 124, collector 32, web 9. lint, typecheck, build, and migration-drift check pass.
 
 ## Credits
 
-496 of 500 remaining this billing period: one `/odds` verification (3) and one Hard Rock probe (1).
+490 of 500 remaining this billing period. Spent: verify 3, probe 1, two collector runs 6.
 
-## Waiting on Jack
+## Waiting on Jack (MS-006b only; Phase 2 can proceed without it)
 
-- Nothing blocks Phase 1.
-- Before MS-006b (scheduled collection): create a free Supabase project. Then put its connection string in `apps/collector/.env.local` as `DATABASE_URL_SUPABASE`, or tell Claude where it is. Claude will ask before adding GitHub repo secrets.
+1. Create a free **Supabase** project (any name, e.g. `marketscope`).
+2. Copy its **Session pooler** connection string (Project Settings → Database). Put it in `apps/collector/.env.local` as `SUPABASE_DATABASE_URL=...` and tell Claude it's there. Don't paste it in chat.
+3. Claude will migrate it and ask once before adding the `DATABASE_URL` and `ODDS_API_KEY` GitHub secrets for the cron workflow.
 
 ## Known issues / open decisions
 
 - Odds API terms: confirm that storing raw payloads and public display are allowed. Required before Phase 3 deployment.
+- A free-tier budget of 400 credits/month allows about 4 polls/day (360). More frequent collection needs the $30 plan.
 - Revisit TS 7 when typescript-eslint supports it (ADR-004).
 
 ## Next task
 
-**MS-004:** install `postgresql@17` via Homebrew, create `marketscope_dev` and `marketscope_test`, scaffold `packages/db` (Drizzle + postgres.js), and write the first migration. Seed the bookmakers table with all 6 collected feeds.
+**Phase 2 / MS-007:**
+
+1. `packages/db` query layer: `listUpcomingGames` and `latestOddsForEvent` (`DISTINCT ON`).
+2. Switch `/nfl` from the fixture to Postgres.
+3. Add `/api/games` and `/api/games/:id/odds` with Zod params and freshness metadata.

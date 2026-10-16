@@ -12,10 +12,12 @@
     "build": "pnpm -r --if-present build",
     "lint": "pnpm -r --if-present lint",
     "typecheck": "pnpm -r --if-present typecheck",
-    "test": "pnpm -r --if-present test",
+    "test": "pnpm -r --workspace-concurrency=1 --if-present test",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "verify:provider": "pnpm --filter @marketscope/collector verify:provider"
+    "verify:provider": "pnpm --filter @marketscope/collector verify:provider",
+    "collect:nfl": "pnpm --filter @marketscope/collector collect:nfl",
+    "db:migrate": "pnpm --filter @marketscope/db db:migrate"
   },
   "devDependencies": {
     "@eslint/js": "^9",
