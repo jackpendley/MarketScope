@@ -4,7 +4,7 @@
 
 MarketScope compares NFL odds across five sportsbooks (DraftKings, FanDuel, BetMGM, Caesars, Hard Rock Bet AZ). Each collection is stored as an append-only observation, so the app can reconstruct how lines moved. The goal is a research tool that keeps observable evidence separate from speculation. It is not a picks service.
 
-> **Status:** Phase 2 complete. The odds board reads real NFL odds snapshots that the collector stores in PostgreSQL. See [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md) and [`docs/ROADMAP.md`](docs/ROADMAP.md).
+> **Status:** Phase 3 complete. Real NFL odds snapshots are collected 4× a day into PostgreSQL; the odds board and line-history charts are deployed privately on Vercel. See [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md) and [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 ## Stack
 
