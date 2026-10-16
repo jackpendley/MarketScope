@@ -50,23 +50,25 @@ test.describe("game detail and history", () => {
       "never returned",
     );
 
-    await page.getByRole("link", { name: /View line history/ }).click();
+    await page.getByRole("link", { name: /Open market replay/ }).click();
     await expect(page).toHaveURL(/\/history$/);
-    await expect(page.getByRole("heading", { name: /Line history/ })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Market replay/ })).toBeVisible();
   });
 
-  test("renders stepped charts, a change log, and gaps; legend toggles books", async ({ page }) => {
+  test("renders stepped charts, a movement timeline, and gaps; legend toggles books", async ({
+    page,
+  }) => {
     await page.goto("/nfl");
     await gameTables(page).first().getByRole("link").first().click();
-    await page.getByRole("link", { name: /View line history/ }).click();
+    await page.getByRole("link", { name: /Open market replay/ }).click();
 
     const charts = page.locator("figure");
     await expect(charts).toHaveCount(2); // spread line + price
     await expect(charts.first().locator(".recharts-line").first()).toBeVisible();
-    await expect(page.getByRole("heading", { name: /Detected changes/ })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Movement timeline/ })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Data gaps" })).toBeVisible();
 
-    const dk = page.getByRole("button", { name: "DraftKings" });
+    const dk = page.getByRole("button", { name: "DraftKings", exact: true });
     const linesBefore = await charts.first().locator(".recharts-line").count();
     await dk.click();
     await expect(dk).toHaveAttribute("aria-pressed", "false");
@@ -94,4 +96,51 @@ test("data health endpoint reports the seeded runs", async ({ request }) => {
   const { data } = await res.json();
   expect(data.status).toBe("ok");
   expect(data.recentRuns.length).toBeGreaterThan(0);
+});
+
+test.describe("market replay", () => {
+  async function openReplay(page: Page) {
+    await page.goto("/replay");
+    await expect(page.getByRole("heading", { name: "Market Replay" })).toBeVisible();
+    const replayLinks = page.getByRole("link", { name: "Replay →", exact: true });
+    await expect(replayLinks).toHaveCount(3);
+    await replayLinks.first().click();
+    await expect(page.getByRole("heading", { name: /Market replay/ })).toBeVisible();
+  }
+
+  test("stepping the cursor back changes the replay time and market state", async ({ page }) => {
+    await openReplay(page);
+    const time = page.getByTestId("replay-time");
+    await expect(page.getByText("latest", { exact: true })).toBeVisible();
+    const latest = await time.textContent();
+
+    await page.getByRole("button", { name: "Previous snapshot" }).click();
+    await expect(time).not.toHaveText(latest!);
+    await expect(page.getByText(/Snapshot \d+ of \d+/)).toBeVisible();
+    await expect(page.getByRole("button", { name: "Latest" })).toBeEnabled();
+
+    await page.getByRole("button", { name: "Latest" }).click();
+    await expect(time).toHaveText(latest!);
+  });
+
+  test("the slider is keyboard operable", async ({ page }) => {
+    await openReplay(page);
+    const slider = page.getByRole("slider", { name: "Replay time" });
+    const before = await page.getByTestId("replay-time").textContent();
+    await slider.focus();
+    await page.keyboard.press("Home");
+    await expect(page.getByTestId("replay-time")).not.toHaveText(before!);
+    // At the first snapshot most books have only just been observed: consensus may or may not
+    // form, but the panel must always explain itself.
+    await expect(page.getByTestId("replay-consensus")).toBeVisible();
+  });
+
+  test("clicking a movement moves the cursor to the end of its interval", async ({ page }) => {
+    await openReplay(page);
+    const entries = page.locator("ol li button");
+    await expect(entries.first()).toBeVisible();
+    const target = entries.nth(3);
+    await target.click();
+    await expect(target).toHaveAttribute("aria-current", "true");
+  });
 });

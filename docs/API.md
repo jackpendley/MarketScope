@@ -61,6 +61,22 @@ Changes are detected by **value**, and each one happened somewhere in `(interval
 
 `meta` includes `observations`, `truncated` (capped at 20,000 rows), `sources` (`"synthetic"` marks demo data), and `orientation`.
 
+## `GET /api/games/:id/movements`
+
+Detected movements for one selection, oldest first.
+
+| Param        | Default         | Rules                           |
+| ------------ | --------------- | ------------------------------- |
+| `market`     | `spreads`       | `spreads`, `totals`, `h2h`      |
+| `selection`  | `HOME` / `OVER` | must match the market           |
+| `pointsOnly` | `false`         | `true` drops price-only changes |
+
+Each movement has the `LineChange` fields from `/history` (interval, from/to point and price, `pointDelta`, `acrossGap`), plus:
+
+- `direction`: `toward-home`, `toward-away` (home orientation), `total-up`, `total-down`, or `price-only`.
+- `keyNumbers[]`: `{ key, signedKey, kind: crossed | landed-on | left }`.
+- `displayName`.
+
 ## `GET /api/health/live`
 
 Liveness only: `{ "status": "ok" }` without touching the database. Used by the Playwright web-server check and suitable for process supervisors. Readiness and data health live in `/api/health/data`.

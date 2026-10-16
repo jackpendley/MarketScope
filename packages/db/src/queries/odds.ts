@@ -249,3 +249,24 @@ export async function selectionHistory(
     .limit(limit + 1);
   return { rows: rows.slice(0, limit), truncated: rows.length > limit };
 }
+
+/** History summary per game (one grouped query), for the replay index. */
+export async function observationSummaries(
+  db: Database,
+  eventIds: readonly string[],
+): Promise<Map<string, GameObservationStats>> {
+  if (eventIds.length === 0) return new Map();
+  const o = oddsObservations;
+  const rows = await db
+    .select({
+      eventId: o.eventId,
+      observations: count(),
+      snapshots: countDistinct(o.observedAt),
+      firstObservedAt: isoUtcNullable(min(o.observedAt)),
+      lastObservedAt: isoUtcNullable(sql`max(${o.observedAt})`),
+    })
+    .from(o)
+    .where(and(inArray(o.eventId, [...eventIds]), eq(o.isLive, false)))
+    .groupBy(o.eventId);
+  return new Map(rows.map(({ eventId, ...stats }) => [eventId, stats]));
+}

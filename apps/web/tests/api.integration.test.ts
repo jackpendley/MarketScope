@@ -5,6 +5,7 @@ import { resetDatabase, TEST_DATABASE_URL } from "@marketscope/db/testing";
 import { NextRequest } from "next/server";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { GET as getGameHistory } from "@/app/api/games/[id]/history/route";
+import { GET as getGameMovements } from "@/app/api/games/[id]/movements/route";
 import { GET as getGameOdds } from "@/app/api/games/[id]/odds/route";
 import { GET as getGames } from "@/app/api/games/route";
 import { GET as getDataHealth } from "@/app/api/health/data/route";
@@ -309,5 +310,78 @@ describe("GET /api/games/:id/history", () => {
     ).toBe(400);
     const id = "00000000-0000-4000-8000-000000000000";
     expect((await getGameHistory(request(`/api/games/${id}/history`), ctx(id))).status).toBe(404);
+  });
+});
+
+describe("GET /api/games/:id/movements", () => {
+  async function addDraftKings(point: number, price: number, minutesAgo: number, key: string) {
+    const [run] = await db
+      .insert(ingestionRuns)
+      .values({
+        jobKey: key,
+        provider: "the-odds-api",
+        requestType: "live",
+        status: "completed",
+        startedAt: iso(-minutesAgo * MIN),
+      })
+      .returning({ id: ingestionRuns.id });
+    await db.insert(oddsObservations).values({
+      ingestionRunId: run!.id,
+      eventId: gameId,
+      bookmakerKey: "draftkings",
+      marketType: "spreads",
+      selection: "HOME",
+      point,
+      americanPrice: price,
+      observedAt: iso(-minutesAgo * MIN),
+      isLive: false,
+    });
+  }
+
+  it("returns movements oldest first with home-orientation direction and key numbers", async () => {
+    await addDraftKings(-3.5, -110, 300, "m1"); // then -3.5 -115 (price), then NEW -1.5 -105
+    await addDraftKings(-3.5, -115, 240, "m2");
+    const res = await getGameMovements(request(`/api/games/${gameId}/movements`), ctx(gameId));
+    expect(res.status).toBe(200);
+    const { data, meta } = await res.json();
+    expect(data).toMatchObject({ market: "spreads", selection: "HOME" });
+    const dk = data.movements.filter(
+      (m: { bookmakerKey: string }) => m.bookmakerKey === "draftkings",
+    );
+    expect(dk.map((m: { direction: string }) => m.direction)).toEqual([
+      "price-only",
+      "toward-away",
+    ]);
+    expect(dk[1]).toMatchObject({
+      fromPoint: -3.5,
+      toPoint: -1.5,
+      pointDelta: 2,
+      keyNumbers: [{ key: 3, signedKey: -3, kind: "crossed" }],
+      displayName: "DraftKings",
+    });
+    expect(meta).toMatchObject({ gapMinutes: 720, sources: ["the-odds-api"] });
+
+    const pointsOnly = await (
+      await getGameMovements(request(`/api/games/${gameId}/movements?pointsOnly=true`), ctx(gameId))
+    ).json();
+    expect(
+      pointsOnly.data.movements.every((m: { direction: string }) => m.direction !== "price-only"),
+    ).toBe(true);
+  });
+
+  it("validates the market/selection combination and ids", async () => {
+    expect(
+      (
+        await getGameMovements(
+          request(`/api/games/${gameId}/movements?market=h2h&selection=OVER`),
+          ctx(gameId),
+        )
+      ).status,
+    ).toBe(400);
+    expect((await getGameMovements(request("/api/games/x/movements"), ctx("x"))).status).toBe(400);
+    const id = "00000000-0000-4000-8000-000000000000";
+    expect((await getGameMovements(request(`/api/games/${id}/movements`), ctx(id))).status).toBe(
+      404,
+    );
   });
 });

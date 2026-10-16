@@ -4,7 +4,7 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-16 (sessio
 
 ## Current milestone
 
-**Phase 3 is complete. MarketScope is deployed privately at https://marketscope-delta.vercel.app (Basic auth; user `marketscope`, password in `apps/web/.env.local` as `VERCEL_SITE_PASSWORD`). Next: Phase 4, Market Replay.**
+**Phase 4 (Market Replay) is complete. MarketScope is deployed privately at https://marketscope-delta.vercel.app (user `marketscope`, password in `apps/web/.env.local` as `VERCEL_SITE_PASSWORD`). Next: Phase 5, Signal Lab and the first research study.**
 
 ## Done so far
 
@@ -22,6 +22,10 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-16 (sessio
   - `/nfl/games/[id]/history` with stepped Recharts line and price charts (palette validated for the dark theme), a change log, and gap lists (ADR-020).
   - Deterministic synthetic history through the real collector, guarded to demo/e2e DBs, with banners everywhere (ADR-021).
   - Local `marketscope_demo` is seeded with 18 synthetic snapshots for UI work.
+- **Phase 4 (MS-016/017):**
+  - Replay cursor over snapshots, state at T with stale and no-data states, consensus and dispersion at T, cursor line on charts.
+  - Movement timeline with direction and key-number badges.
+  - `/api/games/:id/movements` and the `/replay` index (ADR-023).
 - **MS-013:**
   - Odds API terms reviewed (ADR-022).
   - Basic-auth proxy that fails closed on Vercel.
@@ -36,7 +40,7 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-16 (sessio
 
 ## Tests
 
-All green: db 23, shared 152, collector 37, web 51, e2e 11. lint, typecheck, build, and migration-drift check pass.
+All green: db 25, shared 173, collector 37, web 68, e2e 14. lint, typecheck, build, and migration-drift check pass.
 
 ## Credits
 
@@ -59,11 +63,9 @@ Nothing blocking. Optional: mark the GitGuardian false-positive incident as reso
 
 ## Next task
 
-**Phase 4, Market Replay (MS-016/017):**
+**Phase 5, Signal Lab (MS-018–021):**
 
-- Time cursor showing each book's latest observation at or before T, within a freshness window (no carry-forward across gaps).
-- "First observed" / "last observed pregame" labels.
-- `detectKeyNumberCrossings` (3 and 7; crosses vs lands on; sign-safe on home spreads).
-- Movement timeline.
-
-Real history starts accumulating from the 06:07 UTC 2026-10-16 cron run.
+1. Signals A–F (spec §14) as pure, versioned functions over observations, reusing `stateAt`, consensus, dispersion, `describeMovement`, and key numbers.
+2. `market_signals` table (migration) with evidence observation IDs; idempotent recompute per (event, version).
+3. `docs/SIGNAL_DEFINITIONS.md`; Signal Lab UI and `/api/signals`.
+4. First research study (outlier book → consensus convergence within 24 h) once enough real history exists.

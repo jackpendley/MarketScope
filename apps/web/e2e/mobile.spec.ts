@@ -19,7 +19,7 @@ test("board, detail, and history fit a phone screen without horizontal scrolling
   await expect(page.getByRole("heading", { name: "Feed coverage" })).toBeVisible();
   await expectNoHorizontalScroll(page);
 
-  await page.getByRole("link", { name: /View line history/ }).click();
+  await page.getByRole("link", { name: /Open market replay/ }).click();
   await expect(page.locator("figure").first()).toBeVisible();
   await expectNoHorizontalScroll(page);
 });

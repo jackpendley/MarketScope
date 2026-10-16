@@ -126,10 +126,18 @@ Status legend: `[x]` done · `[~]` in progress · `[ ]` not started
 
 ## Phase 4 — Market Replay (MS-016–017)
 
-- [ ] Cursor at time T shows each book's latest observation ≤ T within the freshness window. Missing books stay missing, never carried forward.
-- [ ] Labels: "first observed" (never "open"), "last observed pregame".
-- [ ] `detectLineChanges` via SQL `LAG()`. Changes are reported as intervals.
-- [ ] `detectKeyNumberCrossings` for 3 and 7: sign-safe, covering both "crosses" and "lands on". Direction tests included.
+- [x] **MS-016** Replay cursor on `/nfl/games/[id]/history`:
+  - Steps through actual snapshots (slider, prev/next/latest, keyboard).
+  - State-at-T table, one feed per board book.
+  - Consensus and dispersion at T.
+  - Cursor line on both charts.
+  - Movement timeline that jumps the cursor (ADR-023).
+- [x] **MS-017** Data-quality correctness:
+  - Stale books flagged with their age, never carried forward.
+  - "First observed" / "last observed (pregame)" labels.
+  - Value-based changes reported as intervals, with "across gap" flags.
+  - Key-number crossings (3 and 7; crossed, landed-on, left; sign-safe).
+  - `GET /api/games/:id/movements`; `/replay` index of games with history; Market Replay in the nav.
 
 ## Phase 5 — Signal Lab + first study (MS-018–021)
 
