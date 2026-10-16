@@ -4,53 +4,49 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-16 (sessio
 
 ## Current milestone
 
-**Phase 2 is complete (pending merge of its PR). Next: MS-006b scheduled collection (blocked on Jack's Supabase project) and Phase 3 (history API, charts, deployment).**
+**Phases 0–2 and MS-006b are complete. Scheduled collection is live on GitHub Actions → Supabase. Next: Phase 3 (history API, charts, deployment).**
 
 ## Done so far
 
-- **Phase 0:** monorepo, CI, Odds API client and verification, normalizer, odds math, exact-line comparison. Hard Rock AZ is empty, so we collect the multi-state feed as a fallback (ADR-012).
-- **Phase 1:** Postgres schema with DB-enforced invariants; idempotent, budget-guarded collector (ADR-013); 17 integration tests; CI with Postgres 17 and a migration-drift check.
-- **Phase 2:**
-  - Query layer: `DISTINCT ON` latest quotes, verified index use (ADR-016).
-  - `/api/games`, `/api/games/:id/odds`, `/api/health/data` (`docs/API.md`).
-  - `/nfl` board from Postgres with GET-form filters (ADR-017).
-  - `/nfl/games/[id]` detail page with per-feed coverage.
-  - Stale books flagged and never ranked.
-  - Median consensus requiring ≥ 3 current books.
-  - Verified in a real browser (Playwright screenshots at 1400 px and 390 px).
-  - Fixed a horizontal-overflow bug caused by `sr-only` labels escaping scroll containers.
+- **Phase 0:** monorepo, CI, Odds API client and verification, normalizer, odds math, exact-line comparison, Hard Rock fallback (ADR-012).
+- **Phase 1:** Postgres schema with DB-enforced invariants; idempotent, budget-guarded collector (ADR-013).
+- **Phase 2:** read API (`docs/API.md`), Postgres-backed `/nfl` board and `/nfl/games/[id]` (ADR-015–017).
+- **MS-006b:**
+  - Supabase migrated (4 migrations) and locked down: RLS on every table, `anon`/`authenticated` privileges revoked (ADR-018). REST reads and writes with the publishable key verified as 401.
+  - `createDb` requires TLS for remote hosts.
+  - `collect-odds.yml` runs 4×/day; `migrate-production.yml` runs on merge (ADR-019).
+  - First Supabase run: 25 games, 468 quotes.
+- Supabase agent skills installed at `.claude/skills/` (reviewed: markdown only).
+- Decision: no `supabase-js` until a feature needs Auth, Realtime, or Storage.
 
 ## Tests
 
-All green: db 17, shared 141, collector 32, web 38. lint, typecheck, build, and migration-drift check pass.
+All green: db 21, shared 141, collector 32, web 38. lint, typecheck, build, and migration-drift check pass.
 
 ## Credits
 
-490 of 500 remaining this billing period (no spend in Phase 2).
+487 of 500 remaining. The cron uses about 12/day (≈372/month), leaving little headroom for local runs. **Avoid local `collect:nfl` runs against the free tier**, or upgrade (ask first).
 
-## Local data
+## Data
 
-`marketscope_dev` holds 2 real snapshots (Oct 16 ~01:43 UTC, 25 games). Run `pnpm collect:nfl` for a fresh one (3 credits).
+- **Production (Supabase):** collecting 4×/day since 2026-10-16.
+- **Local `marketscope_dev`:** 2 snapshots, for development only.
 
-## Waiting on Jack (MS-006b only)
+## Waiting on Jack
 
-1. Create a free **Supabase** project.
-2. Put its **Session pooler** connection string in `apps/collector/.env.local` as `SUPABASE_DATABASE_URL=...` (don't paste it in chat), then tell Claude.
-3. Claude migrates it and asks once before adding the GitHub secrets for the 4×/day cron.
-
-Until then, history only grows when collection runs locally.
+Nothing blocking. Optional: mark the GitGuardian false-positive incident as resolved.
 
 ## Known issues / open decisions
 
-- Odds API terms: confirm that storing raw payloads and public display are allowed **before the Phase 3 deployment** (Vercel Deployment Protection stays on until then).
-- 400 credits/month allows about 4 polls/day. Denser history needs the $30 plan (ask first).
+- Odds API terms: confirm that storing raw payloads and public display are allowed **before Phase 3 deployment** (Vercel Deployment Protection stays on until then).
+- GitHub disables scheduled workflows after 60 days without repo activity.
 - Revisit TS 7 when typescript-eslint supports it (ADR-004).
 
 ## Next task
 
 **Phase 3 / MS-011:**
 
-1. `GET /api/games/:id/history` (market, selection, books, from/to). Downsampling keeps every change point plus the first and last observations.
-2. Recharts step charts: point and price on separate charts, gaps rendered as breaks.
+1. `GET /api/games/:id/history`, with downsampling that keeps change points plus first and last observations.
+2. Recharts step charts (point and price separate; gaps as breaks).
 3. Playwright smoke tests.
-4. Deployment prep (Vercel + Supabase). Ask before creating any resources.
+4. Vercel deployment plan. Ask before creating resources.

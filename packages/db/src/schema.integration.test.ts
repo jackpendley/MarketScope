@@ -134,3 +134,20 @@ describe("ingestion_runs", () => {
     ).toBe("ingestion_runs_jobKey_unique");
   });
 });
+
+describe("Data API lock-down (ADR-018)", () => {
+  it("enables row-level security on every table", async () => {
+    const rows = await sql<{ relname: string; relrowsecurity: boolean }[]>`
+      SELECT c.relname, c.relrowsecurity FROM pg_class c
+      JOIN pg_namespace n ON n.oid = c.relnamespace
+      WHERE n.nspname = 'public' AND c.relkind = 'r' ORDER BY c.relname`;
+    expect(rows.map((r) => r.relname)).toEqual([
+      "bookmakers",
+      "events",
+      "ingestion_payloads",
+      "ingestion_runs",
+      "odds_observations",
+    ]);
+    expect(rows.every((r) => r.relrowsecurity)).toBe(true);
+  });
+});

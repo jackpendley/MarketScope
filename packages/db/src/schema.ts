@@ -6,6 +6,10 @@
 // - Invariants that must never be violated are enforced by the database itself
 //   (CHECK / UNIQUE / FK), not only by application code.
 // - TypeScript keys are camelCase; columns are snake_case (drizzle `casing`).
+// - Every table has Row-Level Security ENABLED with NO policies. On Supabase, tables in
+//   `public` are reachable through the REST Data API with the (public) publishable key;
+//   RLS without policies denies those roles everything. Our own connections use the
+//   table owner, which bypasses RLS (ADR-018).
 
 import { sql } from "drizzle-orm";
 import {
@@ -55,7 +59,7 @@ export const events = pgTable(
     updatedAt: tstz().notNull().defaultNow(),
   },
   (t) => [index("events_commence_time_idx").on(t.commenceTimeUtc)],
-);
+).enableRLS();
 
 /** Provider feeds (bookmaker keys). Kept in sync by the collector from COLLECTED_BOOKMAKERS. */
 export const bookmakers = pgTable("bookmakers", {
@@ -65,7 +69,7 @@ export const bookmakers = pgTable("bookmakers", {
   /** True for a board column's preferred feed; false for fallbacks like `hardrockbet`. */
   isPrimary: boolean().notNull().default(false),
   enabled: boolean().notNull().default(true),
-});
+}).enableRLS();
 
 /** One attempt-tracked collection job. Makes ingestion observable and idempotent. */
 export const ingestionRuns = pgTable(
@@ -95,7 +99,7 @@ export const ingestionRuns = pgTable(
     errorMessage: text(),
   },
   (t) => [index("ingestion_runs_started_at_idx").on(t.startedAt.desc())],
-);
+).enableRLS();
 
 /** Raw provider response per run, so normalizer fixes can be re-applied without re-buying data. */
 export const ingestionPayloads = pgTable("ingestion_payloads", {
@@ -104,7 +108,7 @@ export const ingestionPayloads = pgTable("ingestion_payloads", {
     .references(() => ingestionRuns.id, { onDelete: "cascade" }),
   receivedAt: tstz().notNull(),
   payload: jsonb().notNull(),
-});
+}).enableRLS();
 
 /** Append-only: one bookmaker price for one selection, as observed by one ingestion run. */
 export const oddsObservations = pgTable(
@@ -164,4 +168,4 @@ export const oddsObservations = pgTable(
       sql`${t.americanPrice} <= -100 OR ${t.americanPrice} >= 100`,
     ),
   ],
-);
+).enableRLS();

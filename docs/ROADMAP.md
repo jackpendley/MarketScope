@@ -91,7 +91,7 @@ Status legend: `[x]` done · `[~]` in progress · `[ ]` not started
 - [x] **MS-006 Integration tests** against `marketscope_test`: fixture → DB, upsert, same `job_key` twice, rollback on failure, budget refusal. CI gets a `postgres:17` service and a migration-drift check.
   - **Accepted 2026-10-16:** two live runs into `marketscope_dev` produced two distinct sets of 468 observations (25 games, 4 feeds with data), 3 credits each. Re-running the same scheduled slot was a no-op.
   - _Accept:_ two runs, then SQL shows two distinct observation sets.
-- [ ] **MS-006b Scheduled collection** (needs Jack to create a free Supabase project, plus approval for the repo secrets). A GitHub Actions cron runs about 4×/day into the managed DB, so real history starts accumulating as early as possible.
+- [x] **MS-006b Scheduled collection** (2026-10-16): Supabase (Postgres 17, session pooler) is migrated and locked down (ADR-018). `collect-odds.yml` runs 4×/day and `migrate-production.yml` applies migrations on merge (ADR-019). Repo secrets: `DATABASE_URL`, `ODDS_API_KEY`.
 
 ## Phase 2 — Read API + Odds Board (MS-007–010)
 
@@ -169,7 +169,7 @@ Status legend: `[x]` done · `[~]` in progress · `[ ]` not started
 - Buying any paid plan or raising the credit budget.
 - Making a deployment public.
 
-Managed DB for scheduled collection and production: **Supabase** (Jack creates the project and shares the connection string via a local env file, never in chat).
+Managed DB: **Supabase**, used as Postgres only (ADR-018). Its session-pooler URL is stored locally as `SUPABASE_DATABASE_URL` in `apps/collector/.env.local`, and in GitHub as the `DATABASE_URL` secret.
 
 ## Concepts (Claude implements; explains these in milestone summaries)
 

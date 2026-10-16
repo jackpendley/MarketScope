@@ -122,3 +122,34 @@ All books in one run come from a single request, so "contemporaneous" means "sam
 **Context:** The spec suggests shadcn/ui "where useful". The board needs dense tables, a select, and checkboxes.
 **Decision:** Plain Tailwind and native form controls for now. Filters (`q`, `market`, `days`, `books`) live in URL search params, submitted with a GET form and parsed on the server (`lib/board-filters.ts`). That needs no client JavaScript, and URLs are shareable.
 **Consequences:** Fewer dependencies. Revisit when Market Replay needs interactive client components (charts, time cursor).
+
+## ADR-018 — Supabase as managed Postgres only; Data API locked down (2026-10-16)
+
+**Context:** Supabase's default privileges grant the `anon`/`authenticated` roles access to new tables in `public`, and those roles are reachable through its REST Data API with the **publishable key**, which is public by design. Unprotected, the odds tables would have been readable and writable by anyone holding the key, which also conflicts with the provider's no-redistribution terms.
+**Decision:**
+
+- Use Supabase purely as managed PostgreSQL 17 through the **session pooler** (port 5432; direct connections are IPv6-only on the free tier and GitHub runners can't reach them). Access stays server-side through Drizzle.
+- Do **not** add `supabase-js`, `@supabase/ssr`, or the shadcn Supabase blocks until a feature needs Auth, Realtime, or Storage.
+- Every table has RLS **enabled with no policies** (`.enableRLS()` in `schema.ts`, migration 0002). Migration 0003 also revokes current and default privileges from `anon`/`authenticated`; it's a no-op where those roles don't exist (local, CI).
+- Our connections use the table owner, which bypasses RLS.
+- `createDb` requires TLS for any non-local host.
+
+**Verified 2026-10-16:** REST reads and writes with the publishable key return 401 permission denied on every table.
+**Consequences:** If a browser-side Supabase feature is added later, it must come with explicit, minimal grants and RLS policies, and be reviewed against the provider's terms.
+
+## ADR-019 — Scheduled collection on GitHub Actions; migrations applied on merge (2026-10-16)
+
+**Decision:**
+
+- `collect-odds.yml` runs at 00:07, 06:07, 12:07, and 18:07 UTC (plus manual dispatch) with `--scheduled`. The job key is the 6-hour slot, so late or duplicate cron runs still collect once per slot. About 124 runs/month × 3 credits ≈ 372, under `MONTHLY_CREDIT_BUDGET=400`.
+- `migrate-production.yml` applies committed migrations to Supabase when `packages/db/drizzle/**` changes on `main` (CI has already run them against Postgres 17).
+- Secrets `DATABASE_URL` (Supabase pooler) and `ODDS_API_KEY` are GitHub repository secrets.
+
+**Caveats:**
+
+- GitHub cron can run late or skip runs under load.
+- GitHub disables scheduled workflows in public repos after 60 days without repo activity.
+- Failure emails go to the account that last changed the cron.
+- The monthly budget sum is per database: local dev runs don't count toward Supabase's total. The provider-reported remaining-credits floor (`MIN_CREDITS_REMAINING`) is account-wide, so it still protects the quota.
+
+AWS Lambda + EventBridge remains an optional later upgrade (Phase 3).
