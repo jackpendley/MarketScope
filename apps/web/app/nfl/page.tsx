@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import {
-  TARGET_BOOKMAKERS,
-  TARGET_BOOKMAKER_KEYS,
+  BOARD_BOOKS,
+  COLLECTED_BOOKMAKER_KEYS,
   normalizeEventOdds,
   parseOddsResponse,
 } from "@marketscope/shared";
@@ -21,9 +21,9 @@ function loadBoards(): EventBoard[] {
       buildEventBoard(
         normalizeEventOdds(raw, {
           observedAt: SYNTHETIC_OBSERVED_AT,
-          targetBookmakers: TARGET_BOOKMAKER_KEYS,
+          targetBookmakers: COLLECTED_BOOKMAKER_KEYS,
         }),
-        TARGET_BOOKMAKERS,
+        BOARD_BOOKS,
       ),
     )
     .sort((a, b) => a.commenceTime.localeCompare(b.commenceTime));

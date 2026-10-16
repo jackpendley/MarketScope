@@ -73,3 +73,13 @@ All books in one run come from a single request, so "contemporaneous" means "sam
 **Context:** Next 16 offers Cache Components (`"use cache"`, PPR) as an opt-in model.
 **Decision:** Scaffold without it. Pages are static or dynamic by default, which is easy to reason about while the data layer is built.
 **Consequences:** Revisit in Phase 2/3, when caching DB reads per collection run may be worthwhile.
+
+## ADR-012 — Collect Hard Rock AZ and the multi-state feed; board prefers AZ (2026-10-16)
+
+**Context:** In the live check, `hardrockbet_az` returned 0 NFL games. `hardrockbet` (the docs call it the Indiana feed, "same odds as several other states"), `hardrockbet_fl`, and `hardrockbet_oh` each returned the 14 current-week games.
+**Decision:** Collect both `hardrockbet_az` and `hardrockbet`. Six named books still cost one region-equivalent, so a call stays at 3 credits. The two are stored as separate feeds and never merged.
+
+- The odds board has five columns (`BOARD_BOOKS`), each listing feeds in preference order. The Hard Rock column shows AZ when present and otherwise falls back to the IN feed, labeled "IN feed".
+- Best-price comparison uses only the feed each column displays, so a book can never be counted twice.
+
+**Consequences:** Research and consensus code must choose feeds explicitly (default: one feed per board book, using the same preference order). Re-probe AZ occasionally with `pnpm --filter @marketscope/collector probe:books --books hardrockbet_az`.

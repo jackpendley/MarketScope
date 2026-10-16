@@ -1,44 +1,42 @@
 # Project Status
 
-_Rewrite this file at the end of every session. Last updated: 2026-10-15 (session 1)._
+_Rewrite this file at the end of every session. Last updated: 2026-10-16 (session 1, continued)._
 
 ## Current milestone
 
-**Phase 0: MS-002 and MS-003 are waiting on Jack.** MS-001 is complete.
+**Phase 0 is complete. Phase 1 (MS-004: database) is next.**
 
-## Last session (2026-10-15)
+## Done so far
 
-- Cloned `git@github.com:jackpendley/MarketScope.git` (public) to `~/Projects/MarketScope`. Set global git identity to `Jack Pendley <jackpendley9@gmail.com>`.
-- **MS-001:** pnpm monorepo, Next.js 16.4 / React 19.3 / Tailwind 4 / TS 5.9 strict, ESLint 9 + Prettier, CI (`.github/workflows/ci.yml`), full docs set, `CLAUDE.md`.
-- **MS-002:** `apps/collector` with Zod config, Odds API client (retry/backoff, quota headers, key redaction), and `pnpm verify:provider` (paid call gated by `--spend`). Exercised end-to-end against a local mock server; **not yet run against the real API**.
-- **MS-003:**
-  - Domain types, Zod schemas, `normalizeEventOdds` (typed issues), `compareIdenticalMarketPrices`, and formatters.
-  - Synthetic edge-case fixture.
-  - `/nfl` renders it with a "synthetic" banner.
-  - Odds-math stubs plus a full test suite (validated against a throwaway reference implementation, which was then removed).
+- **MS-001:** monorepo, Next.js 16.4, TS 5.9 strict, Tailwind 4, ESLint and Prettier, CI, docs, `CLAUDE.md`.
+- **MS-002:** collector config, Odds API client, `verify:provider`, `probe:books`.
+  - **Live-verified 2026-10-16:** 25 games, 3 credits per call. DraftKings and FanDuel complete; BetMGM current week only; Caesars absent (paid-only).
+  - Hard Rock AZ is empty, so we also collect the `hardrockbet` multi-state feed (ADR-012).
+- **MS-003:** normalizer, exact-line comparison, odds math (implemented by Claude), and the fixture-backed `/nfl` board with Hard Rock AZ-to-IN fallback.
+- Working rules changed (2026-10-16):
+  - No coding exercises for Jack.
+  - Claude merges its own PRs once CI is green.
+  - Claude spends Odds API credits within the collector's budget guards.
+  - The managed DB will be Supabase.
 
 ## Tests
 
-- Passing: normalizer and format (shared), collector client and coverage (15), web view model (6).
-- **Failing by design:** `packages/shared/src/odds.test.ts`, plus the compare tests and the `/nfl` page that depend on it. They need Jack's odds-math implementation.
-- lint, typecheck, and build pass.
+All green: shared 118, collector 15, web 9. lint, typecheck, and build pass.
+
+## Credits
+
+496 of 500 remaining this billing period: one `/odds` verification (3) and one Hard Rock probe (1).
 
 ## Waiting on Jack
 
-1. **Implement** `americanToImpliedProbability`, `americanToDecimal`, and `decimalToAmerican` in `packages/shared/src/odds.ts`. Run `pnpm --filter @marketscope/shared test` until green, then `pnpm dev` and look at `/nfl`.
-2. **Get an Odds API key** (free Starter plan). Put it in `apps/collector/.env.local`, then run `pnpm verify:provider` and `pnpm verify:provider --spend`.
-3. After odds.ts passes, tell Claude to push `ms-002-003-provider-normalization` and open the PR. Merge once CI is green.
-
-## Git state
-
-- `main`: MS-001, pushed to origin. CI green.
-- Branch `ms-002-003-provider-normalization`: MS-002 and MS-003 commits, **local only (not pushed)**. Held until odds.ts is implemented, since its tests and the `/nfl` build fail on the stubs.
+- Nothing blocks Phase 1.
+- Before MS-006b (scheduled collection): create a free Supabase project. Then put its connection string in `apps/collector/.env.local` as `DATABASE_URL_SUPABASE`, or tell Claude where it is. Claude will ask before adding GitHub repo secrets.
 
 ## Known issues / open decisions
 
-- Odds API terms: confirm that storing raw payloads (`ingestion_payloads`) and public display are allowed. Required before Phase 3 deployment.
+- Odds API terms: confirm that storing raw payloads and public display are allowed. Required before Phase 3 deployment.
 - Revisit TS 7 when typescript-eslint supports it (ADR-004).
 
 ## Next task
 
-**Phase 1 / MS-004:** `brew install postgresql@17`, create the dev and test DBs, scaffold `packages/db` with Drizzle, and write the first migration (events, bookmakers, ingestion_runs, ingestion_payloads, odds_observations). Before coding, explain the schema and constraints to Jack.
+**MS-004:** install `postgresql@17` via Homebrew, create `marketscope_dev` and `marketscope_test`, scaffold `packages/db` (Drizzle + postgres.js), and write the first migration. Seed the bookmakers table with all 6 collected feeds.

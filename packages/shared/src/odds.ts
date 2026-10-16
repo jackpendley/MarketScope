@@ -1,14 +1,9 @@
 // American odds math.
 //
-// ┌──────────────────────────────────────────────────────────────────────────┐
-// │ EXERCISE (yours): implement the three functions marked TODO(you).         │
-// │ Run `pnpm --filter @marketscope/shared test` until odds.test.ts is green. │
-// │ Rules:                                                                    │
-// │  • Invalid American odds (see isValidAmericanOdds) → throw RangeError.    │
-// │  • Negative odds −A: implied = A / (A + 100); positive +A: 100 / (A+100). │
-// │  • Decimal odds = total return per 1 unit staked (stake included).       │
-// │  • decimalToAmerican rounds to the nearest integer; 2.0 maps to +100.    │
-// └──────────────────────────────────────────────────────────────────────────┘
+// Conventions:
+// - Negative odds −A: risk A to win 100. Positive odds +A: risk 100 to win A.
+// - Decimal odds = total return per 1 unit staked (stake included).
+// - Invalid American odds (see isValidAmericanOdds) throw RangeError.
 //
 // Raw implied probability includes the bookmaker's margin. It is NOT a
 // calibrated real-world win probability.
@@ -21,19 +16,33 @@ export function isValidAmericanOdds(american: number): boolean {
   return Number.isInteger(american) && Math.abs(american) >= 100;
 }
 
-/** TODO(you): −110 → 0.5238…, +150 → 0.4. Throws RangeError on invalid input. */
+function assertValidAmerican(american: number): void {
+  if (!isValidAmericanOdds(american)) {
+    throw new RangeError(`invalid American odds: ${american}`);
+  }
+}
+
+/** Raw implied probability: −A → A/(A+100), +A → 100/(A+100). −110 → 0.5238…, +150 → 0.4. */
 export function americanToImpliedProbability(american: number): number {
-  throw new Error(`not implemented: americanToImpliedProbability(${american})`);
+  assertValidAmerican(american);
+  return american < 0 ? -american / (-american + 100) : 100 / (american + 100);
 }
 
-/** TODO(you): −110 → 1.9090…, +150 → 2.5. Throws RangeError on invalid input. */
+/** −110 → 1.9090…, +150 → 2.5, ±100 → 2.0. */
 export function americanToDecimal(american: number): number {
-  throw new Error(`not implemented: americanToDecimal(${american})`);
+  assertValidAmerican(american);
+  return american < 0 ? 1 + 100 / -american : 1 + american / 100;
 }
 
-/** TODO(you): 2.5 → 150, 1.5 → −200, 2.0 → 100. Throws RangeError unless decimal > 1. */
+/**
+ * 2.5 → 150, 1.5 → −200, 2.0 → 100 (even money is written as +100).
+ * Rounds to the nearest integer. Throws RangeError unless decimal > 1.
+ */
 export function decimalToAmerican(decimal: number): number {
-  throw new Error(`not implemented: decimalToAmerican(${decimal})`);
+  if (!Number.isFinite(decimal) || decimal <= 1) {
+    throw new RangeError(`decimal odds must be a finite number > 1, got ${decimal}`);
+  }
+  return decimal >= 2 ? Math.round((decimal - 1) * 100) : Math.round(-100 / (decimal - 1));
 }
 
 export interface Payout {

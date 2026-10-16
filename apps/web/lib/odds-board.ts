@@ -2,7 +2,8 @@
 
 import {
   compareIdenticalMarketPrices,
-  type BookmakerInfo,
+  getBookmakerInfo,
+  type BoardBook,
   type Market,
   type NormalizationIssue,
   type NormalizedEventOdds,
@@ -14,12 +15,12 @@ export type BoardCell =
       kind: "quote";
       point: number | null;
       americanPrice: number;
-      /** Best price among books offering this exact line (never set for in-play events). */
+      /** Best price among columns offering this exact line (never set for in-play events). */
       isBest: boolean;
     }
-  /** The book isn't in this event's feed at all. */
+  /** None of the column's feeds are in this event's data. */
   | { kind: "book-missing" }
-  /** The book is in the feed but doesn't list this market. */
+  /** The displayed feed is present but doesn't list this market. */
   | { kind: "market-missing" }
   /** The market is listed, but this selection was absent or rejected by validation. */
   | { kind: "selection-missing" };
@@ -28,13 +29,17 @@ export interface BoardRow {
   market: Market;
   selection: Selection;
   label: string;
+  /** Keyed by BoardBook.id. */
   cells: Record<string, BoardCell>;
 }
 
 export interface BoardColumn {
-  book: BookmakerInfo;
-  inFeed: boolean;
-  /** Latest market-level update reported by the book for this event. */
+  book: BoardBook;
+  /** The feed displayed for this event: the first preferred feed with data, or null. */
+  feedKey: string | null;
+  /** Label for the displayed feed when it isn't the column's primary feed (e.g. "IN feed"). */
+  fallbackLabel: string | null;
+  /** Latest market-level update reported by the displayed feed for this event. */
   latestUpdate: string | null;
 }
 
@@ -60,61 +65,73 @@ const ROW_ORDER: { market: Market; selection: Selection }[] = [
 
 export function buildEventBoard(
   odds: NormalizedEventOdds,
-  books: readonly BookmakerInfo[],
+  books: readonly BoardBook[],
 ): EventBoard {
   const { event, quotes, issues } = odds;
   const isLive = quotes.some((q) => q.isLive);
 
-  const missingMarkets = new Set(
-    issues.filter((i) => i.code === "MARKET_MISSING").map((i) => `${i.bookmakerKey}|${i.market}`),
-  );
-  const booksInFeed = new Set(
-    books
-      .map((b) => b.key)
-      .filter(
-        (key) => !issues.some((i) => i.code === "BOOKMAKER_MISSING" && i.bookmakerKey === key),
-      ),
-  );
+  // A feed "has data" if it produced any quote or was present with a missing market.
+  const feedsWithData = new Set([
+    ...quotes.map((q) => q.bookmakerKey),
+    ...issues.filter((i) => i.code !== "BOOKMAKER_MISSING").map((i) => i.bookmakerKey),
+  ]);
+
+  const columns: BoardColumn[] = books.map((book) => {
+    const feedKey = book.feeds.find((f) => feedsWithData.has(f)) ?? null;
+    const updates = quotes
+      .filter((q) => q.bookmakerKey === feedKey && q.bookmakerUpdatedAt !== null)
+      .map((q) => q.bookmakerUpdatedAt!)
+      .sort();
+    const isFallback = feedKey !== null && feedKey !== book.feeds[0];
+    return {
+      book,
+      feedKey,
+      fallbackLabel: isFallback ? fallbackLabel(feedKey) : null,
+      latestUpdate: updates.at(-1) ?? null,
+    };
+  });
+
+  // Only the displayed feed of each column takes part in the comparison, so a
+  // book with two feeds can't be counted twice.
+  const displayedFeeds = new Set(columns.map((c) => c.feedKey).filter((k) => k !== null));
+  const displayedQuotes = quotes.filter((q) => displayedFeeds.has(q.bookmakerKey));
 
   const best = new Set<string>();
   if (!isLive) {
-    for (const group of compareIdenticalMarketPrices(quotes)) {
+    for (const group of compareIdenticalMarketPrices(displayedQuotes)) {
       if (!group.comparable) continue;
-      for (const key of group.bestBookmakerKeys)
+      for (const key of group.bestBookmakerKeys) {
         best.add(`${key}|${group.market}|${group.selection}`);
+      }
     }
   }
 
+  const missingMarkets = new Set(
+    issues.filter((i) => i.code === "MARKET_MISSING").map((i) => `${i.bookmakerKey}|${i.market}`),
+  );
+
   const rows: BoardRow[] = ROW_ORDER.map(({ market, selection }) => {
     const cells: Record<string, BoardCell> = {};
-    for (const book of books) {
-      const quote = quotes.find(
-        (q) => q.bookmakerKey === book.key && q.market === market && q.selection === selection,
+    for (const { book, feedKey } of columns) {
+      const quote = displayedQuotes.find(
+        (q) => q.bookmakerKey === feedKey && q.market === market && q.selection === selection,
       );
       if (quote) {
-        cells[book.key] = {
+        cells[book.id] = {
           kind: "quote",
           point: quote.point,
           americanPrice: quote.americanPrice,
-          isBest: best.has(`${book.key}|${market}|${selection}`),
+          isBest: best.has(`${feedKey}|${market}|${selection}`),
         };
-      } else if (!booksInFeed.has(book.key)) {
-        cells[book.key] = { kind: "book-missing" };
-      } else if (missingMarkets.has(`${book.key}|${market}`)) {
-        cells[book.key] = { kind: "market-missing" };
+      } else if (feedKey === null) {
+        cells[book.id] = { kind: "book-missing" };
+      } else if (missingMarkets.has(`${feedKey}|${market}`)) {
+        cells[book.id] = { kind: "market-missing" };
       } else {
-        cells[book.key] = { kind: "selection-missing" };
+        cells[book.id] = { kind: "selection-missing" };
       }
     }
     return { market, selection, label: rowLabel(selection, event.homeTeam, event.awayTeam), cells };
-  });
-
-  const columns: BoardColumn[] = books.map((book) => {
-    const updates = quotes
-      .filter((q) => q.bookmakerKey === book.key && q.bookmakerUpdatedAt !== null)
-      .map((q) => q.bookmakerUpdatedAt!)
-      .sort();
-    return { book, inFeed: booksInFeed.has(book.key), latestUpdate: updates.at(-1) ?? null };
   });
 
   return {
@@ -127,6 +144,12 @@ export function buildEventBoard(
     rows,
     issues,
   };
+}
+
+function fallbackLabel(feedKey: string): string {
+  const name = getBookmakerInfo(feedKey)?.displayName ?? feedKey;
+  // "Hard Rock Bet (IN feed)" → "IN feed"
+  return name.match(/\(([^)]+)\)$/)?.[1] ?? feedKey;
 }
 
 function rowLabel(selection: Selection, home: string, away: string): string {

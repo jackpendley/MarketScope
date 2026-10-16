@@ -11,8 +11,8 @@ import path from "node:path";
 import { parseArgs } from "node:util";
 import {
   MARKETS,
-  TARGET_BOOKMAKERS,
-  TARGET_BOOKMAKER_KEYS,
+  COLLECTED_BOOKMAKERS,
+  COLLECTED_BOOKMAKER_KEYS,
   normalizeEventOdds,
   parseOddsResponse,
 } from "@marketscope/shared";
@@ -53,7 +53,7 @@ async function main() {
     console.log(`   - ${e.away_team} @ ${e.home_team}  ${e.commence_time}`);
   }
 
-  const cost = estimateOddsCost(MARKETS, TARGET_BOOKMAKER_KEYS);
+  const cost = estimateOddsCost(MARKETS, COLLECTED_BOOKMAKER_KEYS);
   if (!values.spend) {
     console.log(
       `\n3) Skipped GET /odds: estimated cost ${cost} credits. Re-run with --spend to make the paid call.`,
@@ -75,7 +75,7 @@ async function main() {
   console.log(`3) GET /v4/sports/americanfootball_nfl/odds (estimated ${cost} credits)`);
   const odds = await client.fetchOdds({
     sportKey: SPORT_KEY,
-    bookmakers: TARGET_BOOKMAKER_KEYS,
+    bookmakers: COLLECTED_BOOKMAKER_KEYS,
     markets: MARKETS,
   });
 
@@ -89,12 +89,15 @@ async function main() {
 
   const parsed = parseOddsResponse(odds.data);
   const results = parsed.events.map((e) =>
-    normalizeEventOdds(e, { observedAt: odds.receivedAt, targetBookmakers: TARGET_BOOKMAKER_KEYS }),
+    normalizeEventOdds(e, {
+      observedAt: odds.receivedAt,
+      targetBookmakers: COLLECTED_BOOKMAKER_KEYS,
+    }),
   );
   const report = buildCoverageReport({
     results,
     rejectedCount: parsed.rejected.length,
-    books: TARGET_BOOKMAKERS,
+    books: COLLECTED_BOOKMAKERS,
     markets: MARKETS,
     usage: odds.usage,
     durationMs: odds.durationMs,

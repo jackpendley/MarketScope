@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { TARGET_BOOKMAKER_KEYS } from "../../bookmakers";
+import { COLLECTED_BOOKMAKER_KEYS } from "../../bookmakers";
 import type { NormalizationIssueCode, NormalizedQuote } from "../../domain";
 import { SYNTHETIC_NFL_ODDS, SYNTHETIC_OBSERVED_AT } from "../../fixtures";
 import { normalizeEventOdds } from "./normalize";
 import { parseOddsResponse, type ProviderEventOdds } from "./schema";
 
 const { events } = parseOddsResponse(SYNTHETIC_NFL_ODDS);
-const opts = { observedAt: SYNTHETIC_OBSERVED_AT, targetBookmakers: TARGET_BOOKMAKER_KEYS };
+const opts = { observedAt: SYNTHETIC_OBSERVED_AT, targetBookmakers: COLLECTED_BOOKMAKER_KEYS };
 
 function fixtureEvent(id: string): ProviderEventOdds {
   const event = events.find((e) => e.id === id);
@@ -104,9 +104,9 @@ describe("normalizeEventOdds — synthetic-evt-001 (BUF home vs MIA)", () => {
     expect(find(quotes, "betmgm", "totals", "OVER")).toBeUndefined();
   });
 
-  it("produces 4 books × their available selections", () => {
-    // DK 6 + FD 6 + MGM 4 (no totals) + HR 6
-    expect(quotes).toHaveLength(22);
+  it("produces 5 feeds × their available selections", () => {
+    // DK 6 + FD 6 + MGM 4 (no totals) + Hard Rock AZ 6 + Hard Rock IN feed 6
+    expect(quotes).toHaveLength(28);
   });
 });
 

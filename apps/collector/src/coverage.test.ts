@@ -1,7 +1,7 @@
 import {
   MARKETS,
-  TARGET_BOOKMAKERS,
-  TARGET_BOOKMAKER_KEYS,
+  COLLECTED_BOOKMAKERS,
+  COLLECTED_BOOKMAKER_KEYS,
   normalizeEventOdds,
   parseOddsResponse,
 } from "@marketscope/shared";
@@ -13,13 +13,13 @@ const { events, rejected } = parseOddsResponse(SYNTHETIC_NFL_ODDS);
 const results = events.map((e) =>
   normalizeEventOdds(e, {
     observedAt: SYNTHETIC_OBSERVED_AT,
-    targetBookmakers: TARGET_BOOKMAKER_KEYS,
+    targetBookmakers: COLLECTED_BOOKMAKER_KEYS,
   }),
 );
 const report = buildCoverageReport({
   results,
   rejectedCount: rejected.length,
-  books: TARGET_BOOKMAKERS,
+  books: COLLECTED_BOOKMAKERS,
   markets: MARKETS,
   usage: { requestsRemaining: 497, requestsUsed: 3, requestsLast: 3 },
   durationMs: 420,

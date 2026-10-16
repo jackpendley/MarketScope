@@ -30,10 +30,18 @@ export function EventOddsTable({ board }: { board: EventBoard }) {
                 Market
               </th>
               {board.columns.map((col) => (
-                <th key={col.book.key} scope="col" className="px-3 py-2 text-right font-medium">
+                <th key={col.book.id} scope="col" className="px-3 py-2 text-right font-medium">
                   <div className="text-fg">{col.book.displayName}</div>
+                  {col.fallbackLabel && (
+                    <div
+                      className="font-normal text-warn"
+                      title={`Preferred feed unavailable for this game; showing the ${col.fallbackLabel}`}
+                    >
+                      {col.fallbackLabel}
+                    </div>
+                  )}
                   <div className="font-normal text-subtle">
-                    {col.inFeed
+                    {col.feedKey
                       ? col.latestUpdate
                         ? `upd ${formatTimestamp(col.latestUpdate)}`
                         : "update time unknown"
@@ -59,8 +67,8 @@ export function EventOddsTable({ board }: { board: EventBoard }) {
                   {row.label}
                 </th>
                 {board.columns.map((col) => (
-                  <td key={col.book.key} className="px-3 py-2 text-right font-mono tabular-nums">
-                    <Cell cell={row.cells[col.book.key]!} market={row.market} />
+                  <td key={col.book.id} className="px-3 py-2 text-right font-mono tabular-nums">
+                    <Cell cell={row.cells[col.book.id]!} market={row.market} />
                   </td>
                 ))}
               </tr>
