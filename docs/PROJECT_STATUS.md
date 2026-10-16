@@ -4,7 +4,7 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-16 (sessio
 
 ## Current milestone
 
-**Phases 0–2 and MS-006b are complete. Scheduled collection is live on GitHub Actions → Supabase. Next: Phase 3 (history API, charts, deployment).**
+**Phase 3 is in progress. MS-011/012 (history API and line-history charts) are done; next come MS-015 (Playwright e2e) and MS-013 (deployment, ask first).**
 
 ## Done so far
 
@@ -17,11 +17,16 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-16 (sessio
   - `collect-odds.yml` runs 4×/day; `migrate-production.yml` runs on merge (ADR-019).
   - First Supabase run: 25 games, 468 quotes.
 - Supabase agent skills installed at `.claude/skills/` (reviewed: markdown only).
+- **MS-011/012:**
+  - `GET /api/games/:id/history` with value-based changes as intervals, explicit gaps, and change-preserving downsampling.
+  - `/nfl/games/[id]/history` with stepped Recharts line and price charts (palette validated for the dark theme), a change log, and gap lists (ADR-020).
+  - Deterministic synthetic history through the real collector, guarded to demo/e2e DBs, with banners everywhere (ADR-021).
+  - Local `marketscope_demo` is seeded with 18 synthetic snapshots for UI work.
 - Decision: no `supabase-js` until a feature needs Auth, Realtime, or Storage.
 
 ## Tests
 
-All green: db 21, shared 141, collector 32, web 38. lint, typecheck, build, and migration-drift check pass.
+All green: db 23, shared 152, collector 37, web 51. lint, typecheck, build, and migration-drift check pass.
 
 ## Credits
 
@@ -44,9 +49,5 @@ Nothing blocking. Optional: mark the GitGuardian false-positive incident as reso
 
 ## Next task
 
-**Phase 3 / MS-011:**
-
-1. `GET /api/games/:id/history`, with downsampling that keeps change points plus first and last observations.
-2. Recharts step charts (point and price separate; gaps as breaks).
-3. Playwright smoke tests.
-4. Vercel deployment plan. Ask before creating resources.
+1. **MS-015:** Playwright smoke tests (board, detail, history, filters, missing-book states, mobile width) against a seeded `marketscope_e2e_test` DB, with a CI job.
+2. **MS-013:** review the Odds API terms, then propose a Vercel deployment with Deployment Protection. Ask before creating the project or setting env vars.

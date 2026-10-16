@@ -110,10 +110,15 @@ Status legend: `[x]` done · `[~]` in progress · `[ ]` not started
 
 ## Phase 3 — History + deployment (MS-011–015)
 
-- [ ] `GET /api/games/:id/history` (market, selection, books, from/to, resolution). Downsampling keeps every change point plus the first and last observations.
-- [ ] Recharts step-after charts: point and price on separate charts. Gaps longer than the threshold render as breaks, never interpolated. Spreads are home-oriented.
-- [ ] Deploy (approval needed): Vercel + managed Postgres. **Deployment Protection stays on until the Odds API display terms are reviewed.** Optionally move the scheduler to Lambda + EventBridge with CloudWatch alarms.
-- [ ] Playwright smoke tests on fixture-seeded data. `GET /api/health/data`.
+- [x] **MS-011** `GET /api/games/:id/history` (market, selection, books, from/to, resolution, gapMinutes, includeLive). Value-based changes as intervals; explicit gaps; `changes` downsampling keeps every movement (ADR-020).
+- [x] **MS-012** `/nfl/games/[id]/history`:
+  - Recharts step charts, line and price separate, breaks at gaps, change dots.
+  - Toggle legend and crosshair tooltip.
+  - Per-book first/last-observed table, change log, data-gap list.
+  - Synthetic-data banners across the app (ADR-021).
+- [ ] **MS-015** Playwright smoke tests against a synthetic e2e database, run in CI.
+- [ ] **MS-013** Deployment (ask first): Vercel plus the Supabase prod DB. Review the Odds API display terms first; Deployment Protection stays on until then.
+- [x] **MS-014** Scheduled collection: done in MS-006b via GitHub Actions. Lambda + EventBridge stays an optional upgrade.
 
 ## Phase 4 — Market Replay (MS-016–017)
 

@@ -75,6 +75,8 @@ export interface LatestQuoteRow {
   bookmakerUpdatedAt: string | null;
   observedAt: string;
   isLive: boolean;
+  /** "the-odds-api" for real data; "synthetic" for generated demo/e2e data. */
+  source: string;
 }
 
 /**
@@ -105,6 +107,7 @@ export async function latestQuotesForEvents(
       bookmakerUpdatedAt: isoUtcNullable(o.bookmakerUpdatedAt),
       observedAt: isoUtc(o.observedAt),
       isLive: o.isLive,
+      source: o.source,
     })
     .from(o)
     .where(inArray(o.eventId, [...eventIds]))
@@ -180,4 +183,69 @@ export async function recentRuns(db: Database, limit: number): Promise<RunSummar
     .from(ingestionRuns)
     .orderBy(desc(ingestionRuns.startedAt))
     .limit(limit);
+}
+
+export const MAX_HISTORY_ROWS = 20_000;
+
+export interface HistoryQuery {
+  eventId: string;
+  market: LatestQuoteRow["market"];
+  selection: LatestQuoteRow["selection"];
+  /** Restrict to these feeds (default: all). */
+  bookmakerKeys?: readonly string[];
+  from?: string;
+  to?: string;
+  /** Include in-play observations (default false: MarketScope is pregame-only). */
+  includeLive?: boolean;
+  limit?: number;
+}
+
+export interface HistoryRow {
+  bookmakerKey: string;
+  observedAt: string;
+  point: number | null;
+  americanPrice: number;
+  bookmakerUpdatedAt: string | null;
+  isLive: boolean;
+  source: string;
+}
+
+/**
+ * Every observation of one selection for one game, ordered by book then time. Served
+ * by odds_observations_history_idx (event, market, selection, book, observed_at).
+ * Bounded: returns at most `limit` rows and reports whether it truncated.
+ */
+export async function selectionHistory(
+  db: Database,
+  q: HistoryQuery,
+): Promise<{ rows: HistoryRow[]; truncated: boolean }> {
+  const o = oddsObservations;
+  const limit = Math.min(q.limit ?? MAX_HISTORY_ROWS, MAX_HISTORY_ROWS);
+  const conditions = [
+    eq(o.eventId, q.eventId),
+    eq(o.marketType, q.market),
+    eq(o.selection, q.selection),
+  ];
+  if (q.bookmakerKeys && q.bookmakerKeys.length > 0) {
+    conditions.push(inArray(o.bookmakerKey, [...q.bookmakerKeys]));
+  }
+  if (q.from) conditions.push(gte(o.observedAt, q.from));
+  if (q.to) conditions.push(lt(o.observedAt, q.to));
+  if (!q.includeLive) conditions.push(eq(o.isLive, false));
+
+  const rows = await db
+    .select({
+      bookmakerKey: o.bookmakerKey,
+      observedAt: isoUtc(o.observedAt),
+      point: o.point,
+      americanPrice: o.americanPrice,
+      bookmakerUpdatedAt: isoUtcNullable(o.bookmakerUpdatedAt),
+      isLive: o.isLive,
+      source: o.source,
+    })
+    .from(o)
+    .where(and(...conditions))
+    .orderBy(asc(o.bookmakerKey), asc(o.observedAt))
+    .limit(limit + 1);
+  return { rows: rows.slice(0, limit), truncated: rows.length > limit };
 }

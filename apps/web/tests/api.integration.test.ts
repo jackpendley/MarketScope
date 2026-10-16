@@ -4,6 +4,7 @@ import { createDb, events, ingestionRuns, oddsObservations } from "@marketscope/
 import { resetDatabase, TEST_DATABASE_URL } from "@marketscope/db/testing";
 import { NextRequest } from "next/server";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import { GET as getGameHistory } from "@/app/api/games/[id]/history/route";
 import { GET as getGameOdds } from "@/app/api/games/[id]/odds/route";
 import { GET as getGames } from "@/app/api/games/route";
 import { GET as getDataHealth } from "@/app/api/health/data/route";
@@ -221,5 +222,92 @@ describe("isConnectionError", () => {
     });
     expect(isConnectionError(err)).toBe(true);
     expect(isConnectionError(new Error("syntax error"))).toBe(false);
+  });
+});
+
+describe("GET /api/games/:id/history", () => {
+  async function addOlderDraftKings() {
+    const [run] = await db
+      .insert(ingestionRuns)
+      .values({
+        jobKey: "r0",
+        provider: "the-odds-api",
+        requestType: "live",
+        status: "completed",
+        startedAt: iso(-180 * MIN),
+      })
+      .returning({ id: ingestionRuns.id });
+    await db.insert(oddsObservations).values({
+      ingestionRunId: run!.id,
+      eventId: gameId,
+      bookmakerKey: "draftkings",
+      marketType: "spreads",
+      selection: "HOME",
+      point: -1.5,
+      americanPrice: -110,
+      observedAt: iso(-180 * MIN),
+      isLive: false,
+    });
+  }
+
+  it("returns per-book series with value-based changes reported as intervals", async () => {
+    await addOlderDraftKings();
+    const res = await getGameHistory(request(`/api/games/${gameId}/history`), ctx(gameId));
+    expect(res.status).toBe(200);
+    const { data, meta } = await res.json();
+    expect(data).toMatchObject({ market: "spreads", selection: "HOME" });
+    expect(meta).toMatchObject({
+      resolution: "changes",
+      gapMinutes: 720,
+      includeLive: false,
+      sources: ["the-odds-api"],
+    });
+    expect(meta.orientation).toContain("home team");
+
+    const dk = data.series.find((s: { bookmakerKey: string }) => s.bookmakerKey === "draftkings");
+    expect(dk).toMatchObject({ displayName: "DraftKings", observations: 2 });
+    expect(dk.changes).toEqual([
+      expect.objectContaining({
+        type: "price",
+        fromPrice: -110,
+        toPrice: -105,
+        intervalStart: iso(-180 * MIN),
+        intervalEnd: NEW_SNAPSHOT,
+        acrossGap: false,
+      }),
+    ]);
+  });
+
+  it("filters books and validates the selection against the market", async () => {
+    const res = await getGameHistory(
+      request(`/api/games/${gameId}/history?books=betmgm`),
+      ctx(gameId),
+    );
+    const { data } = await res.json();
+    expect(data.series.map((s: { bookmakerKey: string }) => s.bookmakerKey)).toEqual(["betmgm"]);
+
+    const bad = await getGameHistory(
+      request(`/api/games/${gameId}/history?market=totals&selection=HOME`),
+      ctx(gameId),
+    );
+    expect(bad.status).toBe(400);
+    expect((await bad.json()).error.details[0].path).toBe("selection");
+  });
+
+  it("defaults totals to OVER and returns empty series when nothing was observed", async () => {
+    const { data } = await (
+      await getGameHistory(request(`/api/games/${gameId}/history?market=totals`), ctx(gameId))
+    ).json();
+    expect(data).toMatchObject({ market: "totals", selection: "OVER", series: [] });
+  });
+
+  it("returns 400 for bad ids/params and 404 for unknown games", async () => {
+    expect((await getGameHistory(request("/api/games/x/history"), ctx("x"))).status).toBe(400);
+    expect(
+      (await getGameHistory(request(`/api/games/${gameId}/history?resolution=hourly`), ctx(gameId)))
+        .status,
+    ).toBe(400);
+    const id = "00000000-0000-4000-8000-000000000000";
+    expect((await getGameHistory(request(`/api/games/${id}/history`), ctx(id))).status).toBe(404);
   });
 });

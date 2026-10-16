@@ -18,6 +18,7 @@ const row = (
   bookmakerUpdatedAt: null,
   observedAt,
   isLive: false,
+  source: "the-odds-api",
 });
 
 const rows = [

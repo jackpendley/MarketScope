@@ -39,6 +39,11 @@ export async function loadGamesWithQuotes(
   return games.map((game) => ({ game, quotes: quotes.get(game.id) ?? [] }));
 }
 
+/** True when any quote comes from generated demo data rather than the provider. */
+export function hasSyntheticData(items: readonly GameWithQuotes[]): boolean {
+  return items.some(({ quotes }) => quotes.some((q) => q.source === "synthetic"));
+}
+
 export function toBoard({ game, quotes }: GameWithQuotes): EventBoard {
   return buildEventBoard(
     {

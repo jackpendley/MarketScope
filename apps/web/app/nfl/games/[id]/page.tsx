@@ -3,13 +3,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { MARKET_LABELS } from "@marketscope/shared";
-import { DataUnavailable, SnapshotMeta } from "@/components/data-states";
+import { DataUnavailable, Notice, SnapshotMeta } from "@/components/data-states";
 import { EventOddsTable } from "@/components/event-odds-table";
 import { feedCoverage } from "@/lib/game-data";
 import { gameIdSchema } from "@/lib/params";
 import { isConnectionError } from "@/lib/server/api";
 import { DatabaseNotConfiguredError, getDb, quoteFreshnessMinutes } from "@/lib/server/db";
-import { loadGameDetail, type GameDetail } from "@/lib/server/games";
+import { hasSyntheticData, loadGameDetail, type GameDetail } from "@/lib/server/games";
 import { formatKickoff, formatTimestamp } from "@/lib/time";
 
 export const metadata: Metadata = { title: "Game odds" };
@@ -58,6 +58,12 @@ export default async function GamePage(props: PageProps<"/nfl/games/[id]">) {
           )}
         </p>
       </div>
+
+      {hasSyntheticData([detail]) && (
+        <Notice tone="warn" title="Synthetic data: not real odds.">
+          This database contains generated demo history for development and testing.
+        </Notice>
+      )}
 
       {quotes.length === 0 ? (
         <p className="text-sm text-muted">No odds have been collected for this game.</p>
@@ -131,20 +137,29 @@ export default async function GamePage(props: PageProps<"/nfl/games/[id]">) {
         </p>
       </section>
 
-      <section className="space-y-1 rounded-lg border border-line bg-surface px-4 py-3 text-sm">
-        <h2 className="font-medium">History</h2>
-        <p className="text-muted">
-          {stats.observations > 0 && stats.firstObservedAt ? (
-            <>
-              {stats.observations.toLocaleString()} observations across {stats.snapshots} snapshot
-              {stats.snapshots === 1 ? "" : "s"} since {formatTimestamp(stats.firstObservedAt)}{" "}
-              (first observed by MarketScope, not necessarily the opening line).
-            </>
-          ) : (
-            "No observations stored yet."
-          )}{" "}
-          Line-movement charts arrive with Market Replay (Phase 3).
-        </p>
+      <section className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-surface px-4 py-3 text-sm">
+        <div>
+          <h2 className="font-medium">Line history</h2>
+          <p className="text-muted">
+            {stats.observations > 0 && stats.firstObservedAt ? (
+              <>
+                {stats.observations.toLocaleString()} observations across {stats.snapshots} snapshot
+                {stats.snapshots === 1 ? "" : "s"} since {formatTimestamp(stats.firstObservedAt)}{" "}
+                (first observed by MarketScope, not necessarily the opening line).
+              </>
+            ) : (
+              "No observations stored yet."
+            )}
+          </p>
+        </div>
+        {stats.observations > 0 && (
+          <Link
+            href={`/nfl/games/${game.id}/history`}
+            className="rounded border border-line px-3 py-1 text-accent hover:border-accent"
+          >
+            View line history →
+          </Link>
+        )}
       </section>
     </div>
   );

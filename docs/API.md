@@ -36,6 +36,31 @@ The latest observed quote for each (book, market, selection), for one game.
 - `meta.coverage`: same shape as in `/api/games`.
 - 400 if `id` isn't a UUID; 404 if the game is unknown.
 
+## `GET /api/games/:id/history`
+
+Per-book time series for one selection of one game.
+
+| Param         | Default                                 | Rules                                                                                                          |
+| ------------- | --------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `market`      | `spreads`                               | `h2h`, `spreads`, `totals`                                                                                     |
+| `selection`   | `HOME` (spreads, h2h) / `OVER` (totals) | must be valid for the market. Spreads are the chosen team's line as posted; HOME is the consistent orientation |
+| `books`       | all                                     | comma-separated feed keys                                                                                      |
+| `from`, `to`  | all history                             | ISO datetimes                                                                                                  |
+| `resolution`  | `changes`                               | `changes` keeps first, last, every change, and both edges of every gap; `all` returns every observation        |
+| `gapMinutes`  | 720                                     | 30–10080. Consecutive observations further apart than this are a gap                                           |
+| `includeLive` | `false`                                 | in-play observations are excluded by default                                                                   |
+
+`data.series[]`, one per feed:
+
+- `observations`, `firstObservedAt`, `lastObservedAt`.
+- `points[]`: `observedAt`, `point`, `americanPrice`, `kinds` (`first`, `change`, `gap-start`, `gap-end`, `last`, `observation`).
+- `changes[]`: `type` (`point`/`price`/`both`), `intervalStart`, `intervalEnd`, from/to point and price, `pointDelta`, `acrossGap`.
+- `gaps[]`: `from`, `to`, `minutes`.
+
+Changes are detected by **value**, and each one happened somewhere in `(intervalStart, intervalEnd]`.
+
+`meta` includes `observations`, `truncated` (capped at 20,000 rows), `sources` (`"synthetic"` marks demo data), and `orientation`.
+
 ## `GET /api/health/data`
 
 Ingestion health, with no credentials or infrastructure details.
