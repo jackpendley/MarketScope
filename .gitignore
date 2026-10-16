@@ -34,3 +34,7 @@ __pycache__/
 *.pem
 *.log
 .vercel
+
+# Playwright
+/apps/web/playwright/.cache/
+/apps/web/blob-report/

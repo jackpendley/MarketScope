@@ -61,6 +61,10 @@ Changes are detected by **value**, and each one happened somewhere in `(interval
 
 `meta` includes `observations`, `truncated` (capped at 20,000 rows), `sources` (`"synthetic"` marks demo data), and `orientation`.
 
+## `GET /api/health/live`
+
+Liveness only: `{ "status": "ok" }` without touching the database. Used by the Playwright web-server check and suitable for process supervisors. Readiness and data health live in `/api/health/data`.
+
 ## `GET /api/health/data`
 
 Ingestion health, with no credentials or infrastructure details.

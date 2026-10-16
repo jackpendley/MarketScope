@@ -116,7 +116,7 @@ Status legend: `[x]` done · `[~]` in progress · `[ ]` not started
   - Toggle legend and crosshair tooltip.
   - Per-book first/last-observed table, change log, data-gap list.
   - Synthetic-data banners across the app (ADR-021).
-- [ ] **MS-015** Playwright smoke tests against a synthetic e2e database, run in CI.
+- [x] **MS-015** Playwright e2e against a synthetic e2e DB, seeded through the real collector. Covers the board, filters, empty and missing-book states, detail, history charts and legend toggles, moneyline price-only view, 404, health, and phone width. Runs in a CI job; the suite was stable over 3 repeats.
 - [ ] **MS-013** Deployment (ask first): Vercel plus the Supabase prod DB. Review the Odds API display terms first; Deployment Protection stays on until then.
 - [x] **MS-014** Scheduled collection: done in MS-006b via GitHub Actions. Lambda + EventBridge stays an optional upgrade.
 
