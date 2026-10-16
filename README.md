@@ -4,7 +4,7 @@
 
 MarketScope compares NFL odds across five sportsbooks (DraftKings, FanDuel, BetMGM, Caesars, Hard Rock Bet AZ). Each collection is stored as an append-only observation, so the app can reconstruct how lines moved. The goal is a research tool that keeps observable evidence separate from speculation. It is not a picks service.
 
-> **Status:** Phase 0 (foundation). The odds board currently renders a clearly labeled **synthetic fixture**, not real odds. See [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md) and [`docs/ROADMAP.md`](docs/ROADMAP.md).
+> **Status:** Phase 2 complete. The odds board reads real NFL odds snapshots that the collector stores in PostgreSQL. See [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md) and [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 ## Stack
 
@@ -36,6 +36,7 @@ pnpm install
 brew install postgresql@17 && brew services start postgresql@17
 createdb marketscope_dev && createdb marketscope_test
 cp packages/db/.env.example packages/db/.env.local
+cp apps/web/.env.example apps/web/.env.local
 pnpm db:migrate
 
 pnpm dev            # http://localhost:3000/nfl
@@ -73,7 +74,7 @@ Raw responses are saved to `fixtures/the-odds-api/local/`, which is gitignored. 
 
 ## Documentation
 
-- [Roadmap](docs/ROADMAP.md) · [Project status](docs/PROJECT_STATUS.md) · [Architecture](docs/ARCHITECTURE.md)
+- [Roadmap](docs/ROADMAP.md) · [Project status](docs/PROJECT_STATUS.md) · [Architecture](docs/ARCHITECTURE.md) · [API](docs/API.md)
 - [Decisions](docs/DECISIONS.md) · [Data dictionary](docs/DATA_DICTIONARY.md) · [Provider coverage](docs/PROVIDER_COVERAGE.md)
 - [Original product specification](docs/PRODUCT_SPEC.md)
 

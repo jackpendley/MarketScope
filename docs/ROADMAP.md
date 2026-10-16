@@ -95,15 +95,18 @@ Status legend: `[x]` done · `[~]` in progress · `[ ]` not started
 
 ## Phase 2 — Read API + Odds Board (MS-007–010)
 
-- [ ] Query layer: `listUpcomingGames` and `latestOddsForEvent`. The latter uses `DISTINCT ON … ORDER BY observed_at DESC`.
-- [ ] Server components call the query layer directly. `GET /api/games` and `GET /api/games/:id/odds` wrap the same functions.
-  - Zod params; `{ data, meta }` / `{ error: { code, message } }` envelopes; limits; 400/404 handling.
-- [ ] Freshness metadata: collection age vs book update age, labeled "snapshot" vs "recent". The dashboard never claims to be real-time.
-- [ ] UI with shadcn/ui:
-  - `/nfl`: games grouped by date, filters for market, team search, and book visibility.
-  - `/nfl/games/[id]`: all 5 books, each in an explicit state (not offered / not in plan / stale).
-  - Consensus only when ≥3 fresh books report it.
-- [ ] API tests against the test DB. Add `apps/web/.env.example` (`DATABASE_URL` only; the web app never gets the odds key).
+- [x] Query layer (`packages/db/src/queries/odds.ts`): `listGames`, `getGame`, `latestQuotesForEvents` (`DISTINCT ON`, index-ordered), `gameObservationStats`, `latestCompletedRun`, `recentRuns`. ISO UTC timestamps are formatted in SQL.
+- [x] Server components call the query layer directly. `GET /api/games`, `GET /api/games/:id/odds`, and `GET /api/health/data` wrap the same functions (ADR-015, `docs/API.md`).
+  - Zod params; strict, bounded; `{ data, meta }` / `{ error }` envelopes; 400, 404, and 503 handling.
+- [x] Freshness metadata: collection age vs book update age, labeled `recent` or `snapshot`. Stale-book detection (ADR-016).
+- [x] UI:
+  - `/nfl`: games grouped by ET date, filters for team, market, kickoff window, and books (GET form, ADR-017).
+  - `/nfl/games/[id]`: board, per-feed coverage, history counts.
+  - Consensus shown only with ≥ 3 current books.
+  - Empty and error states for: DB unavailable, no snapshots, no games, no matches, unknown game.
+  - No horizontal page scroll at 390 px.
+- [x] Tests: query integration tests (db), API route integration tests and view-model unit tests (web).
+- Deferred: shadcn/ui (ADR-017).
 
 ## Phase 3 — History + deployment (MS-011–015)
 

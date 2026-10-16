@@ -1,0 +1,151 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { connection } from "next/server";
+import { MARKET_LABELS } from "@marketscope/shared";
+import { DataUnavailable, SnapshotMeta } from "@/components/data-states";
+import { EventOddsTable } from "@/components/event-odds-table";
+import { feedCoverage } from "@/lib/game-data";
+import { gameIdSchema } from "@/lib/params";
+import { isConnectionError } from "@/lib/server/api";
+import { DatabaseNotConfiguredError, getDb, quoteFreshnessMinutes } from "@/lib/server/db";
+import { loadGameDetail, type GameDetail } from "@/lib/server/games";
+import { formatKickoff, formatTimestamp } from "@/lib/time";
+
+export const metadata: Metadata = { title: "Game odds" };
+
+export default async function GamePage(props: PageProps<"/nfl/games/[id]">) {
+  await connection();
+  const { id } = await props.params;
+  if (!gameIdSchema.safeParse(id).success) notFound();
+
+  let detail: GameDetail | null;
+  try {
+    detail = await loadGameDetail(getDb(), id);
+  } catch (err) {
+    if (err instanceof DatabaseNotConfiguredError || isConnectionError(err))
+      return <DataUnavailable />;
+    throw err;
+  }
+  if (!detail) notFound();
+
+  const { game, board, stats, quotes } = detail;
+  const now = new Date();
+  const coverage = feedCoverage(quotes);
+
+  return (
+    <div className="space-y-6">
+      <div className="space-y-1">
+        <Link href="/nfl" className="text-sm text-muted hover:text-accent">
+          ← Odds board
+        </Link>
+        <h1 className="text-xl font-semibold tracking-tight">
+          {game.awayTeam} <span className="text-muted">@</span> {game.homeTeam}
+        </h1>
+        <p className="text-sm text-muted">
+          Kickoff <time dateTime={game.commenceTime}>{formatKickoff(game.commenceTime)}</time>
+          {" · "}Season {game.season}
+          {game.week !== null && ` · Week ${game.week}`}
+          {board.latestObservedAt && (
+            <>
+              {" · "}
+              <SnapshotMeta
+                observedAt={board.latestObservedAt}
+                recentMinutes={quoteFreshnessMinutes()}
+                now={now}
+              />
+            </>
+          )}
+        </p>
+      </div>
+
+      {quotes.length === 0 ? (
+        <p className="text-sm text-muted">No odds have been collected for this game.</p>
+      ) : (
+        <EventOddsTable board={board} />
+      )}
+
+      <section className="space-y-2">
+        <h2 className="text-sm font-medium uppercase tracking-wide text-muted">Feed coverage</h2>
+        <div className="relative overflow-x-auto rounded-lg border border-line bg-surface">
+          <table className="w-full min-w-[640px] text-sm">
+            <thead>
+              <tr className="text-left text-xs text-muted">
+                <th scope="col" className="px-4 py-2 font-medium">
+                  Feed
+                </th>
+                <th scope="col" className="px-3 py-2 font-medium">
+                  Status
+                </th>
+                <th scope="col" className="px-3 py-2 font-medium">
+                  Markets
+                </th>
+                <th scope="col" className="px-3 py-2 font-medium">
+                  Last observed by us
+                </th>
+                <th scope="col" className="px-3 py-2 font-medium">
+                  Last book update
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {coverage.map((f) => (
+                <tr key={f.bookmakerKey} className="border-t border-line/60">
+                  <td className="px-4 py-2">
+                    {f.displayName} <code className="text-xs text-subtle">{f.bookmakerKey}</code>
+                  </td>
+                  <td className="px-3 py-2">
+                    <span
+                      className={
+                        f.status === "current"
+                          ? "text-best"
+                          : f.status === "stale"
+                            ? "text-warn"
+                            : "text-subtle"
+                      }
+                    >
+                      {f.status === "current"
+                        ? "in latest snapshot"
+                        : f.status === "stale"
+                          ? "missing from latest snapshot"
+                          : "never returned"}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2 text-muted">
+                    {f.markets.length > 0 ? f.markets.map((m) => MARKET_LABELS[m]).join(", ") : "—"}
+                  </td>
+                  <td className="px-3 py-2 font-mono text-xs tabular-nums text-muted">
+                    {f.lastObservedAt ? formatTimestamp(f.lastObservedAt) : "—"}
+                  </td>
+                  <td className="px-3 py-2 font-mono text-xs tabular-nums text-muted">
+                    {f.lastBookUpdateAt ? formatTimestamp(f.lastBookUpdateAt) : "—"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="text-xs text-subtle">
+          A feed missing from a snapshot means the provider didn&apos;t return it, not necessarily
+          that the sportsbook stopped offering the market. Caesars requires a paid data plan.
+        </p>
+      </section>
+
+      <section className="space-y-1 rounded-lg border border-line bg-surface px-4 py-3 text-sm">
+        <h2 className="font-medium">History</h2>
+        <p className="text-muted">
+          {stats.observations > 0 && stats.firstObservedAt ? (
+            <>
+              {stats.observations.toLocaleString()} observations across {stats.snapshots} snapshot
+              {stats.snapshots === 1 ? "" : "s"} since {formatTimestamp(stats.firstObservedAt)}{" "}
+              (first observed by MarketScope, not necessarily the opening line).
+            </>
+          ) : (
+            "No observations stored yet."
+          )}{" "}
+          Line-movement charts arrive with Market Replay (Phase 3).
+        </p>
+      </section>
+    </div>
+  );
+}

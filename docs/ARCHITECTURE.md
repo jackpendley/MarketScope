@@ -1,6 +1,6 @@
 # Architecture
 
-## Current state (Phase 1)
+## Current state (Phase 2)
 
 ```
  The Odds API ──HTTPS (key in query, server-only)──▶ apps/collector
@@ -19,8 +19,11 @@
                                                                    ingestion_payloads · odds_observations
                                                                    (append-only)
 
- Browser ◀──HTML── apps/web (Next.js 16 App Router, server components)
-                   └─ /nfl  still renders the synthetic fixture; Phase 2 switches it to Postgres
+ Browser ◀──HTML/JSON── apps/web (Next.js 16 App Router; DATABASE_URL only, never the odds key)
+                        ├─ /nfl, /nfl/games/[id]   server components ─┐
+                        ├─ /api/games, /api/games/:id/odds,           ├─▶ lib/server/games.ts ─▶ @marketscope/db queries
+                        │  /api/health/data        route handlers ───┘     (DISTINCT ON latest quotes)
+                        └─ lib/odds-board.ts       pure view model: exact-line best price, stale books, consensus
 ```
 
 **Boundaries:**
