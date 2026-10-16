@@ -8,7 +8,14 @@ import { basicAuthConfigFromEnv, isAuthorized } from "@/lib/basic-auth";
  */
 export function proxy(request: NextRequest) {
   const config = basicAuthConfigFromEnv(process.env);
-  if (!config || isAuthorized(request.headers.get("authorization"), config)) {
+  if (!config) {
+    // Fail closed on Vercel: a missing password must never make the deployment public.
+    if (process.env.VERCEL) {
+      return new NextResponse("Site access is not configured.", { status: 503 });
+    }
+    return NextResponse.next(); // local development and e2e
+  }
+  if (isAuthorized(request.headers.get("authorization"), config)) {
     return NextResponse.next();
   }
   return new NextResponse("Authentication required.", {
