@@ -1,0 +1,23 @@
+{
+  "name": "@marketscope/collector",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "verify:provider": "node --env-file-if-exists=.env.local --import tsx src/scripts/verify-provider.ts",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@marketscope/shared": "workspace:*",
+    "zod": "^4.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "eslint": "^9",
+    "tsx": "^4.23.0",
+    "typescript": "^5",
+    "vitest": "^5.0.0"
+  }
+}
