@@ -62,6 +62,8 @@ pnpm collect:nfl               # store a snapshot in Postgres (~3 credits)
 
 The collector is idempotent per job key (`--scheduled` uses one key per 6-hour slot) and refuses to run past the configured credit budget. Every run is recorded in `ingestion_runs`.
 
+In production, a GitHub Actions workflow (`collect-odds.yml`) collects 4× a day into a Supabase-hosted Postgres. Migrations are applied automatically when they merge to `main`. Supabase's public REST API is locked out of every table via row-level security.
+
 Raw responses are saved to `fixtures/the-odds-api/local/`, which is gitignored. A price-free coverage summary is appended to [`docs/PROVIDER_COVERAGE.md`](docs/PROVIDER_COVERAGE.md).
 
 ## Principles

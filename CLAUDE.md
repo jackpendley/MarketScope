@@ -23,7 +23,9 @@ The developer (Jack) is building it to move into a backend/full-stack software e
 - Build vertical slices in small, tested increments. No new frameworks or infrastructure without a stated reason.
 - **Git:** one branch per milestone and a PR via `gh pr create`. **Claude squash-merges once CI is green** (standing approval, 2026-10-16). `main` stays deployable. The repo is **public**: `git@github.com:jackpendley/MarketScope.git`.
 - **Odds API credits:** standing approval to spend within the collector's guards (`MONTHLY_CREDIT_BUDGET=400`, `MIN_CREDITS_REMAINING=25`). Report usage in each summary.
-- **Still requires approval:** adding repo secrets, creating any cloud resource (DB, Vercel, AWS), buying any plan, raising the credit budget, and making a deployment public. Managed DB choice: **Supabase** (Jack creates the project).
+- **Still requires approval:** adding or changing repo secrets, creating any cloud resource (Vercel, AWS, new DBs), buying any plan, raising the credit budget, and making a deployment public.
+- **Supabase = managed Postgres only** (ADR-018). Don't add `supabase-js` or the shadcn Supabase blocks without a feature that needs them. Every table must keep RLS enabled (`.enableRLS()` in `schema.ts`). Project skills for Supabase live in `.claude/skills/`.
+- **Production data:** GitHub Actions collects 4×/day into Supabase (ADR-019). Locally, `SUPABASE_DATABASE_URL` in `apps/collector/.env.local` points at it. Never print it.
 
 ## Non-negotiable domain rules
 
