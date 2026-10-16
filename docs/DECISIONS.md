@@ -198,6 +198,7 @@ AWS Lambda + EventBridge remains an optional later upgrade (Phase 3).
 - `/api/health/live` stays open; it returns no data.
 - Comparisons are constant-time over SHA-256 digests.
 - Auth is app-level rather than Vercel Deployment Protection, so it works on any plan and protects the production domain too.
+- **Fails closed:** on Vercel (`VERCEL` set), a missing `BASIC_AUTH_PASSWORD` returns 503 instead of serving data.
 - A site-wide footer adds the not-betting-advice notice, "Gamble responsibly. 21+ where legal. 1-800-GAMBLER", and a statement that MarketScope isn't affiliated with any sportsbook.
 
 **Consequences:** For a portfolio launch, the UI could go public (permitted) while `/api/*` stays behind auth. Revisit the matcher then.
