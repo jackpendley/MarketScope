@@ -30,16 +30,16 @@ Status legend: `[x]` done · `[~]` in progress · `[ ]` not started
 
 ## Verified provider facts (The Odds API, docs checked 2026-10-15)
 
-| Topic         | Fact                                                                                                                                   |
-| ------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| Book keys     | `draftkings`, `fanduel`, `betmgm`, `williamhill_us` (Caesars, **paid plans only**), `hardrockbet_az` (region us2)                      |
-| Cost          | `/odds` = markets × regions. Named `bookmakers` count as 1 region per 10 books, so our call costs **3 credits**                        |
-| Free          | `/sports`, `/events`, and any request that returns no events                                                                           |
-| Quota headers | `x-requests-remaining`, `x-requests-used`, `x-requests-last`                                                                           |
-| Historical    | `/v4/historical/sports/{sport}/odds?date=`. Costs **10 × markets × regions = 30 credits per snapshot**. Paid only, 5-minute resolution |
-| Plans         | Free 500/mo · $30 20K · $59 100K                                                                                                       |
-| Timestamps    | Bookmaker-level `last_update` is deprecated. Use market-level `last_update`                                                            |
-| 429           | No Retry-After header documented. Back off exponentially                                                                               |
+| Topic         | Fact                                                                                                                                                                                                            |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Book keys     | `draftkings`, `fanduel`, `betmgm`, `williamhill_us` (Caesars, **paid plans only**), `hardrockbet_az` (us2, **empty for NFL** as of 2026-10-16), plus the fallback `hardrockbet` (us2, multi-state). See ADR-012 |
+| Cost          | `/odds` = markets × regions. Named `bookmakers` count as 1 region per 10 books, so our call costs **3 credits**                                                                                                 |
+| Free          | `/sports`, `/events`, and any request that returns no events                                                                                                                                                    |
+| Quota headers | `x-requests-remaining`, `x-requests-used`, `x-requests-last`                                                                                                                                                    |
+| Historical    | `/v4/historical/sports/{sport}/odds?date=`. Costs **10 × markets × regions = 30 credits per snapshot**. Paid only, 5-minute resolution                                                                          |
+| Plans         | Free 500/mo · $30 20K · $59 100K                                                                                                                                                                                |
+| Timestamps    | Bookmaker-level `last_update` is deprecated. Use market-level `last_update`                                                                                                                                     |
+| 429           | No Retry-After header documented. Back off exponentially                                                                                                                                                        |
 
 **Budget:**
 
@@ -54,18 +54,18 @@ Status legend: `[x]` done · `[~]` in progress · `[ ]` not started
 - [x] **MS-001 Repository initialization**
   - Delivered: pnpm monorepo, Next.js 16 + TS strict + Tailwind 4, ESLint and Prettier, CI workflow, docs set, `CLAUDE.md`.
   - _Accept:_ a fresh clone passes `install`, `lint`, `typecheck`, and `build`.
-- [~] **MS-002 Provider verification**
+- [x] **MS-002 Provider verification**
   - Delivered: collector config (Zod env), Odds API client (retry/backoff, quota headers, key redaction), `pnpm verify:provider` (free checks; the paid call is gated by `--spend`), and a coverage report with no prices.
-  - Tested against a mock server. **Pending: live run with Jack's API key.**
+  - **Live-verified 2026-10-16:** 25 games returned, 3 credits per call. DraftKings and FanDuel complete; BetMGM current week only; Caesars absent (paid-only); Hard Rock AZ empty, so we also collect the multi-state `hardrockbet` feed (ADR-012). See `PROVIDER_COVERAGE.md`.
   - _Accept:_ at least one real NFL game fetched, normalized, and summarized in `PROVIDER_COVERAGE.md`.
-- [~] **MS-003 Normalization + first UI**
+- [x] **MS-003 Normalization + first UI**
   - Delivered:
     - Domain types and Zod provider schemas.
     - `normalizeEventOdds` (issues are reported, never repaired).
     - `compareIdenticalMarketPrices`.
     - The synthetic edge-case fixture.
     - `/nfl` renders the fixture with a "synthetic" banner.
-  - **Pending: Jack implements `americanToImpliedProbability`, `americanToDecimal`, and `decimalToAmerican` in `packages/shared/src/odds.ts`** until `odds.test.ts` passes.
+    - American odds math (conversions, payout, overround).
   - _Accept:_ all tests green.
 
 ## Phase 1 — Persistence + collector (MS-004–006)
@@ -90,11 +90,11 @@ Status legend: `[x]` done · `[~]` in progress · `[ ]` not started
   5. **On error:** record quota headers and a sanitized error in a separate statement.
 - [ ] **MS-006 Integration tests** against `marketscope_test`: fixture → DB, upsert, same `job_key` twice, rollback on failure, budget refusal. CI gets a `postgres:17` service.
   - _Accept:_ two runs, then SQL shows two distinct observation sets.
-- [ ] **MS-006b Scheduled collection** (needs approval: free Neon/Supabase DB plus repo secrets). A GitHub Actions cron runs about 4×/day into the managed DB, so real history starts accumulating as early as possible.
+- [ ] **MS-006b Scheduled collection** (needs Jack to create a free Supabase project, plus approval for the repo secrets). A GitHub Actions cron runs about 4×/day into the managed DB, so real history starts accumulating as early as possible.
 
 ## Phase 2 — Read API + Odds Board (MS-007–010)
 
-- [ ] Query layer: `listUpcomingGames` and `latestOddsForEvent`. The latter uses `DISTINCT ON … ORDER BY observed_at DESC`, and **Jack writes it as an exercise**.
+- [ ] Query layer: `listUpcomingGames` and `latestOddsForEvent`. The latter uses `DISTINCT ON … ORDER BY observed_at DESC`.
 - [ ] Server components call the query layer directly. `GET /api/games` and `GET /api/games/:id/odds` wrap the same functions.
   - Zod params; `{ data, meta }` / `{ error: { code, message } }` envelopes; limits; 400/404 handling.
 - [ ] Freshness metadata: collection age vs book update age, labeled "snapshot" vs "recent". The dashboard never claims to be real-time.
@@ -115,7 +115,7 @@ Status legend: `[x]` done · `[~]` in progress · `[ ]` not started
 
 - [ ] Cursor at time T shows each book's latest observation ≤ T within the freshness window. Missing books stay missing, never carried forward.
 - [ ] Labels: "first observed" (never "open"), "last observed pregame".
-- [ ] `detectLineChanges` via SQL `LAG()` (**Jack's exercise**). Changes are reported as intervals.
+- [ ] `detectLineChanges` via SQL `LAG()`. Changes are reported as intervals.
 - [ ] `detectKeyNumberCrossings` for 3 and 7: sign-safe, covering both "crosses" and "lands on". Direction tests included.
 
 ## Phase 5 — Signal Lab + first study (MS-018–021)
@@ -153,23 +153,32 @@ Status legend: `[x]` done · `[~]` in progress · `[ ]` not started
 
 ## Approval checkpoints
 
-Ask before:
+**Standing approvals (2026-10-16):**
 
-- Pushing or merging.
-- Repo secrets.
+- Claude merges its own PRs once CI is green.
+- Claude spends Odds API credits within the collector's guards (`MONTHLY_CREDIT_BUDGET=400`, `MIN_CREDITS_REMAINING=25`).
+
+**Still ask before:**
+
+- Adding repo secrets.
 - Creating any cloud resource.
-- Any paid plan.
+- Buying any paid plan or raising the credit budget.
 - Making a deployment public.
-- Every paid `--spend` call after the first verification.
 
-## Exercises (Jack implements; Claude reviews)
+Managed DB for scheduled collection and production: **Supabase** (Jack creates the project and shares the connection string via a local env file, never in chat).
 
-- [~] American odds conversions (`packages/shared/src/odds.ts`): Phase 0
-- [ ] Design the run claim/retry state machine on paper before reading the code: Phase 1
-- [ ] Explain `bookmaker_updated_at` vs `observed_at` vs `provider_snapshot_at`: Phase 1
-- [ ] `DISTINCT ON` latest-quote-per-book query: Phase 2
-- [ ] `LAG()` line-movement query: Phase 4
-- [ ] Find the leakage in a deliberately leaky ML feature: Phase 7
+## Concepts (Claude implements; explains these in milestone summaries)
+
+Jack doesn't write code for the project. These are the ideas he should be able to explain in interviews, and each milestone summary should cover the relevant ones:
+
+- American odds, implied probability, and overround: Phase 0
+- Normalization at the boundary; why team orientation comes from event metadata: Phase 0
+- The run claim/retry state machine and idempotency keys: Phase 1
+- `bookmaker_updated_at` vs `observed_at` vs `provider_snapshot_at`: Phase 1
+- Transactions, constraints, and indexes on an append-only table: Phase 1
+- `DISTINCT ON` for latest-quote-per-book: Phase 2
+- `LAG()` window functions for line movement: Phase 4
+- Data leakage and chronological, game-grouped splits: Phase 7
 
 ## Out of scope until the core works
 

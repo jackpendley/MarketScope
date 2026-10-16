@@ -19,10 +19,11 @@ The developer (Jack) is building it to move into a backend/full-stack software e
 ## Working agreement
 
 - **Ask clarifying questions** when a decision is genuinely Jack's. Explain the plan before large changes. Challenge questionable designs.
-- Jack implements selected exercises himself (see ROADMAP §Exercises). **Never fill in code marked `TODO(you)`** unless he asks.
+- **Claude implements everything.** Never stop to hand Jack code to write. He learns by reading the explanations: when you finish a milestone, summarize its key concepts (see ROADMAP §Concepts).
 - Build vertical slices in small, tested increments. No new frameworks or infrastructure without a stated reason.
-- **Git:** one branch per milestone, then a PR via `gh pr create`, then merge after Jack approves. `main` stays deployable. The repo is **public**: `git@github.com:jackpendley/MarketScope.git`.
-- **Approval required before:** pushing or merging, adding repo secrets, creating any cloud resource (DB, Vercel, AWS), buying any plan, making a deployment public, or any paid `--spend` API call beyond the first verification.
+- **Git:** one branch per milestone and a PR via `gh pr create`. **Claude squash-merges once CI is green** (standing approval, 2026-10-16). `main` stays deployable. The repo is **public**: `git@github.com:jackpendley/MarketScope.git`.
+- **Odds API credits:** standing approval to spend within the collector's guards (`MONTHLY_CREDIT_BUDGET=400`, `MIN_CREDITS_REMAINING=25`). Report usage in each summary.
+- **Still requires approval:** adding repo secrets, creating any cloud resource (DB, Vercel, AWS), buying any plan, raising the credit budget, and making a deployment public. Managed DB choice: **Supabase** (Jack creates the project).
 
 ## Non-negotiable domain rules
 
