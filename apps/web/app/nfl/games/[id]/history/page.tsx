@@ -54,6 +54,9 @@ export default async function MarketReplayPage(props: PageProps<"/nfl/games/[id]
       : defaultSelection(market);
   const rangeParam = (first(sp.range) ?? "all") as HistoryRange;
   const range: HistoryRange = rangeParam in HISTORY_RANGES ? rangeParam : "all";
+  const atParam = first(sp.at);
+  const initialAt =
+    atParam && !Number.isNaN(Date.parse(atParam)) ? new Date(atParam).toISOString() : undefined;
 
   const now = new Date();
   let data: MarketReplayData | null;
@@ -167,7 +170,8 @@ export default async function MarketReplayPage(props: PageProps<"/nfl/games/[id]
             </Notice>
           )}
           <MarketReplay
-            key={`${market}-${selection}-${range}`}
+            key={`${market}-${selection}-${range}-${initialAt ?? "latest"}`}
+            initialAt={initialAt}
             market={market}
             selections={selections}
             series={series}

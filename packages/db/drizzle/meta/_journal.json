@@ -29,6 +29,13 @@
       "when": 1792117920897,
       "tag": "0003_revoke_data_api_roles",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792280834158,
+      "tag": "0004_market_signals",
+      "breakpoints": true
     }
   ]
 }

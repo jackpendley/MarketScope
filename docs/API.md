@@ -77,6 +77,26 @@ Each movement has the `LineChange` fields from `/history` (interval, from/to poi
 - `keyNumbers[]`: `{ key, signedKey, kind: crossed | landed-on | left }`.
 - `displayName`.
 
+## `GET /api/signals`
+
+Stored signal detections (definitions: `docs/SIGNAL_DEFINITIONS.md`), newest first.
+
+| Param         | Default           | Rules                                                                                                                               |
+| ------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `type`        | all               | comma-separated: `line_move`, `price_move`, `key_number`, `book_divergence`, `rapid_consensus_move`, `same_line_price_disagreement` |
+| `from` / `to` | last 7 days / now | ISO datetimes on `detectedAt`                                                                                                       |
+| `event`       | all               | game UUID                                                                                                                           |
+| `limit`       | 200               | 1–500                                                                                                                               |
+
+Rows include:
+
+- `type`, `version`, `market`, `selection`, `bookmakerKey`
+- `detectedAt`, `windowStart`, `windowEnd`, `value`, `details`
+- `evidence`: observation ids
+- game teams and kickoff
+
+`meta.definitions` carries every definition and its limitations. `meta.disclaimer` states that signals are not betting advice.
+
 ## `GET /api/health/live`
 
 Liveness only: `{ "status": "ok" }` without touching the database. Used by the Playwright web-server check and suitable for process supervisors. Readiness and data health live in `/api/health/data`.

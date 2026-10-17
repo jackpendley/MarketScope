@@ -42,3 +42,8 @@ jobs:
 
       - name: Collect
         run: pnpm --filter @marketscope/collector collect:nfl --scheduled
+
+      # Recompute versioned signals for games kicking off from 2 days ago to 14 days out.
+      # Idempotent; runs even when the slot was already collected so definitions stay current.
+      - name: Compute signals
+        run: pnpm --filter @marketscope/collector signals:compute

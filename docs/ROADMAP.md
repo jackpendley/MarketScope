@@ -141,13 +141,15 @@ Status legend: `[x]` done · `[~]` in progress · `[ ]` not started
 
 ## Phase 5 — Signal Lab + first study (MS-018–021)
 
-- [ ] Signals A–F (spec §14) as pure functions with `ALGORITHM_VERSION`.
-  - Stored in `market_signals` with evidence observation IDs.
-  - Recompute is idempotent per (event, version).
-  - Formal definitions go in `docs/SIGNAL_DEFINITIONS.md`.
-- [ ] Python `research/` venv. Study: _does an outlier book predict consensus convergence within 24h?_
-  - Report game-clustered sample sizes, a baseline, and limitations.
-  - Null results get published too.
+- [x] **MS-018/019/020** Signals A–F as pure, versioned functions (`computeSignals`):
+  - Stored in `market_signals` with evidence observation ids.
+  - Idempotent recompute after every scheduled collection.
+  - `/signals` lab with filters, definitions, and replay deep links; game-page signals; `/api/signals`.
+  - Documented in `docs/SIGNAL_DEFINITIONS.md` and ADR-024.
+- [ ] **MS-021** First study: does an outlier book (`book_divergence`) predict consensus convergence within 24 h?
+  - Python `research/` with a reproducible script and report.
+  - Game-clustered sample sizes, a baseline, and limitations; null results are published too.
+  - Needs several days of real history.
 
 ## Phase 6 — Historical import (decision gate: $30 plan?)
 

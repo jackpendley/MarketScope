@@ -1,4 +1,5 @@
 // Query-parameter schemas shared by API routes and pages. Pure (no Next.js imports).
+import { SIGNAL_TYPES } from "@marketscope/shared";
 import { z } from "zod";
 
 export const MAX_GAMES = 100;
@@ -102,4 +103,32 @@ export type HistoryParams = z.infer<typeof historyQuerySchema>;
 export function historyRangeStart(range: HistoryRange, now: Date): string | undefined {
   const hours = HISTORY_RANGES[range];
   return hours === null ? undefined : new Date(now.getTime() - hours * 3_600_000).toISOString();
+}
+
+export const SIGNAL_WINDOWS = { "24h": 1, "3d": 3, "7d": 7, "30d": 30 } as const;
+export type SignalWindow = keyof typeof SIGNAL_WINDOWS;
+
+export function signalsQuerySchema(now: Date) {
+  return z
+    .object({
+      type: z
+        .string()
+        .transform((s) =>
+          s
+            .split(",")
+            .map((t) => t.trim())
+            .filter(Boolean),
+        )
+        .pipe(z.array(z.enum(SIGNAL_TYPES)))
+        .optional(),
+      from: isoDateTime.default(new Date(now.getTime() - 7 * DAY).toISOString()),
+      to: isoDateTime.optional(),
+      event: z.uuid().optional(),
+      limit: z.coerce.number().int().min(1).max(500).default(200),
+    })
+    .strict()
+    .refine((q) => !q.to || Date.parse(q.to) > Date.parse(q.from), {
+      message: "`to` must be after `from`",
+      path: ["to"],
+    });
 }

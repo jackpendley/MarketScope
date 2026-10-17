@@ -16,6 +16,7 @@ import {
   bigint,
   boolean,
   check,
+  doublePrecision,
   index,
   integer,
   jsonb,
@@ -167,5 +168,40 @@ export const oddsObservations = pgTable(
       "odds_observations_valid_american_price",
       sql`${t.americanPrice} <= -100 OR ${t.americanPrice} >= 100`,
     ),
+  ],
+).enableRLS();
+
+/**
+ * Derived market signals (Signal Lab). Recomputed from odds_observations by versioned,
+ * pure definitions in @marketscope/shared; each row cites the observations it came from.
+ * Recompute replaces rows per (event, signal_type, algorithm_version) in one transaction.
+ */
+export const marketSignals = pgTable(
+  "market_signals",
+  {
+    id: bigint({ mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+    eventId: uuid()
+      .notNull()
+      .references(() => events.id, { onDelete: "cascade" }),
+    /** e.g. line_move, book_divergence (text: new types don't need a migration). */
+    signalType: text().notNull(),
+    algorithmVersion: integer().notNull(),
+    marketType: marketType().notNull(),
+    selection: selection(),
+    bookmakerKey: text().references(() => bookmakers.key),
+    /** When the signal became observable (end of its evidence window). */
+    detectedAt: tstz().notNull(),
+    windowStart: tstz().notNull(),
+    windowEnd: tstz().notNull(),
+    /** Points, cents, or a signed key number, depending on signal_type. */
+    value: doublePrecision().notNull(),
+    details: jsonb().$type<Record<string, unknown>>().notNull(),
+    evidenceObservationIds: bigint({ mode: "number" }).array().notNull(),
+    computedAt: tstz().notNull().defaultNow(),
+  },
+  (t) => [
+    index("market_signals_detected_at_idx").on(t.detectedAt.desc()),
+    index("market_signals_event_idx").on(t.eventId, t.signalType, t.algorithmVersion),
+    check("market_signals_window_order", sql`${t.windowStart} <= ${t.windowEnd}`),
   ],
 ).enableRLS();

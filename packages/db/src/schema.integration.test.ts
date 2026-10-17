@@ -146,6 +146,7 @@ describe("Data API lock-down (ADR-018)", () => {
       "events",
       "ingestion_payloads",
       "ingestion_runs",
+      "market_signals",
       "odds_observations",
     ]);
     expect(rows.every((r) => r.relrowsecurity)).toBe(true);

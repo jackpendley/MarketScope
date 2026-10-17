@@ -218,3 +218,19 @@ AWS Lambda + EventBridge remains an optional later upgrade (Phase 3).
 - The replay cursor steps through actual snapshot times only, never interpolated times.
 
 **Consequences:** The Signal Lab (Phase 5) can reuse `stateAt`, consensus, dispersion, and `describeMovement` directly.
+
+## ADR-024 — Signal Lab: pure versioned definitions, stored with evidence (2026-10-17)
+
+**Decision:**
+
+- Six v1 signals (`docs/SIGNAL_DEFINITIONS.md`) are computed by `computeSignals`, a pure and deterministic function (total ordering) over a game's pregame observations.
+- They're stored in `market_signals` with type, version, window, value, details, and `evidence_observation_ids`.
+- Recompute is idempotent: delete and insert per (game, type, version) in one transaction. It runs after every scheduled collection (`signals:compute`, games kicking off from −2 d to +14 d) and on demand.
+- Contemporaneous signals compare only same-snapshot quotes, with one feed per board book.
+- **Divergence** uses the full-snapshot median. This replaces my initial leave-one-out design after a test showed it flags the non-outliers when only 3 books report.
+
+**Consequences:**
+
+- The UI (`/signals`, plus game pages) and `/api/signals` only read stored rows.
+- Every signal deep-links to the replay at its snapshot (`?at=`).
+- Changing a definition means bumping its version; old rows remain for comparison.

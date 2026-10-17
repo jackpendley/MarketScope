@@ -144,3 +144,58 @@ test.describe("market replay", () => {
     await expect(target).toHaveAttribute("aria-current", "true");
   });
 });
+
+test.describe("signal lab", () => {
+  test("lists evidence-backed signals with definitions and filters by type", async ({ page }) => {
+    await page.goto("/signals");
+    await expect(page.getByRole("heading", { name: "Signal Lab" })).toBeVisible();
+    await expect(page.getByText("Synthetic data: not real odds.")).toBeVisible();
+    await expect(page.getByText(/not betting advice/).first()).toBeVisible();
+    const rows = page.locator("tbody tr");
+    expect(await rows.count()).toBeGreaterThan(5);
+    await expect(page.getByRole("heading", { name: /Definitions/ })).toBeVisible();
+
+    await page.getByLabel("Signal type").selectOption("line_move");
+    await page.getByRole("button", { name: "Apply" }).click();
+    await expect(page).toHaveURL(/type=line_move/);
+    const badges = page.locator("[data-signal-type]");
+    await expect(badges.first()).toBeVisible();
+    for (const t of await badges.evaluateAll((els) =>
+      els.map((e) => e.getAttribute("data-signal-type")),
+    )) {
+      expect(t).toBe("line_move");
+    }
+  });
+
+  test("a signal's replay link opens the replay at the signal's moment", async ({ page }) => {
+    await page.goto("/signals?type=line_move");
+    const link = page.getByRole("link", { name: "Replay →" }).first();
+    const href = await link.getAttribute("href");
+    const at = new URL(href!, "http://x").searchParams.get("at")!;
+    await link.click();
+    await expect(page.getByRole("heading", { name: /Market replay/ })).toBeVisible();
+    // The cursor starts on the snapshot at (or just before) the signal time, not "latest".
+    const expected = new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/New_York",
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      timeZoneName: "short",
+    }).format(new Date(at));
+    await expect(page.getByTestId("replay-time")).toHaveText(expected);
+  });
+
+  test("game pages show recent signals", async ({ page }) => {
+    await page.goto("/nfl");
+    await page
+      .locator("section[aria-labelledby^='evt-']")
+      .first()
+      .getByRole("link")
+      .first()
+      .click();
+    await expect(page.getByRole("heading", { name: "Recent signals" })).toBeVisible();
+    await expect(page.getByRole("link", { name: /All signals for this game/ })).toBeVisible();
+  });
+});
