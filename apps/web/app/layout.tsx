@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 const NAV: { label: string; href?: string }[] = [
   { label: "Odds Board", href: "/nfl" },
   { label: "Market Replay", href: "/replay" },
-  { label: "Signal Lab" },
+  { label: "Signal Lab", href: "/signals" },
   { label: "Research" },
   { label: "ML Lab" },
 ];

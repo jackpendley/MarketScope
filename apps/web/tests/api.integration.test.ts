@@ -1,6 +1,12 @@
 // Calls the route handlers directly against the test database: validation, envelopes,
 // status codes, freshness metadata, and stale-book handling.
-import { createDb, events, ingestionRuns, oddsObservations } from "@marketscope/db";
+import {
+  createDb,
+  events,
+  ingestionRuns,
+  oddsObservations,
+  replaceEventSignals,
+} from "@marketscope/db";
 import { resetDatabase, TEST_DATABASE_URL } from "@marketscope/db/testing";
 import { NextRequest } from "next/server";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
@@ -9,6 +15,7 @@ import { GET as getGameMovements } from "@/app/api/games/[id]/movements/route";
 import { GET as getGameOdds } from "@/app/api/games/[id]/odds/route";
 import { GET as getGames } from "@/app/api/games/route";
 import { GET as getDataHealth } from "@/app/api/health/data/route";
+import { GET as getSignals } from "@/app/api/signals/route";
 import { isConnectionError } from "@/lib/server/api";
 
 const { db, sql, close } = createDb(TEST_DATABASE_URL, { max: 2 });
@@ -383,5 +390,71 @@ describe("GET /api/games/:id/movements", () => {
     expect((await getGameMovements(request(`/api/games/${id}/movements`), ctx(id))).status).toBe(
       404,
     );
+  });
+});
+
+describe("GET /api/signals", () => {
+  async function addSignals() {
+    const base = {
+      version: 1,
+      market: "spreads" as const,
+      selection: "HOME" as const,
+      bookmakerKey: "draftkings",
+      windowStart: iso(-120 * MIN),
+      windowEnd: iso(-30 * MIN),
+      details: {},
+      evidence: [1, 2],
+    };
+    await replaceEventSignals(
+      db,
+      gameId,
+      [
+        { type: "line_move", version: 1 },
+        { type: "key_number", version: 1 },
+      ],
+      [
+        { ...base, type: "line_move", value: -0.5, detectedAt: iso(-30 * MIN) },
+        { ...base, type: "key_number", value: -3, detectedAt: iso(-30 * MIN) },
+        {
+          ...base,
+          type: "line_move",
+          value: -1,
+          detectedAt: iso(-10 * 24 * 60 * MIN),
+          windowStart: iso(-10 * 24 * 60 * MIN - 360 * MIN),
+          windowEnd: iso(-10 * 24 * 60 * MIN),
+        },
+      ],
+    );
+  }
+
+  it("returns recent signals newest first with definitions and a disclaimer", async () => {
+    await addSignals();
+    const res = await getSignals(request("/api/signals"));
+    expect(res.status).toBe(200);
+    const { data, meta } = await res.json();
+    expect(data).toHaveLength(2); // default window is 7 days
+    expect(data[0]).toMatchObject({
+      eventId: gameId,
+      homeTeam: "Green Bay Packers",
+      evidence: [1, 2],
+    });
+    expect(meta.definitions.line_move).toMatchObject({ version: 1, title: "Line move" });
+    expect(meta.disclaimer).toContain("not betting advice");
+  });
+
+  it("filters by type, game, and window", async () => {
+    await addSignals();
+    const byType = await (await getSignals(request("/api/signals?type=key_number"))).json();
+    expect(byType.data.map((r: { type: string }) => r.type)).toEqual(["key_number"]);
+    const wide = await (
+      await getSignals(request(`/api/signals?from=${iso(-30 * 24 * 60 * MIN)}&event=${gameId}`))
+    ).json();
+    expect(wide.data).toHaveLength(3);
+  });
+
+  it("rejects unknown types and bad params", async () => {
+    expect((await getSignals(request("/api/signals?type=sharp_money"))).status).toBe(400);
+    expect((await getSignals(request("/api/signals?event=nope"))).status).toBe(400);
+    expect((await getSignals(request("/api/signals?limit=1000"))).status).toBe(400);
   });
 });

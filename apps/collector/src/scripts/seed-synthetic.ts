@@ -5,11 +5,12 @@
 //
 // Deliberately does NOT read .env.local, and refuses database names without "e2e"/"demo".
 
-import { createDb } from "@marketscope/db";
+import { createDb, eventIdsKickingOff } from "@marketscope/db";
 import { runMigrations } from "@marketscope/db/migrate";
 import { parseArgs } from "node:util";
 import { collectNflOdds } from "../collect";
 import { jsonLogger } from "../log";
+import { recomputeSignals } from "../signals-job";
 import { assertSyntheticTarget, generateSyntheticHistory } from "../synthetic";
 
 const { values } = parseArgs({
@@ -61,6 +62,8 @@ try {
     else if (outcome.status === "failed") throw new Error(`seed failed: ${outcome.errorMessage}`);
   }
   jsonLogger.info("seed.completed", { snapshots: snapshots.length, quotes });
+  const ids = await eventIdsKickingOff(db, "1970-01-01T00:00:00Z", "2100-01-01T00:00:00Z");
+  await recomputeSignals(db, ids, jsonLogger);
 } finally {
   await close();
 }

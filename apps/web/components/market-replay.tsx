@@ -33,6 +33,8 @@ export interface MarketReplayProps {
   pointLabel: string;
   priceLabel: string;
   freshnessMinutes: number;
+  /** Start the cursor at the last snapshot at or before this time (deep links from signals). */
+  initialAt?: string;
 }
 
 export function MarketReplay({
@@ -45,9 +47,14 @@ export function MarketReplay({
   pointLabel,
   priceLabel,
   freshnessMinutes,
+  initialAt,
 }: MarketReplayProps) {
   const times = useMemo(() => snapshotTimes(selections), [selections]);
-  const [index, setIndex] = useState(times.length - 1);
+  const [index, setIndex] = useState(() => {
+    if (!initialAt) return times.length - 1;
+    const i = times.findLastIndex((t) => t <= initialAt);
+    return i >= 0 ? i : 0;
+  });
   const at = times[Math.min(Math.max(index, 0), times.length - 1)];
   const view = useMemo(
     () =>

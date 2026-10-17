@@ -9,5 +9,6 @@ export * from "./freshness";
 export * from "./history";
 export * from "./key-numbers";
 export * from "./replay";
+export * from "./signals";
 export * from "./providers/the-odds-api/schema";
 export * from "./providers/the-odds-api/normalize";

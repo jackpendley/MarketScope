@@ -10,6 +10,8 @@ import { gameIdSchema } from "@/lib/params";
 import { isConnectionError } from "@/lib/server/api";
 import { DatabaseNotConfiguredError, getDb, quoteFreshnessMinutes } from "@/lib/server/db";
 import { hasSyntheticData, loadGameDetail, type GameDetail } from "@/lib/server/games";
+import { describeSignal, signalTitle } from "@/lib/signal-format";
+import { listSignals, type SignalRow } from "@marketscope/db";
 import { formatKickoff, formatTimestamp } from "@/lib/time";
 
 export const metadata: Metadata = { title: "Game odds" };
@@ -20,8 +22,10 @@ export default async function GamePage(props: PageProps<"/nfl/games/[id]">) {
   if (!gameIdSchema.safeParse(id).success) notFound();
 
   let detail: GameDetail | null;
+  let signals: SignalRow[] = [];
   try {
     detail = await loadGameDetail(getDb(), id);
+    if (detail) signals = await listSignals(getDb(), { eventId: id, limit: 8 });
   } catch (err) {
     if (err instanceof DatabaseNotConfiguredError || isConnectionError(err))
       return <DataUnavailable />;
@@ -135,6 +139,33 @@ export default async function GamePage(props: PageProps<"/nfl/games/[id]">) {
           A feed missing from a snapshot means the provider didn&apos;t return it, not necessarily
           that the sportsbook stopped offering the market. Caesars requires a paid data plan.
         </p>
+      </section>
+
+      <section className="space-y-2">
+        <div className="flex items-baseline justify-between">
+          <h2 className="text-sm font-medium uppercase tracking-wide text-muted">Recent signals</h2>
+          <Link
+            href={`/signals?event=${game.id}&window=30d`}
+            className="text-sm text-accent hover:underline"
+          >
+            All signals for this game →
+          </Link>
+        </div>
+        {signals.length === 0 ? (
+          <p className="text-sm text-muted">No signals detected yet.</p>
+        ) : (
+          <ul className="divide-y divide-line/60 rounded-lg border border-line bg-surface text-sm">
+            {signals.map((s) => (
+              <li key={s.id} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 px-4 py-2">
+                <span className="rounded bg-surface-raised px-1.5 py-0.5 text-xs">
+                  {signalTitle(s.type)}
+                </span>
+                <span>{describeSignal(s)}</span>
+                <span className="ml-auto text-xs text-subtle">{formatTimestamp(s.detectedAt)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <section className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-surface px-4 py-3 text-sm">

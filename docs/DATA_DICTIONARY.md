@@ -125,3 +125,20 @@ Indexes:
 - `(event_id, market_type, selection, bookmaker_key, observed_at DESC)`: per-book history and latest quote.
 
 **Unchanged prices are stored on purpose.** Two runs that see the same line produce two rows. That is evidence the line was still there at the second time. Movement detection compares consecutive observations by **value** (point and price), never by `bookmaker_updated_at`. Live data on 2026-10-16 showed DraftKings' `last_update` advancing between runs while its line stayed at −1.5 (−105).
+
+### `market_signals`: derived Signal Lab detections
+
+| Column                                      | Notes                                                                      |
+| ------------------------------------------- | -------------------------------------------------------------------------- |
+| `id`                                        | bigint identity                                                            |
+| `event_id`                                  | FK `events` (cascade delete)                                               |
+| `signal_type`, `algorithm_version`          | e.g. `book_divergence`, `1` (definitions: `docs/SIGNAL_DEFINITIONS.md`)    |
+| `market_type`, `selection`, `bookmaker_key` | selection and book are null for market-wide signals (e.g. consensus moves) |
+| `detected_at`                               | when the signal became observable (end of its window)                      |
+| `window_start`, `window_end`                | the evidence interval (`window_start <= window_end`, enforced by CHECK)    |
+| `value`                                     | points, cents, or a signed key number, depending on type                   |
+| `details`                                   | jsonb (from/to values, direction, consensus, best/worst books, …)          |
+| `evidence_observation_ids`                  | bigint[] of `odds_observations.id`                                         |
+| `computed_at`                               | recompute time                                                             |
+
+RLS is enabled. Rows are replaced per (event, type, version) on recompute.
