@@ -86,6 +86,7 @@ Raw responses are saved to `fixtures/the-odds-api/local/`, which is gitignored. 
 
 - [Roadmap](docs/ROADMAP.md) · [Project status](docs/PROJECT_STATUS.md) · [Architecture](docs/ARCHITECTURE.md) · [API](docs/API.md)
 - [Decisions](docs/DECISIONS.md) · [Data dictionary](docs/DATA_DICTIONARY.md) · [Provider coverage](docs/PROVIDER_COVERAGE.md)
+- [Signal definitions](docs/SIGNAL_DEFINITIONS.md) · [Research](research/README.md)
 - [Original product specification](docs/PRODUCT_SPEC.md)
 
 MarketScope is an analytics and education project. It doesn't place bets or give betting advice.

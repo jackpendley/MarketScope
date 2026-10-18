@@ -4,7 +4,7 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-16 (sessio
 
 ## Current milestone
 
-**Phase 5 is in progress. MS-018–020 (Signal Lab) are done. Next: MS-021, the first research study. Deployed privately at https://marketscope-delta.vercel.app (user `marketscope`, password in `apps/web/.env.local` as `VERCEL_SITE_PASSWORD`).**
+**Phase 5 is complete (Signal Lab + first study). Deployed privately at https://marketscope-delta.vercel.app (user `marketscope`, password in `apps/web/.env.local` as `VERCEL_SITE_PASSWORD`). Next: Phase 6 decision (paid historical data?) or keep accumulating real history.**
 
 ## Done so far
 
@@ -22,6 +22,10 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-16 (sessio
   - `/nfl/games/[id]/history` with stepped Recharts line and price charts (palette validated for the dark theme), a change log, and gap lists (ADR-020).
   - Deterministic synthetic history through the real collector, guarded to demo/e2e DBs, with banners everywhere (ADR-021).
   - Local `marketscope_demo` is seeded with 18 synthetic snapshots for UI work.
+- **MS-021 research study:**
+  - `research/` (Python) with a pre-registered outlier → consensus-convergence study.
+  - **v1 result: inconclusive** (9 events from 5 games; minimum 30/15). Python consensus cross-check 13/13.
+  - Pytest in CI (ADR-025).
 - **Phase 5 (MS-018–020):**
   - Six versioned signals with evidence ids in `market_signals`.
   - `signals:compute` after each scheduled collection.
@@ -45,7 +49,7 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-16 (sessio
 
 ## Tests
 
-All green: db 30, shared 192, collector 38, web 73, e2e 17. lint, typecheck, build, and migration-drift check pass.
+All green: db 30, shared 192, collector 38, web 73, e2e 17, research 11 (pytest). lint, typecheck, build, and migration-drift check pass.
 
 ## Credits
 
@@ -68,11 +72,9 @@ Nothing blocking. Optional: mark the GitGuardian false-positive incident as reso
 
 ## Next task
 
-**MS-021, first research study:** does a book's divergence from consensus predict that the consensus moves toward it within 24 h?
+**Phase 6 decision gate:** is the paid historical plan worth it?
 
-- Python `research/` (venv, pandas, psycopg) reading Postgres read-only.
-- Point-in-time events from `book_divergence` onsets.
-- Outcome: consensus 18–30 h later moves toward, away, or not at all.
-- Baselines: the same rate for non-divergent books, and a random-book comparison.
-- Game-clustered counts with bootstrap CIs, plus limitations.
-- Publish even if null; report the sample size honestly (real history only began 2026-10-16).
+- Real history began 2026-10-16 (about 4 snapshots/day). Both the study and Phase 7 ML need far more games.
+- Option A, keep accumulating for free: the study reaches its 15-game minimum in roughly 1–2 weeks of NFL slates.
+- Option B, buy the $30/20K plan (ask Jack first): a historical import at 6-hour resolution for past weeks costs about 30 credits per snapshot.
+- Otherwise, polish and accessibility (Phase 8 items), or re-run the study weekly.
