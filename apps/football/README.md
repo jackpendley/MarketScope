@@ -22,6 +22,8 @@ PYTHONPATH=src .venv/bin/python -m marketscope_football.plays_report --out repor
 PYTHONPATH=src .venv/bin/python -m marketscope_football.crosscheck --seasons 2016-2026 --out reports/team-stats-crosscheck.md
 PYTHONPATH=src .venv/bin/python -m marketscope_football.luck_fit   # reproduces the frozen constants in design.py
 PYTHONPATH=src .venv/bin/python -m marketscope_football.eval.run_benchmarks --out reports/benchmarks.md  # walk-forward benchmarks
+PYTHONPATH=src .venv/bin/python -m marketscope_football.ratings.fit --variants all [--refine]      # ML fit -> ratings/params.json (~30 min)
+PYTHONPATH=src .venv/bin/python -m marketscope_football.ratings.run_eval --out reports/kalman-ratings.md
 ```
 
 `--seasons` accepts `2016-2026`, `2025,2026` or `current`. The daily GitHub workflow (`.github/workflows/football-data.yml`) runs `schedules`, `team-stats --refresh`, `snaps` and `injuries` for the current season at 13:00 UTC, and `injuries` again at 23:00 UTC.
@@ -38,6 +40,7 @@ PYTHONPATH=src .venv/bin/python -m marketscope_football.eval.run_benchmarks --ou
 - **Weather** (`weather.py`, ADR-032): Open-Meteo Previous Runs forecasts at leads 0/1/3/7 days for outdoor and retractable venues, game-window averages, 2024+.
 - **Context** (`context.py`): rest, bye, short week, travel, time-zone shift, body clock, altitude, road streak, coaching tenure.
 - **Evaluation** (`eval/`, ADR-033): walk-forward runner (results removed before `predict`; 2025 refused), pre-registered design, benchmarks (naive home field, 538 Elo, ridge SRS, market-implied ratings, the nflverse close), paired bootstrap scoring. Schedules 1999+ cached in `.cache/schedules/` with a manifest. See `reports/benchmarks.md`.
+- **Ratings** (`ratings/`, ADR-034): Kalman filters per channel (pass, rush, success rate, points per drive: offense/defense units + league mean; special teams), season reversion by play-caller continuity, ML parameters on 2016–22 frozen in `ratings/params.json`, an OLS game layer, and the harness wrapper. Play-by-play from 2012 is cached for burn-in. See `reports/kalman-ratings.md`.
 - `final_observed_at` is stamped only when a game we already held becomes final. Backfilled history never gets the import time.
 
 Data: [nflverse](https://github.com/nflverse) (CC-BY 4.0). Coaching facts: Wikipedia (cited by revision) and the news sources in `data/*.csv`.

@@ -70,25 +70,27 @@ def diff_table(scores: pd.DataFrame, reference: str) -> list[str]:
     return lines
 
 
-def main() -> None:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--refresh", action="store_true", help="re-download nflverse schedules")
-    ap.add_argument("--out", type=Path, default=Path("reports/benchmarks.md"))
-    args = ap.parse_args()
+def last_season() -> int:
+    return date.today().year if date.today().month >= 3 else date.today().year - 1
 
-    last = date.today().year if date.today().month >= 3 else date.today().year - 1
-    games = games_frame(load_schedules(last, args.refresh))
+
+def prepare(refresh: bool = False) -> tuple[pd.DataFrame, float, pd.DataFrame]:
+    """Games frame, sigma (fit on SIGMA_FIT_SEASONS closing lines) and the games it was fit on."""
+    games = games_frame(load_schedules(last_season(), refresh))
     fit = games[games["season"].isin(d.SIGMA_FIT_SEASONS) & games["margin"].notna()]
-    sigma = fit_sigma(fit["close_margin"].to_numpy(), fit["home_win"].to_numpy())
-    print(f"sigma = {sigma:.3f} from {len(fit)} games")
+    return games, fit_sigma(fit["close_margin"].to_numpy(), fit["home_win"].to_numpy()), fit
 
+
+def benchmark_factories(games: pd.DataFrame, sigma: float, verbose: bool = True) -> tuple[dict, dict]:
+    """The benchmark models (fresh-instance factories), with the ridge benchmarks tuned on
+    TUNING_SEASONS. Returns (factories, tuned: label -> (target, half-life, lambda, grid))."""
     tuned = {}
     for label, target in (("SRS (ridge)", "margin"), ("market-implied ratings", "close_margin")):
         grid = ridge_grid(games, target, d.TUNING_SEASONS)
         best = grid.loc[grid["margin_mae"].idxmin()]
         tuned[label] = (target, float(best["half_life"]), float(best["lambda"]), grid)
-        print(f"{label}: half-life {best['half_life']:.0f} d, lambda {best['lambda']}, tuning MAE {best['margin_mae']:.3f}")
-
+        if verbose:
+            print(f"{label}: half-life {best['half_life']:.0f} d, lambda {best['lambda']}, tuning MAE {best['margin_mae']:.3f}")
     factories = {
         "naive home field": lambda: NaiveHomeField(sigma),
         "Elo (538)": lambda: Elo538(),
@@ -96,6 +98,19 @@ def main() -> None:
            for label, (t, h, l, _) in tuned.items()},
         d.REFERENCE: lambda: NflverseClose(sigma),
     }
+    return factories, tuned
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--refresh", action="store_true", help="re-download nflverse schedules")
+    ap.add_argument("--out", type=Path, default=Path("reports/benchmarks.md"))
+    args = ap.parse_args()
+
+    last = last_season()
+    games, sigma, fit = prepare(args.refresh)
+    print(f"sigma = {sigma:.3f} from {len(fit)} games")
+    factories, tuned = benchmark_factories(games, sigma)
     seasons = d.TUNING_SEASONS + d.VALIDATION_SEASONS
     preds = run_models(games, factories, seasons)
     val = preds[preds["season"].isin(d.VALIDATION_SEASONS)]

@@ -442,3 +442,29 @@ AWS Lambda + EventBridge remains an optional later upgrade (Phase 3).
 - On 2023–24 (570 games) the close has margin MAE 9.84; Elo 10.33, SRS 10.37 and market-implied ratings 10.37 sit about 0.5 behind (paired CI about ±0.25); naive home field is 11.16. These match the published ranges.
 - Absolute MAE CIs are wide (±0.7), but paired differences are tight. So a model or factor is judged by its paired difference against a baseline, never by comparing two separate intervals.
 - The bar for MS-030 is concrete: beat Elo/SRS by a margin whose paired CI excludes 0, and close part of the 0.5-point gap to the close.
+
+## ADR-034 — Kalman unit ratings: separate channel filters, a fitted game layer, and an honest first result (2026-10-18)
+
+**Context.** RATINGS.md specifies a Kalman filter over opponent-adjusted unit strengths, with parameters fit by maximum likelihood on 2016–22 and judged in the MS-029 harness (ADR-033). Building it required four choices the frozen design did not pin down. All four were made on 2016–22 before 2023–24 was scored, and are recorded here as deviations.
+
+**Decision.**
+
+- **One filter per channel, no cross-channel covariance:**
+  - pass EPA/dropback, rush EPA/rush, success rate, points per drive: each with 32 offense + 32 defense units and a league mean
+  - special teams: 32 units
+  - This makes the likelihood fast (0.05 s) and every parameter interpretable. The cost is that correlated channels don't share strength inside the filter. The game layer combines them instead.
+- **Points per drive is a channel.** KenPom's AdjO is defined in points per possession, and nfelo finds margin carries signal beyond EPA. Adding it cut in-sample MAE from 10.05 to 10.02, so it was kept before validation.
+- **The game layer is OLS** of the actual margin on the filter's pre-week expected features (one weight per channel plus home field), on 2016–22. It is not part of the joint likelihood.
+- **QB continuity is deferred to MS-031**, which owns QB state. Season reversion is conditioned on play-caller continuity only.
+- **Burn-in:** the filter starts in 2012 (play-by-play cached from then). 2012–15 never enter the likelihood.
+- **Ablations are refitted:** each measurement and structural variant is fitted from scratch. Channel ablations keep the filters and refit the game layer.
+
+**Consequences (2023–24 validation, 570 games, run once).**
+
+- Margin MAE 10.33, the same as Elo (Δ +0.00, CI −0.20 to +0.21) and SRS (Δ −0.04, CI −0.21 to +0.14). **The bar set in ADR-033 (beat Elo/SRS with a CI excluding 0) is not met by unit ratings alone.**
+- The model is better early in the season: weeks 1–4 Δ −0.31 vs SRS (CI −0.61 to −0.00) and −0.28 vs Elo. That is where season reversion matters. From week 5 on it is level.
+- The filter itself matters: ridge with a half-life on the same EPA is 0.17 worse (CI +0.01 to +0.32).
+- None of the ADR-029 measurement adjustments (luck, cap, WP weighting) is distinguishable at this sample size. The same holds for play-caller continuity (likelihood-ratio p = 0.66 on 2016–22) and for any single channel. They stay in the model because the design specifies them and none of them hurts. Factor selection is MS-032's job.
+- Offense carries over between seasons more than defense (pass ρ 0.72 vs 0.40; rush 0.58 vs 0.58). Offensive team spread is wider than defensive in every channel.
+- The validation seasons have now been looked at once for this model. Further changes are decided on 2016–22, and 2025 remains the clean test.
+- The expected source of further lift is MS-031 (QB and availability). That is consistent with MS-029's finding that the close's edge comes from news in the week of the game.

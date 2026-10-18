@@ -238,7 +238,29 @@ Walk-forward on the 2023–24 validation seasons (570 games, regular season and 
 - Ablations: classic current-season-only SRS is 0.32 worse (CI +0.15 to +0.50), mostly early in the season. Elo's margin-of-victory multiplier helps (+0.17 without it, CI just touching 0). 538's later home-field value (48) is indistinguishable from 65.
 - Win probability for margin-based benchmarks: Φ(margin / 11.90), with σ fit on 1999–2015 closing lines.
 
+### Kalman unit ratings (MS-030)
+
+Walk-forward on 2023–24 (570 games), parameters fitted on 2016–22 only (ADR-034). Full report: `apps/football/reports/kalman-ratings.md`.
+
+| Model                        | Margin MAE | Δ vs Elo (paired 95% CI) | Δ vs SRS               | Brier  | Log loss |
+| ---------------------------- | ---------- | ------------------------ | ---------------------- | ------ | -------- |
+| MarketScope Ratings (Kalman) | 10.33      | +0.00 (−0.20 to +0.21)   | −0.04 (−0.21 to +0.14) | 0.2244 | 0.6411   |
+| Elo (538)                    | 10.33      | –                        |                        | 0.2230 | 0.6371   |
+| SRS (ridge)                  | 10.37      |                          | –                      | 0.2246 | 0.6404   |
+| nflverse close               | 9.84       | −0.49                    | −0.53                  | 0.2098 | 0.6081   |
+
+- **Bar not met.** Unit ratings alone tie Elo and SRS. They win early in the season (weeks 1–4: −0.31 vs SRS, CI −0.61 to −0.00) and are level after.
+- **The filter beats a half-life ridge** on the same EPA (+0.17 for the ridge, CI +0.01 to +0.32).
+- **Not distinguishable from zero on validation:** the luck, cap and WP-weighting adjustments, each extra channel, and play-caller continuity (likelihood-ratio p = 0.66 in-sample).
+- **Stability:** offense carries over more than defense (pass ρ 0.72 vs 0.40), consistent with FPI's offense/defense asymmetry. Within a season, weekly drift is about ⅙ of the spread between teams.
+
 ## Changelog
 
 - 2026-10-17: design frozen (ADR-028).
 - 2026-10-18: evaluation harness and benchmark results (MS-029, ADR-033). No design change.
+- 2026-10-18: Kalman unit ratings (MS-030, ADR-034). Deviations, all decided on 2016–22 before validation:
+  - one filter per channel (no cross-channel covariance)
+  - points per drive added as a channel
+  - game-layer weights by OLS rather than inside the likelihood
+  - QB continuity deferred to MS-031
+  - filter burn-in from 2012

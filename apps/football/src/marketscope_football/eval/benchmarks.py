@@ -120,7 +120,7 @@ class RidgeRatings:
         return pd.DataFrame({"margin": margin, "p_home": win_probability(margin, self.sigma)}, index=games.index)
 
     def update(self, results: pd.DataFrame) -> None:
-        self.history.append(results[["season", "kickoff_utc", "home", "away", "neutral", "margin", "close_margin"]])
+        self.history.append(results[list(dict.fromkeys(["season", "kickoff_utc", "home", "away", "neutral", self.target]))])
 
 
 class NflverseClose:

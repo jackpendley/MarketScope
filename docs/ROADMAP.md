@@ -223,11 +223,14 @@ New Python app `apps/football/` (nflreadpy, polars, psycopg). The schema stays i
   - Walk-forward runner, clustered CIs, ablations.
   - Benchmarks: naive, SRS, Elo, market-implied ratings.
   - 2023–24 margin MAE: close 9.84, Elo 10.33, SRS 10.37, market-implied 10.37, naive 11.16 (ADR-033, `apps/football/reports/benchmarks.md`).
-- [ ] **MS-030** Kalman unit ratings in the KenPom contract:
+- [x] **MS-030** Kalman unit ratings (engine and evaluation):
+  - Channel filters (pass, rush, success rate, points per drive, special teams), ML fit on 2016–22, game layer, ablations.
+  - 2023–24: ties Elo/SRS (10.33); better in weeks 1–4; bar not met by unit ratings alone (ADR-034).
+- [ ] **MS-030b** KenPom contract outputs:
   - AdjO, AdjD, AdjST, AdjPace, AdjEM, each with a standard error.
   - Luck and its decomposition, SOS, Five Factors.
   - `kenpom_classic` benchmark.
-  - Point-in-time snapshots for 2016–26.
+  - Point-in-time `rating_snapshots` for 2016–26.
 - [ ] **MS-031** QB and availability:
   - QB state, expected starter, P(plays | status), positional absence values.
   - Oracle vs expected-starter leakage lesson.
