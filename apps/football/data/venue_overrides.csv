@@ -1,0 +1,8 @@
+game_id,venue_key,source_url,note
+2025_01_KC_LAC,SAO_CORINTHIANS,https://en.wikipedia.org/wiki/NFL_International_Series,São Paulo; nflverse lists SoFi Stadium
+2025_04_MIN_PIT,DUB_CROKE_PARK,https://en.wikipedia.org/wiki/NFL_International_Series,Dublin; nflverse lists Acrisure Stadium
+2025_05_MIN_CLE,LON_TOTTENHAM,https://en.wikipedia.org/wiki/NFL_International_Series,London; nflverse lists FirstEnergy Stadium
+2025_06_DEN_NYJ,LON_TOTTENHAM,https://en.wikipedia.org/wiki/NFL_International_Series,London; nflverse lists MetLife Stadium
+2025_07_LA_JAX,LON_WEMBLEY,https://en.wikipedia.org/wiki/NFL_International_Series,London; nflverse lists TIAA Bank Stadium
+2025_10_ATL_IND,BER_OLYMPIASTADION,https://en.wikipedia.org/wiki/NFL_International_Series,Berlin; nflverse lists Lucas Oil Stadium
+2025_11_WAS_MIA,MAD_BERNABEU,https://en.wikipedia.org/wiki/NFL_International_Series,Madrid; nflverse lists Hard Rock Stadium

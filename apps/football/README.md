@@ -14,6 +14,10 @@ PYTHONPATH=src DATABASE_URL=... .venv/bin/python -m marketscope_football.ingest 
 PYTHONPATH=src .venv/bin/python -m marketscope_football.coaching_build [--refresh]                # rebuild the CSV from sources
 PYTHONPATH=src .venv/bin/python -m marketscope_football.coaching_build --report reports/coaching-staff.md
 PYTHONPATH=src .venv/bin/python -m marketscope_football.coaching_build --check                    # drift vs Wikipedia (current season)
+PYTHONPATH=src DATABASE_URL=... .venv/bin/python -m marketscope_football.ingest context            # nfl_game_context (all seasons)
+PYTHONPATH=src DATABASE_URL=... .venv/bin/python -m marketscope_football.ingest weather --seasons 2024-2026 [--recent]
+PYTHONPATH=src DATABASE_URL=... .venv/bin/python -m marketscope_football.weather_report --out reports/weather-forecast-skill.md
+PYTHONPATH=src .venv/bin/python -m marketscope_football.venues                                     # refresh venue coordinates/elevation/time zone
 PYTHONPATH=src .venv/bin/python -m marketscope_football.plays_report --out reports/plays-given-status.md
 PYTHONPATH=src .venv/bin/python -m marketscope_football.crosscheck --seasons 2016-2026 --out reports/team-stats-crosscheck.md
 PYTHONPATH=src .venv/bin/python -m marketscope_football.luck_fit   # reproduces the frozen constants in design.py
@@ -29,6 +33,9 @@ PYTHONPATH=src .venv/bin/python -m marketscope_football.luck_fit   # reproduces 
 - **Cross-check** (`crosscheck.py`): counts vs nflverse `load_team_stats` must match; see `reports/team-stats-crosscheck.md`.
 - **Availability** (`availability.py`, ADR-030): snap counts with gsis ids attached; injury reports as a point-in-time history (live rows appended before kickoff, history as backfill with `first_seen_at` NULL); P(plays | status) with Wilson intervals (`plays_report.py`).
 - **Coaching staff** (`coaching.py`, `coaching_build.py`, ADR-031): head coaches (nflverse, or Wikipedia where nflverse is stale), coordinators (Wikipedia, cited by revision) and play-callers (season lists, dated overrides, or the coordinator rule), assembled into `data/coaching_staff.csv` and validated. To record a change, add a row to `data/coordinator_changes.csv` or `data/playcaller_overrides.csv` with its source, rebuild, and commit.
+- **Venues** (`venues.py`, `data/venues.csv`, `venue_aliases.csv`, `venue_overrides.csv`): roof type (curated), coordinates (Wikipedia), elevation and time zone (Open-Meteo); overrides fix nflverse's mislabelled 2025 international games.
+- **Weather** (`weather.py`, ADR-032): Open-Meteo Previous Runs forecasts at leads 0/1/3/7 days for outdoor and retractable venues, game-window averages, 2024+.
+- **Context** (`context.py`): rest, bye, short week, travel, time-zone shift, body clock, altitude, road streak, coaching tenure.
 - `final_observed_at` is stamped only when a game we already held becomes final. Backfilled history never gets the import time.
 
 Data: [nflverse](https://github.com/nflverse) (CC-BY 4.0). Coaching facts: Wikipedia (cited by revision) and the news sources in `data/*.csv`.

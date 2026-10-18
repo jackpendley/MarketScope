@@ -520,3 +520,81 @@ export const nflCoachingStaff = pgTable(
     check("nfl_coaching_staff_role", sql`${t.role} IN ('HC', 'OC', 'DC', 'STC', 'PC')`),
   ],
 ).enableRLS();
+
+/** Point-in-time weather forecasts for a game's window (kickoff hour + 3), from Open-Meteo's
+ *  Previous Runs API (ADR-032): lead_days N = predicted at least N x 24 h before the hour.
+ *  Lead 0 = the latest run before kickoff. Outdoor and retractable-roof venues only. */
+export const nflWeatherForecasts = pgTable(
+  "nfl_weather_forecasts",
+  {
+    gameId: text()
+      .notNull()
+      .references(() => nflGames.gameId, { onDelete: "cascade" }),
+    leadDays: integer().notNull(),
+    forecastHourUtc: tstz().notNull(),
+    temperatureF: doublePrecision().notNull(),
+    windMph: doublePrecision().notNull(),
+    gustMph: doublePrecision().notNull(),
+    precipIn: doublePrecision().notNull(),
+    source: text().notNull(),
+    fetchedAt: tstz().notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.gameId, t.leadDays] }),
+    check("nfl_weather_forecasts_lead", sql`${t.leadDays} BETWEEN 0 AND 7`),
+  ],
+).enableRLS();
+
+/** Pre-game context per team per game (ADR-032): rest, travel, time zones, altitude, road
+ *  streaks, coaching tenure. All known before kickoff. */
+export const nflGameContext = pgTable(
+  "nfl_game_context",
+  {
+    gameId: text()
+      .notNull()
+      .references(() => nflGames.gameId, { onDelete: "cascade" }),
+    team: text()
+      .notNull()
+      .references(() => nflTeams.abbr),
+    opponent: text()
+      .notNull()
+      .references(() => nflTeams.abbr),
+    season: integer().notNull(),
+    week: integer().notNull(),
+    /** False for both teams at a neutral site. */
+    isHome: boolean().notNull(),
+    neutralSite: boolean().notNull(),
+    divisionGame: boolean().notNull(),
+    venueKey: text().notNull(),
+    /** outdoor, dome, retractable (open/closed unknown before the game). */
+    roofType: text().notNull(),
+    restDays: integer(),
+    restDiff: integer(),
+    byeBefore: boolean(),
+    shortWeek: boolean(),
+    homeVenueKey: text().notNull(),
+    travelKm: doublePrecision().notNull(),
+    /** Venue UTC offset minus the team's home UTC offset at kickoff. */
+    tzShiftHours: doublePrecision().notNull(),
+    /** Kickoff in the team's home time zone (e.g. 10.0 for a Pacific team at 1 pm ET). */
+    bodyClockKickoffHour: doublePrecision().notNull(),
+    venueLocalKickoffHour: doublePrecision().notNull(),
+    altitudeM: integer().notNull(),
+    altitudeChangeM: integer().notNull(),
+    /** Consecutive games away from home (neutral counts), this one included; 0 at home. */
+    roadStreak: integer().notNull(),
+    hcCoach: text(),
+    offPlaycaller: text(),
+    defPlaycaller: text(),
+    /** Consecutive prior games with the franchise; NULL when the run began before our data. */
+    hcTenureGames: integer(),
+    offPlaycallerTenureGames: integer(),
+    defPlaycallerTenureGames: integer(),
+    newOffPlaycaller: boolean(),
+    newDefPlaycaller: boolean(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.gameId, t.team] }),
+    index("nfl_game_context_team_season_idx").on(t.team, t.season, t.week),
+  ],
+).enableRLS();

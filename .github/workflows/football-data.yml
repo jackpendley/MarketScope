@@ -2,7 +2,8 @@ name: Football data
 
 # nflverse refresh for the current season (ADR-028/029/030).
 # 13:00 UTC: schedules and results (and event links), team-game stats from the latest
-#   play-by-play, snap counts, injury reports, and the curated coaching staff (+ drift check). nflverse rebuilds overnight, so this picks up
+#   play-by-play, snap counts, injury reports, the curated coaching staff (+ drift check), game
+#   context, and point-in-time weather forecasts. nflverse rebuilds overnight, so this picks up
 #   Sunday, Monday and Thursday games the next morning.
 # 23:00 UTC: injury reports only, a second daily snapshot after teams publish their reports
 #   (≈ 4 pm ET), so status changes get a tighter first-seen time.
@@ -65,6 +66,12 @@ jobs:
       - name: Coaching staff
         if: github.event.schedule != '0 23 * * *'
         run: PYTHONPATH=src python -m marketscope_football.ingest coaching
+      - name: Game context (rest, travel, time zones, coaching tenure)
+        if: github.event.schedule != '0 23 * * *'
+        run: PYTHONPATH=src python -m marketscope_football.ingest context --seasons "$SEASONS"
+      - name: Weather forecasts (Open-Meteo, games from 10 days ago to 8 days ahead)
+        if: github.event.schedule != '0 23 * * *'
+        run: PYTHONPATH=src python -m marketscope_football.ingest weather --seasons "$SEASONS" --recent
       - name: Coaching staff drift check
         if: github.event.schedule != '0 23 * * *'
         continue-on-error: true

@@ -1,10 +1,10 @@
 # Project Status
 
-_Rewrite this file at the end of every session. Last updated: 2026-10-18 (session 1, continued; MS-026)._
+_Rewrite this file at the end of every session. Last updated: 2026-10-18 (session 1, continued; MS-028)._
 
 ## Current milestone
 
-**Phase 7 is complete; Phase 8 is underway. MS-026 (football data foundation) is done. Next: MS-027 (play-by-play → team-game stats, snaps, injuries, depth charts, coaching staff, daily workflow).**
+**Phase 8 (football data foundation) is complete: MS-026, MS-027 and MS-028 are done. Next: Phase 9, MS-029 (evaluation harness + benchmarks).**
 
 - **Scope extended 2026-10-17 (ADR-028):** football context and MarketScope Ratings, "KenPom for the NFL". The design is frozen in `docs/RATINGS.md`.
 - **Site:** deployed privately at https://marketscope-delta.vercel.app (user `marketscope`; the password is `VERCEL_SITE_PASSWORD` in `apps/web/.env.local`).
@@ -12,77 +12,85 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-18 (sessio
 ## Done so far
 
 - **Phases 0–6:**
-  - board, persistence and collector
-  - API and UI
-  - Supabase and Vercel deployment, history charts, replay
-  - signals and the outlier study (conclusive: 29.0% toward-rate vs a 10.3% chance baseline)
-  - OddsPapi backfill (79 games, Weeks 1–5)
-  - `/data` coverage page, EXPLAIN review, sort-matching indexes
+  - board, collector, API/UI, Supabase/Vercel, replay
+  - signals and the outlier study
+  - OddsPapi backfill, `/data`, EXPLAIN review
 
   ADRs 001–027.
 
-- **Plan (PR #18, ADR-028):**
-  - ROADMAP Phases 7–11.
-  - CLAUDE.md football rules 1–8.
-  - `docs/RATINGS.md`: prior-art review (538, ELWAY, nfelo, FPI, DVOA, KenPom, Inpredictable, Glickman–Stern), the KenPom output contract, factor catalog (including coaching and play-callers), Kalman architecture, validation protocol.
-- **MS-024** (PR #19): target, split and gate, pre-registered and committed before any label was computed.
-  - 22 point-in-time features.
-  - Mechanical leakage audit: perturb everything after t; a planted leak is caught.
-  - **Gate passed:** 79 games, 292 positives; test week 5 has 15 games and 79 positives.
-  - The positive rate rises by week (9% → 23%).
-- **MS-025:** model protocol pre-registered before fitting.
-  - Baselines plus logistic regression; game-clustered bootstrap CIs; `docs/MODEL_CARD.md`.
-  - **v1 result:** logistic regression _ranks_ moves (test AUC 0.72, CI 0.57–0.86), but its Brier and log-loss gains are not yet distinguishable from the constant baseline (the CIs include 0).
-  - Direction: no skill.
-  - Live forward check: pending at 13 of 15 games.
-- **MS-026** (PR #21):
-  - Migration 0007: `nfl_teams`, `nfl_games`, `nfl_ingest_runs`, with RLS.
-  - New Python app `apps/football`: nflreadpy schedule ingest, idempotent runs, and a linker.
-  - Production holds 3,033 games (2016–2026, 2,841 final). **All 104 odds events are linked.**
-  - nflverse close vs our last pregame consensus: correlation 0.996, 98.7% within 1 point. The sign convention (store `−spread_line`) is confirmed (`research/reports/close-vs-consensus.md`).
-  - `/data` gains a football panel; the footer credits nflverse.
-  - CI gains a `football` job (Drizzle migrate, then pytest).
+- **Phase 7 (MS-024/025):**
+  - Market-movement ML: pre-registered gate, leakage audit, baselines plus logistic regression.
+  - v1: test AUC 0.72, but the Brier and log-loss gains are not yet distinguishable from the constant. Direction: no skill.
+  - Results in `docs/MODEL_CARD.md`.
+- **MS-026** (PRs #21/#22):
+  - `nfl_teams`, `nfl_games`, `nfl_ingest_runs`; 3,033 games 2016–2026; all odds events linked.
+  - nflverse close vs our consensus: r = 0.996, so it serves as the benchmark for 2016–25.
+- **MS-027:**
+  - **#23, team-game stats:**
+    - Play-by-play Parquet cache with a manifest.
+    - `nfl_team_game_stats`: 5,682 team-games, raw EPA plus the model channel (luck-adjusted, capped, WP-weighted EPA), Five Factors, pace/PROE, drives, special teams (ADR-029).
+    - Counts match nflverse team stats 100%; EPA r = 0.996.
+  - **#25, availability:**
+    - `nfl_player_game_snaps` and `nfl_injury_reports`, a point-in-time history. Live rows have been captured twice daily since 2026-10-18 (ADR-030).
+    - P(plays | status): Out 0%, Doubtful 0.9%, Questionable 68%. The practice-status gradient weakened in 2023–25.
+  - **#26, coaching:**
+    - `nfl_coaching_staff`: 1,473 sourced, validated spans; exactly one HC, offensive and defensive play-caller per team-week (ADR-031).
+    - **nflverse head coaches are stale for 2024+ interims and the 2026 season.**
+    - Offensive play-callers are sourced for 69% of team-weeks, defensive for 10%.
+  - **Daily `football-data.yml`:** 13:00 UTC runs everything; 23:00 UTC runs injuries only. Uses the existing `DATABASE_URL` secret.
+- **MS-028 (this PR):**
+  - **Weather:** `nfl_weather_forecasts`, Open-Meteo Previous Runs forecasts at leads 0/1/3/7 days for 2024+, 546 games.
+    - Temperature r = 0.98 at 1 day.
+    - Wind r = 0.74 at 1 day but 0.34 at 7 days.
+  - **Context:** `nfl_game_context` (6,066 team-games): rest, travel, time zones, body clock, altitude, road streaks, coaching tenure.
+  - **Venues:** a 49-venue catalog, with overrides for nflverse's mislabelled 2025 international games (ADR-032).
+  - Week-18 incentives move to MS-034.
+  - Footer now credits Open-Meteo and the injury/snap sources.
 
 ## Tests
 
-- **All green before MS-025:** db 34, shared 192, collector 51, web 83, e2e 18.
-- **Research pytest:** 25. **Football pytest:** 10 (unit, plus integration against the migrated test DB). **db:** 36.
+- **Football pytest:** 45 (unit tests, plus integration against the migrated test DB; includes validation of the committed coaching CSV).
+- **Research pytest:** 25.
+- **TS:** db 36, shared 192, collector 51, web 83, e2e 18.
 
 ## Quotas
 
-- **Odds API:** about 12 credits/day from the cron (≈ 372 of 500/month). Avoid local `collect:nfl` runs.
-- **OddsPapi:** 9 of 250 billable requests used this month. History calls are free.
+- **Odds API:** about 12 credits/day from the cron (≈ 372 of 500/month).
+- **OddsPapi:** 9 of 250. Open-Meteo, Wikipedia and nflverse: free, no keys.
 
 ## Data (production, Supabase)
 
-- **Size:** 74.5 MB of 500 MB. Projected ≈ 175 MB by the Super Bowl, before football data. ADR-028 estimates 30–40 MB more.
-- **Observations:** 159K from `oddspapi` (79 games, Sep 10 → Oct 13), plus live `the-odds-api` since 2026-10-16.
-- No game has more than one source.
-- GitHub cron runs fire 2–4 h late. That's normal, and inside the 12 h health threshold.
+- **Size:** ≈ 75 MB of odds data plus ≈ 20 MB of football tables (team-game stats 3 MB, snaps 9 MB, injuries 3 MB, the rest small).
+- **Migrations:** 0007–0010 applied in production; 0011 (weather/context) is applied on merge by `migrate-production.yml`.
+- **After merging this PR:**
+  - `ingest context` (all seasons)
+  - `ingest weather --seasons 2024-2026` (about 4 minutes)
 
 ## Waiting on Jack
 
-Nothing blocking. Optional: mark the GitGuardian false-positive incident as resolved.
+Nothing blocking.
 
 ## Known issues / open decisions
 
-- **Football schedules are not yet scheduled.** For now, run the ingest by hand after each game day. The daily workflow (`football-data.yml`, existing `DATABASE_URL` secret) is part of MS-027.
-- **`nflreadpy.load_injuries` for 2025–26:** still to verify (a 2025 issue reported it broken).
-- **Coaching staff** (coordinators, play-callers): no free dataset exists, so this becomes a curated, sourced CSV (MS-027).
+- **nflverse quirks found:**
+  - stale head coaches for 2024+ interims and the 2026 season
+  - 2025 international venues labelled with the home team's stadium
+  - typos (e.g. "Jay Rosburg")
+
+  The pipeline works around all three (ADR-031/032).
+
+- **Defensive play-callers** are mostly the coordinator default (90% of team-weeks), so treat defensive-caller findings as provisional.
+- **Live injury history** begins 2026-10-18 (Week 6). Earlier weeks are final reports only.
 - **Market model v2:** re-run once the live forward check has ≥ 15 games.
-- **Generated reports:** run `pnpm exec prettier --write research/reports` after regenerating; CI checks formatting.
-- `docs/PERFORMANCE.md` thresholds still apply. GitHub disables crons after 60 days without repo activity. TS 7 is still waiting on typescript-eslint (ADR-004).
+- **Generated reports:** run `pnpm exec prettier --write research/reports apps/football/reports` after regenerating.
+- `docs/PERFORMANCE.md` thresholds still apply. GitHub disables crons after 60 days without repo activity.
 
 ## Next task
 
-**Phase 8, MS-027: play-by-play → team-game channels, snaps, injuries, depth charts, coaching staff.**
+**Phase 9, MS-029: evaluation harness and benchmarks** (`apps/football/src/marketscope_football/eval/`).
 
-1. Cache play-by-play for 2016–2026 locally as Parquet (gitignored), recording the version and hash.
-2. Compute `nfl_team_game_stats` with pure, unit-tested aggregations:
-   - EPA per play, per dropback and per rush; success rate; early-down EPA; explosive rate; PROE; CPOE; sack rate; turnovers; red-zone TD rate; neutral pace; special-teams EPA.
-   - Raw, neutral and luck-adjusted variants.
-   - Cross-check against `load_team_stats`.
-3. Add `nfl_player_game_snaps` (current and previous season), `nfl_injury_reports` (daily live snapshots with `fetched_at`), `nfl_depth_charts`, and the curated `nfl_coaching_staff` CSV with a source on every row. Derive P(plays | status, position).
-4. Add `football-data.yml`: daily schedules, results and injuries; a Tuesday play-by-play job.
+1. **Walk-forward runner:** for each week, fit on data before that week and predict that week. Metrics: margin MAE/RMSE, win-probability Brier and log loss, with game-clustered bootstrap CIs (reuse the research bootstrap pattern). Plus an ablation runner and a report generator.
+2. **Benchmarks:** naive home-field; SRS (ridge on margins, refit weekly); 538-style Elo (k, home field, margin-of-victory multiplier, season reversion); market-implied ratings (weighted least squares on nflverse close spreads); and the nflverse close itself.
+3. **Sanity check:** Elo/SRS margin MAE ≈ 10–11 and the close ≈ 9.5–10 on 2023–24. First result: a benchmark table for 2023–24 (validation). 2025 stays untouched until MS-032.
 
-**Then:** MS-028 (Open-Meteo forecasts, stadium coordinates, rest, travel and time-zone context), then Phase 9 (ratings).
+**Then:** MS-030, the Kalman unit ratings in the KenPom output contract.
