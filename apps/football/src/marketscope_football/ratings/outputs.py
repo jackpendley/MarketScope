@@ -27,7 +27,7 @@ from .engine import UNIT_CHANNELS, Engine, GameLayer
 from .luck import game_net_epa, pythag_share, win_probability
 
 ONE_SCORE = 8
-MODEL_VERSION = "kalman-v0"  # ratings-v1 is frozen in MS-032
+from .version import MODEL_VERSION  # noqa: E402  (ratings-v1, frozen in MS-032b)
 
 
 def home_advantage_points(eng: Engine, layer: GameLayer) -> float:

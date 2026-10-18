@@ -258,3 +258,38 @@ def replace_rating_snapshots(conn: psycopg.Connection, frame: pd.DataFrame, mode
             for r in frame[RATING_COLUMNS].itertuples(index=False):
                 copy.write_row([clean(v) for v in r])
     return len(frame)
+
+
+def insert_predictions(conn: psycopg.Connection, rows: list[dict], model_version: str, predicted_at) -> int:
+    """Append-only: one new row per game per run; existing rows are never touched."""
+    import json as _json
+
+    with conn.cursor() as cur:
+        cur.executemany(
+            """INSERT INTO model_predictions (model_version, game_id, predicted_at, kickoff_utc, home_team, away_team,
+                 expected_margin, expected_total, home_score, away_score, p_home, home_qb, away_qb, home_qb_p, away_qb_p,
+                 contributions)
+               VALUES (%(model_version)s, %(game_id)s, %(predicted_at)s, %(kickoff_utc)s, %(home_team)s, %(away_team)s,
+                 %(expected_margin)s, %(expected_total)s, %(home_score)s, %(away_score)s, %(p_home)s, %(home_qb)s,
+                 %(away_qb)s, %(home_qb_p)s, %(away_qb_p)s, %(contributions)s)
+               ON CONFLICT DO NOTHING""",
+            [{**r, "model_version": model_version, "predicted_at": predicted_at,
+              "contributions": _json.dumps(r["contributions"])} for r in rows],
+        )
+    return len(rows)
+
+
+def upsert_model_run(conn: psycopg.Connection, run: dict) -> int:
+    """Insert a model run from its committed JSON record (idempotent on model_version + kind + seasons + ran_at)."""
+    import json as _json
+
+    with conn.cursor() as cur:
+        cur.execute(
+            """INSERT INTO model_runs (model_version, run_kind, seasons, games, metrics, params_sha256, code_sha, notes, ran_at)
+               SELECT %(model_version)s, %(run_kind)s, %(seasons)s, %(games)s, %(metrics)s, %(params_sha256)s,
+                 %(code_sha)s, %(notes)s, %(ran_at)s
+               WHERE NOT EXISTS (SELECT 1 FROM model_runs WHERE model_version = %(model_version)s
+                 AND run_kind = %(run_kind)s AND seasons = %(seasons)s AND ran_at = %(ran_at)s)""",
+            {**run, "metrics": _json.dumps(run["metrics"])},
+        )
+        return cur.rowcount

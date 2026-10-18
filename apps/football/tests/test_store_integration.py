@@ -22,7 +22,7 @@ def conn():
         c = psycopg.connect(URL, connect_timeout=5)
     except psycopg.OperationalError:
         pytest.skip("test database unavailable")
-    c.execute("TRUNCATE rating_snapshots, nfl_game_context, nfl_weather_forecasts, nfl_coaching_staff, nfl_injury_reports, nfl_player_game_snaps, nfl_team_game_stats, nfl_games, nfl_teams, nfl_ingest_runs, events RESTART IDENTITY CASCADE")
+    c.execute("TRUNCATE model_predictions, model_runs, rating_snapshots, nfl_game_context, nfl_weather_forecasts, nfl_coaching_staff, nfl_injury_reports, nfl_player_game_snaps, nfl_team_game_stats, nfl_games, nfl_teams, nfl_ingest_runs, events RESTART IDENTITY CASCADE")
     c.commit()
     yield c
     c.rollback()

@@ -21,7 +21,7 @@ import polars as pl
 
 from ..availability import POSITION_GROUPS
 from ..schedules import FRANCHISE
-from .observations import CACHE_DIR
+from .observations import per_season
 
 RECENT_GAMES = 3
 P_MISS = {"Out": 1.0, "Doubtful": 0.991, "Questionable": 0.323}
@@ -35,37 +35,31 @@ def _fr(t):
     return FRANCHISE.get(t, t)
 
 
-def load_snaps(seasons: list[int], refresh: bool = False) -> pd.DataFrame:
-    """game_id, team, gsis_id (or pfr id when unmatched), group, share (offense or defense snap %)."""
-    seasons = [s for s in seasons if s >= SNAPS_FROM]
-    path = CACHE_DIR / f"snaps_{seasons[0]}_{seasons[-1]}.parquet"
-    if path.exists() and not refresh:
-        return pd.read_parquet(path)
-    s = nfl.load_snap_counts(seasons)
-    ids = nfl.load_players().select("gsis_id", pl.col("pfr_id").alias("pfr_player_id")).drop_nulls().unique("pfr_player_id")
-    s = s.join(ids, on="pfr_player_id", how="left").to_pandas()
-    grp = s["position"].map(POSITION_GROUPS).map(GROUPS)
-    side_off = grp.isin(["ol", "skill", "rb"])
-    df = pd.DataFrame({"game_id": s["game_id"], "team": s["team"].map(_fr),
-                       "player": s["gsis_id"].fillna("pfr:" + s["pfr_player_id"].astype(str)), "group": grp,
-                       "share": s["offense_pct"].where(side_off, s["defense_pct"]).astype(float)})
-    df = df[df["group"].notna()].drop_duplicates(["game_id", "player"])
-    CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    df.to_parquet(path)
-    return df
+def load_snaps(seasons: list[int], refresh: bool | set[int] = False) -> pd.DataFrame:
+    """game_id, team, player (gsis_id, or pfr id when unmatched), group, share (offense or defense snap %)."""
+    ids = None
+
+    def fetch(season):
+        nonlocal ids
+        if ids is None:
+            ids = nfl.load_players().select("gsis_id", pl.col("pfr_id").alias("pfr_player_id")).drop_nulls().unique("pfr_player_id")
+        s = nfl.load_snap_counts([season]).join(ids, on="pfr_player_id", how="left").to_pandas()
+        grp = s["position"].map(POSITION_GROUPS).map(GROUPS)
+        side_off = grp.isin(["ol", "skill", "rb"])
+        df = pd.DataFrame({"game_id": s["game_id"], "team": s["team"].map(_fr),
+                           "player": s["gsis_id"].fillna("pfr:" + s["pfr_player_id"].astype(str)), "group": grp,
+                           "share": s["offense_pct"].where(side_off, s["defense_pct"]).astype(float)})
+        return df[df["group"].notna()].drop_duplicates(["game_id", "player"])
+    return per_season("snaps", [s for s in seasons if s >= SNAPS_FROM], fetch, refresh)
 
 
-def load_reserve(seasons: list[int], refresh: bool = False) -> pd.DataFrame:
+def load_reserve(seasons: list[int], refresh: bool | set[int] = False) -> pd.DataFrame:
     """Players on a reserve list (IR, PUP, NFI, suspended...) per team-week: season, week, team, gsis_id."""
-    path = CACHE_DIR / f"reserve_{seasons[0]}_{seasons[-1]}.parquet"
-    if path.exists() and not refresh:
-        return pd.read_parquet(path)
-    r = nfl.load_rosters_weekly(seasons).filter(pl.col("status").is_in(list(RESERVE))).to_pandas()
-    df = pd.DataFrame({"season": r["season"].astype(int), "week": r["week"].astype(int), "team": r["team"].map(_fr),
-                       "gsis_id": r["gsis_id"]}).dropna().drop_duplicates()
-    CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    df.to_parquet(path)
-    return df
+    def fetch(season):
+        r = nfl.load_rosters_weekly([season]).filter(pl.col("status").is_in(list(RESERVE))).to_pandas()
+        return pd.DataFrame({"season": r["season"].astype(int), "week": r["week"].astype(int), "team": r["team"].map(_fr),
+                             "gsis_id": r["gsis_id"]}).dropna().drop_duplicates()
+    return per_season("reserve", seasons, fetch, refresh)
 
 
 def absences(games: pd.DataFrame, snaps: pd.DataFrame, injuries: pd.DataFrame, reserve: pd.DataFrame,
