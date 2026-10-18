@@ -97,6 +97,17 @@ Rows include:
 
 `meta.definitions` carries every definition and its limitations. `meta.disclaimer` states that signals are not betting advice.
 
+## `GET /api/ratings`
+
+MarketScope Ratings for one weekly snapshot, best AdjEM first (definitions: `docs/RATINGS.md`, `docs/DATA_DICTIONARY.md` → `rating_snapshots`).
+
+| Param    | Default                    | Rules                                                                                     |
+| -------- | -------------------------- | ----------------------------------------------------------------------------------------- |
+| `season` | latest                     | a season with snapshots; otherwise the latest                                             |
+| `week`   | latest week of that season | 0 = preseason prior; a week without a snapshot falls back to the season's latest snapshot |
+
+Rows carry the KenPom contract: AdjEM/AdjO/AdjD/AdjST/AdjPace with SEs and ranks, record, expected and Pythagorean wins, luck and its decomposition, SOS, and the Five Factors. `meta` gives `modelVersion` (`ratings-v1`; a synthetic demo database shows `synthetic-demo`), `season`, `week` and a disclaimer. Values are point-in-time model estimates, not betting advice. 404 `NOT_FOUND` before any ratings exist.
+
 ## `GET /api/health/live`
 
 Liveness only: `{ "status": "ok" }` without touching the database. Used by the Playwright web-server check and suitable for process supervisors. Readiness and data health live in `/api/health/data`.

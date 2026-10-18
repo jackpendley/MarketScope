@@ -244,9 +244,10 @@ New Python app `apps/football/` (nflreadpy, polars, psycopg). The schema stays i
   - Against the close the model's cover probabilities are worse than a coin flip.
 - [x] **MS-032b** Freeze `ratings-v1`, 2025 test (once), parameter comparison, live `model_predictions` (ADR-039):
   - 2025: MAE 10.06 (Elo 10.19, SRS 10.19, close 9.67); vs Elo −0.13 (CI includes 0), vs close +0.39.
-- [ ] **MS-033** UI:
-  - `/ratings` (KenPom table, time machine), `/ratings/{factors,luck,sos}`, `/matchups`, `/teams/[abbr]`, `/coaches`, `/model` scorecard.
-  - Game-page Matchup panel with the model line, explained.
+- [x] **MS-033a** Ratings UI (ADR-040):
+  - `/ratings` (KenPom table, week time machine, sortable ranks, conference filter), `/teams/[abbr]` (ratings, trend, Five Factors, luck, schedule with model estimates, staff), `/api/ratings`.
+  - Synthetic ratings seed for e2e; EXPLAIN review.
+- [ ] **MS-033b** `/matchups`, `/model` scorecard, game-page matchup panel.
 - [ ] **MS-034** (stretch) Season simulation: playoff, division and #1-seed odds.
 
 ## Phase 10 — Research studies + ML with football features (MS-035–036)

@@ -20,8 +20,13 @@ import {
   listGames,
   listSignals,
   observationSummaries,
+  ratingsForWeek,
+  ratingVersion,
+  ratingWeeks,
   recentRuns,
   selectionHistory,
+  teamGames,
+  teamRatingHistory,
 } from "../queries";
 import * as schema from "../schema";
 
@@ -136,6 +141,27 @@ async function main() {
     await step("listSignals (Signal Lab, 30 days)", () =>
       listSignals(db, { from: new Date(now - 30 * DAY).toISOString(), limit: 300 }),
     );
+
+    // Ratings pages (MS-033): the latest snapshot, a team's season and schedule.
+    const version = await step("ratingVersion (ratings pages)", () => ratingVersion(db));
+    if (version) {
+      const weeks = await step("ratingWeeks (ratings pages)", () => ratingWeeks(db, version));
+      const at = weeks.at(-1);
+      if (at) {
+        const table = await step("ratingsForWeek (ratings table)", () =>
+          ratingsForWeek(db, { version, ...at }),
+        );
+        const team = table[0]?.team;
+        if (team) {
+          await step("teamRatingHistory (team page)", () =>
+            teamRatingHistory(db, { version, team, season: at.season }),
+          );
+          await step("teamGames (team page schedule)", () =>
+            teamGames(db, { version, team, season: at.season }),
+          );
+        }
+      }
+    }
 
     const results: {
       name: string;
