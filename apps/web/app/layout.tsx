@@ -55,6 +55,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             affiliated with or endorsed by any sportsbook.
           </p>
           <p>
+            Football data: schedules, results and play-by-play from{" "}
+            <a href="https://github.com/nflverse" className="underline hover:text-muted">
+              nflverse
+            </a>{" "}
+            (CC-BY 4.0).
+          </p>
+          <p>
             Gamble responsibly. 21+ where legal. If you or someone you know has a gambling problem,
             call 1-800-GAMBLER.
           </p>

@@ -213,3 +213,102 @@ export const marketSignals = pgTable(
     check("market_signals_window_order", sql`${t.windowStart} <= ${t.windowEnd}`),
   ],
 ).enableRLS();
+
+// ---- Football context (ADR-028) -------------------------------------------------------------
+// Written only by the Python app `apps/football` (nflverse ingest). The schema lives here so
+// there is one migration history, one drift check, and RLS on every table.
+
+/** NFL teams by nflverse abbreviation. Relocated teams keep their historical abbreviation
+ *  (OAK, SD, STL) and point at the current franchise, so ratings follow the franchise. */
+export const nflTeams = pgTable("nfl_teams", {
+  abbr: text().primaryKey(),
+  /** Current franchise abbreviation (OAK -> LV, SD -> LAC, STL -> LA; otherwise itself). */
+  franchise: text().notNull(),
+  fullName: text().notNull(),
+  nickname: text().notNull(),
+  conference: text().notNull(),
+  division: text().notNull(),
+  /** Exact `home_team`/`away_team` string used by the odds feeds, for linking events. */
+  oddsApiName: text(),
+}).enableRLS();
+
+/** One-attempt-tracked football ingest job (same claim/idempotency pattern as ingestion_runs). */
+export const nflIngestRuns = pgTable(
+  "nfl_ingest_runs",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    /** e.g. `schedules:2016-2026:<utc date>` or `manual:<uuid>`. */
+    jobKey: text().notNull().unique(),
+    dataset: text().notNull(),
+    startedAt: tstz().notNull().defaultNow(),
+    finishedAt: tstz(),
+    status: ingestionStatus().notNull().default("started"),
+    attempt: integer().notNull().default(1),
+    rowsUpserted: integer().notNull().default(0),
+    /** nflverse release tag / file checksum, so a dataset version is reproducible. */
+    sourceVersion: text(),
+    errorMessage: text(),
+  },
+  (t) => [index("nfl_ingest_runs_started_at_idx").on(t.startedAt.desc().nullsFirst())],
+).enableRLS();
+
+/** One NFL game from the nflverse schedule. Results and observed weather are POST-HOC: they
+ *  never feed features for the same game (CLAUDE.md football rules 1-2). */
+export const nflGames = pgTable(
+  "nfl_games",
+  {
+    /** nflverse game_id, e.g. `2026_01_NE_SEA`. */
+    gameId: text().primaryKey(),
+    season: integer().notNull(),
+    /** REG, WC, DIV, CON, SB. */
+    gameType: text().notNull(),
+    week: integer().notNull(),
+    kickoffUtc: tstz().notNull(),
+    homeTeam: text()
+      .notNull()
+      .references(() => nflTeams.abbr),
+    awayTeam: text()
+      .notNull()
+      .references(() => nflTeams.abbr),
+    neutralSite: boolean().notNull(),
+    divisionGame: boolean().notNull(),
+    homeRestDays: integer(),
+    awayRestDays: integer(),
+    homeScore: integer(),
+    awayScore: integer(),
+    overtime: boolean(),
+    /** When our ingest first saw the final score. Null for games already final at backfill:
+     *  the import time is never assigned to historical data. */
+    finalObservedAt: tstz(),
+    stadiumId: text(),
+    stadium: text(),
+    /** dome, outdoors, open, closed (as played; retractable status is unknown pre-game). */
+    roof: text(),
+    surface: text(),
+    observedTempF: integer(),
+    observedWindMph: integer(),
+    referee: text(),
+    homeCoach: text(),
+    awayCoach: text(),
+    /** Starting QBs as played (post-hoc: used only for the oracle-vs-expected-starter study). */
+    homeQbId: text(),
+    awayQbId: text(),
+    /** nflverse closing line, converted to OUR home orientation (negative = home favored).
+     *  A labeled benchmark: never copied into odds_observations (no observation timestamp). */
+    nflverseCloseHomeSpread: numeric({ precision: 4, scale: 1, mode: "number" }),
+    nflverseCloseTotal: numeric({ precision: 4, scale: 1, mode: "number" }),
+    nflverseCloseHomeMoneyline: integer(),
+    nflverseCloseAwayMoneyline: integer(),
+    /** Link to the odds event for the same game (teams + kickoff within 36 h). */
+    eventId: uuid()
+      .unique()
+      .references(() => events.id, { onDelete: "set null" }),
+    updatedAt: tstz().notNull().defaultNow(),
+  },
+  (t) => [
+    index("nfl_games_season_week_idx").on(t.season, t.week),
+    index("nfl_games_kickoff_idx").on(t.kickoffUtc),
+    check("nfl_games_teams_differ", sql`${t.homeTeam} <> ${t.awayTeam}`),
+    check("nfl_games_scores_together", sql`(${t.homeScore} IS NULL) = (${t.awayScore} IS NULL)`),
+  ],
+).enableRLS();

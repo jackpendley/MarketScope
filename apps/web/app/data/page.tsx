@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
-import { gameCoverage, latestCompletedRun, recentRuns } from "@marketscope/db";
+import { footballDataStatus, gameCoverage, latestCompletedRun, recentRuns } from "@marketscope/db";
 import { formatAge } from "@marketscope/shared";
 import { DataUnavailable, Notice } from "@/components/data-states";
 import {
@@ -39,24 +39,22 @@ export default async function DataCoveragePage() {
   let data;
   try {
     const db = getDb();
-    const [rows, latest, runs] = await Promise.all([
-      gameCoverage(db, {
-        from: new Date(now.getTime() - 150 * DAY).toISOString(),
-        to: new Date(now.getTime() + 14 * DAY).toISOString(),
-        feedColumns: FEED_COLUMNS,
-        limit: MAX_GAMES,
-      }),
+    const from = new Date(now.getTime() - 150 * DAY).toISOString();
+    const to = new Date(now.getTime() + 14 * DAY).toISOString();
+    const [rows, latest, runs, football] = await Promise.all([
+      gameCoverage(db, { from, to, feedColumns: FEED_COLUMNS, limit: MAX_GAMES }),
       latestCompletedRun(db),
       recentRuns(db, 12),
+      footballDataStatus(db, { from, to, limit: 20 }),
     ]);
-    data = { rows, latest, runs };
+    data = { rows, latest, runs, football };
   } catch (err) {
     if (err instanceof DatabaseNotConfiguredError || isConnectionError(err))
       return <DataUnavailable />;
     throw err;
   }
 
-  const { rows, latest, runs } = data;
+  const { rows, latest, runs, football } = data;
   const summary = summarizeCoverage(rows);
   const health = collectionStatus(latest, now);
 
@@ -158,6 +156,58 @@ export default async function DataCoveragePage() {
             At least 3 board books posted a spread
           </Stat>
         </dl>
+      </section>
+
+      <section aria-labelledby="football" className="space-y-2">
+        <h2 id="football" className="text-sm font-medium uppercase tracking-wide text-muted">
+          Football data (nflverse)
+        </h2>
+        {football.games === 0 ? (
+          <Notice title="No football data loaded yet.">
+            The nflverse pipeline (<code>apps/football</code>) loads schedules and results.
+          </Notice>
+        ) : (
+          <>
+            <dl className="grid grid-cols-2 gap-3 md:grid-cols-4">
+              <Stat label="Games stored" value={football.games.toLocaleString()}>
+                Seasons {football.firstSeason}–{football.lastSeason} ·{" "}
+                {football.finalGames.toLocaleString()} final
+              </Stat>
+              <Stat
+                label="Odds events linked"
+                value={`${football.linkedEvents} / ${football.events}`}
+              >
+                Same teams and orientation, kickoff within 36 h
+              </Stat>
+              {football.latestRun && (
+                <Stat label="Last football ingest" value={football.latestRun.status}>
+                  <time dateTime={football.latestRun.startedAt}>
+                    {formatTimestamp(football.latestRun.startedAt)}
+                  </time>
+                  {football.latestRun.sourceVersion && (
+                    <div className="truncate" title={football.latestRun.sourceVersion}>
+                      {football.latestRun.sourceVersion}
+                    </div>
+                  )}
+                </Stat>
+              )}
+            </dl>
+            {football.unlinked.length > 0 && (
+              <Notice
+                tone="warn"
+                title={`${football.unlinked.length} odds event(s) not linked to a game.`}
+              >
+                <ul className="mt-1 space-y-0.5">
+                  {football.unlinked.map((u) => (
+                    <li key={u.eventId}>
+                      {u.awayTeam} @ {u.homeTeam} · {formatTimestamp(u.commenceTime)}
+                    </li>
+                  ))}
+                </ul>
+              </Notice>
+            )}
+          </>
+        )}
       </section>
 
       <section aria-labelledby="games" className="space-y-2">
