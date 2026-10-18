@@ -630,7 +630,7 @@ The test is only honest if the model is fixed before it runs and cannot be re-ru
 
   `model_runs` allows one `test` row per version (a partial unique index).
 
-  Commit order on the branch: freeze (20d04a0), test script (30ab657), result (f567682). The record's NaN entries for metrics a model does not produce were rewritten as JSON null so Postgres accepts them; no result changed.
+  Commit order: freeze, test script, result, preserved on main by a rebase merge (8ab2547, af4c08f, a7b8cc9; on the PR #34 branch they were 20d04a0, 30ab657 and f567682, which is why the record's `code_sha` reads 30ab657). The record's NaN entries for metrics a model does not produce were rewritten as JSON null so Postgres accepts them; no result changed.
 
 - **Live forward test.** `model_predictions` is append-only:
   - The daily job adds one row per upcoming game (next 8 days) with the margin, total, team scores, P(home), the expected QBs and the additive contributions (ratings, home, QB, absences).
