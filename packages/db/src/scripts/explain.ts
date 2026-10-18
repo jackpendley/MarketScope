@@ -18,7 +18,11 @@ import {
   latestCompletedRun,
   latestQuotesForEvents,
   listGames,
+  currentWeek,
+  forwardTest,
   listSignals,
+  matchupsForWeek,
+  matchupWeeks,
   observationSummaries,
   ratingsForWeek,
   ratingVersion,
@@ -161,6 +165,16 @@ async function main() {
           );
         }
       }
+      await step("matchupWeeks (matchups week picker)", () => matchupWeeks(db, version));
+      const cur = await step("currentWeek (matchups default)", () =>
+        currentWeek(db, new Date().toISOString()),
+      );
+      if (cur) {
+        await step("matchupsForWeek (matchups page)", () =>
+          matchupsForWeek(db, { version, ...cur }),
+        );
+      }
+      await step("forwardTest (model scorecard)", () => forwardTest(db, version));
     }
 
     const results: {

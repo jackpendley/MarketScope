@@ -108,6 +108,21 @@ MarketScope Ratings for one weekly snapshot, best AdjEM first (definitions: `doc
 
 Rows carry the KenPom contract: AdjEM/AdjO/AdjD/AdjST/AdjPace with SEs and ranks, record, expected and Pythagorean wins, luck and its decomposition, SOS, and the Five Factors. `meta` gives `modelVersion` (`ratings-v1`; a synthetic demo database shows `synthetic-demo`), `season`, `week` and a disclaimer. Values are point-in-time model estimates, not betting advice. 404 `NOT_FOUND` before any ratings exist.
 
+## `GET /api/matchups`
+
+One week's games with pre-game MarketScope Ratings and the last model estimate stored before kickoff (`docs/DATA_DICTIONARY.md` → `model_predictions`).
+
+| Param    | Default                             | Rules                                                                 |
+| -------- | ----------------------------------- | --------------------------------------------------------------------- |
+| `season` | the next week with an unplayed game | a season from the first forward-test season on; otherwise the default |
+| `week`   | that week                           | a week without games falls back to the default week, then the latest  |
+
+Each row: game identity and kickoff, franchise abbreviations and names, final score (null until final), linked odds `eventId`, the nflverse close (home orientation, a labeled benchmark), each team's AdjEM and rank from the last snapshot before the game, and `estimate` (null when none was stored): expected margin and total, team scores, home win probability, expected QBs by name with their probability of playing, and the additive margin `contributions` (`ratings`, `home`, `qb`, `absences`). `meta` gives `modelVersion`, `season`, `week` and a disclaimer.
+
+## `GET /api/model`
+
+The live forward-test scorecard and the committed evaluation records. `data.scorecard`: games scored; margin MAE, win-probability Brier (the close's from no-vig moneylines) and total MAE for the model and the close, with the paired difference and a 95% game-bootstrap interval from 30 games; the share of games the model favorite won; a per-week table; calibration bins from 50 games. `data.games` lists every scored game, `data.pending` counts estimated games not yet final, and `data.runs` holds the `model_runs` records (the one-time 2025 test first). 404 `NOT_FOUND` before any model output exists.
+
 ## `GET /api/health/live`
 
 Liveness only: `{ "status": "ok" }` without touching the database. Used by the Playwright web-server check and suitable for process supervisors. Readiness and data health live in `/api/health/data`.

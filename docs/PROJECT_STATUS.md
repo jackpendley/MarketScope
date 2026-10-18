@@ -1,10 +1,10 @@
 # Project Status
 
-_Rewrite this file at the end of every session. Last updated: 2026-10-18 (session 1, continued; MS-033a)._
+_Rewrite this file at the end of every session. Last updated: 2026-10-18 (session 1, continued; MS-033b)._
 
 ## Current milestone
 
-**Phase 9 (MarketScope Ratings): MS-029 (harness), MS-030 (Kalman engine), MS-030b (KenPom contract + `rating_snapshots`) MS-031a (QB layer) and MS-031b (non-QB availability) are done. MS-032a (factor selection, probabilities) and MS-032b (ratings-v1 frozen, 2025 test, live forward test) and MS-033a (ratings and team pages) are done. Next: MS-033b (matchups, model scorecard).**
+**Phase 9 (MarketScope Ratings): MS-029 (harness), MS-030 (Kalman engine), MS-030b (KenPom contract + `rating_snapshots`) MS-031a (QB layer) and MS-031b (non-QB availability) are done. MS-032a (factor selection, probabilities), MS-032b (ratings-v1 frozen, 2025 test, live forward test), MS-033a (ratings and team pages) and MS-033b (matchups, scorecard, game panel) are done. Next: MS-034 (stretch: season simulation).**
 
 - **Scope extended 2026-10-17 (ADR-028):** football context and MarketScope Ratings, "KenPom for the NFL". The design is frozen in `docs/RATINGS.md`.
 - **Site:** deployed privately at https://marketscope-delta.vercel.app (user `marketscope`; the password is `VERCEL_SITE_PASSWORD` in `apps/web/.env.local`).
@@ -89,16 +89,22 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-18 (sessio
   - `model_runs` + `model_predictions` (migration 0013); daily `ingest predictions` (append-only, before kickoff) and `ingest model-runs`.
   - Parameter-comparison table in RATINGS.md.
 
-- **MS-033a (this PR):** ratings UI (ADR-040).
+- **MS-033a** (#36): ratings UI (ADR-040).
   - `/ratings`: KenPom table with week time machine, sortable ranks, AFC/NFC filter, ± SE, diverging rank shading.
   - `/teams/[abbr]`: ratings header, AdjEM trend with SE band, Five Factors with ranks, luck decomposition, schedule (opponent ranks then/now, last pre-kickoff model estimate), coaching staff.
   - `/api/ratings`; `queries/ratings.ts` with integration tests; synthetic ratings seed (`synthetic-demo`) and e2e tests; EXPLAIN on production (< 10 ms each).
+
+- **MS-033b (this PR):** matchups, scorecard and game panel (ADR-041).
+  - `/matchups`: a week's games (default: the next week with an unplayed game) with model scores, win probability, a contribution waterfall (ratings, home, QB, absences), expected QBs, the board consensus (or the nflverse close once final), and quality/excitement scores.
+  - `/model`: the live forward test (last pre-kickoff estimate vs result and close: margin MAE, Brier, total MAE, paired bootstrap CIs from 30 games, weekly table, calibration from 50) and the 2025 test record from `model_runs`.
+  - Game pages: a model panel for the linked football game. `/api/matchups`, `/api/model`; `queries/model.ts` with integration tests; nav adds Matchups.
+  - Forward test so far: 18 estimates, 0 scored (it began with today's week-6 late games).
 
 ## Tests
 
 - **Football pytest:** 88 (unit tests, plus integration against the migrated test DB; includes validation of the committed coaching CSV).
 - **Research pytest:** 25.
-- **TS:** db 41, shared 192, collector 51, web 91, e2e 26.
+- **TS:** db 46, shared 192, collector 51, web 101, e2e 33.
 
 ## Quotas
 
@@ -108,7 +114,7 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-18 (sessio
 ## Data (production, Supabase)
 
 - **Size:** ≈ 75 MB of odds data plus ≈ 20 MB of football tables (team-game stats 3 MB, snaps 9 MB, injuries 3 MB, the rest small).
-- **Migrations:** 0007–0012 applied in production.
+- **Migrations:** 0007–0013 applied in production.
 
 ## Waiting on Jack
 
@@ -131,9 +137,9 @@ Nothing blocking.
 
 ## Next task
 
-**MS-033b:**
+**MS-034 (stretch): season simulation.**
 
-1. **`/matchups`:** the week's games with model scores, win probability, contributions (ratings, home, QB, absences) and expected QBs, next to our consensus line. Game-quality and excitement scores.
-2. **`/model`:** live scorecard: the last estimate before kickoff vs results and vs the close (MAE, Brier, CIs once there are enough games), plus the 2025 test record from `model_runs`.
-3. **Game page panel:** the model estimate and its contributions on `/nfl/games/[id]`.
-4. Then **MS-034 (stretch):** season simulation.
+1. Simulate the rest of the season 10,000 times from the frozen ratings-v1 game model, propagating rating uncertainty (the filter covariance) and updating ratings inside each simulated branch.
+2. NFL tiebreakers to depth 3 (nflseedR logic), Week-18 rest behavior.
+3. Outputs: playoff, division and #1-seed odds and projected records, shown on `/ratings` and team pages as model estimates.
+4. Watch the forward test: once week 6–7 games are final, check `/model` against the stored rows.

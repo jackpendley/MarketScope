@@ -2,6 +2,7 @@ import "server-only";
 import {
   gameObservationStats,
   getGame,
+  getGames,
   latestQuotesForEvents,
   listGames,
   type Database,
@@ -9,7 +10,7 @@ import {
   type GameRow,
   type LatestQuoteRow,
 } from "@marketscope/db";
-import { BOARD_BOOKS } from "@marketscope/shared";
+import { BOARD_BOOKS, type ConsensusResult } from "@marketscope/shared";
 import { groupByEvent, toNormalizedEvent, toNormalizedQuote } from "@/lib/game-data";
 import { buildEventBoard, type EventBoard } from "@/lib/odds-board";
 
@@ -69,4 +70,20 @@ export async function loadGameDetail(db: Database, id: string): Promise<GameDeta
   ]);
   const withQuotes = { game, quotes };
   return { ...withQuotes, board: toBoard(withQuotes), stats };
+}
+
+/** The current board consensus (median home spread) for each linked odds event (2 queries). */
+export async function loadConsensus(
+  db: Database,
+  eventIds: readonly string[],
+): Promise<Map<string, ConsensusResult>> {
+  if (eventIds.length === 0) return new Map();
+  const [games, quotes] = await Promise.all([
+    getGames(db, eventIds),
+    latestQuotesForEvents(db, eventIds),
+  ]);
+  const byEvent = groupByEvent(quotes);
+  return new Map(
+    games.map((game) => [game.id, toBoard({ game, quotes: byEvent.get(game.id) ?? [] }).consensus]),
+  );
 }

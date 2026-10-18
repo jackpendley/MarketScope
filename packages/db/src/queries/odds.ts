@@ -65,6 +65,15 @@ export async function getGame(db: Database, id: string): Promise<GameRow | null>
   return row ?? null;
 }
 
+/** Several games by id (any order); unknown ids are skipped. */
+export async function getGames(db: Database, ids: readonly string[]): Promise<GameRow[]> {
+  if (ids.length === 0) return [];
+  return db
+    .select(gameColumns)
+    .from(events)
+    .where(inArray(events.id, [...ids]));
+}
+
 export interface LatestQuoteRow {
   eventId: string;
   bookmakerKey: string;
