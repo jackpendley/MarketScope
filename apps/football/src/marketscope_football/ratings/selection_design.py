@@ -40,3 +40,12 @@ RB_FEATURE = "avail_rb"
 NEW_HC_GAMES = 10
 NEW_OC_GAMES = 4
 EARLY_BODY_CLOCK_HOUR = 11.0
+
+# ---- Probabilities (pre-registered 2026-10-18, before the distribution was fitted) -----------
+# Margin distribution: P(margin = k | expected m) ∝ Normal(k; m, s) x w_|k| on integers, with key-number
+# multipliers w_0..w_KEY_MAX (w = 1 beyond) fitted with s by maximum likelihood on 1999-2015 closing
+# lines; for the model, s is refitted on its own 2016-22 walk-forward predictions (multipliers fixed).
+# Win probability = P(k > 0) + P(k = 0) / 2. Adopted for ratings-v1 only if its 2023-24 win-probability
+# log loss is no worse (point estimate) than Phi(m / sigma) (the MS-029 mapping); otherwise Phi stays.
+KEY_MAX = 21
+MARGIN_SUPPORT = 70
