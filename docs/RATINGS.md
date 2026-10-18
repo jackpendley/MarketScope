@@ -321,6 +321,16 @@ ADR-037. Validation 2023–24 (570 games), run once:
 - **Positional values (points per missing full-time starter):** OL 0.72, WR/TE 0.84, front seven 0.55, secondary 0.57 (ELWAY: 0.5–1 typical). RB 2.41 is noisy (rare absences).
 - **The close is still 0.41 ahead** (9.84).
 
+### Factor selection and probabilities (MS-032a)
+
+ADR-038; report `apps/football/reports/factor-selection.md`.
+
+- **None of the ten candidates passed the pre-registered rule.** Rest, bye, travel, time zones, body clock, altitude, division game, playoffs, new head coach and new play-caller were all tested. Only the new-head-coach effect (−1.4 points, t −2.2) passed the in-sample test, and it did not improve 2023–24.
+- **The RB absence value was dropped** (t −1.8).
+- **ratings-v1 = unit ratings + QB layer + four absence groups.**
+- **Key-number margin distribution:** 3 is 2.9× and 7 is 2.0× as likely as a smooth curve implies; ties 0.04×. It was adopted for win probability (log loss 0.6352 vs 0.6362).
+- **The model has no information against the close.** Its probability of covering the closing line scores worse than a coin flip (log loss 0.715 vs 0.693).
+
 ## Changelog
 
 - 2026-10-17: design frozen (ADR-028).
@@ -335,3 +345,4 @@ ADR-037. Validation 2023–24 (570 games), run once:
 - 2026-10-18: QB layer (MS-031a, ADR-036). QB continuity at the season boundary is handled by the QB feature's baseline rather than by conditioning ρ_s.
 - 2026-10-18: non-QB availability (MS-031b, ADR-037).
 - 2026-10-18: factor-selection rule pre-registered (MS-032), committed before any candidate was fitted.
+- 2026-10-18: factor selection run (no candidate kept; RB absence dropped) and the margin distribution adopted (ADR-038).

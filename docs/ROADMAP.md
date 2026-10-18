@@ -238,11 +238,11 @@ New Python app `apps/football/` (nflreadpy, polars, psycopg). The schema stays i
 - [x] **MS-031b** Non-QB availability (ADR-037):
   - Snap-share-weighted absences by position group × learned values, expected value over P(plays | status).
   - 2023–24: model MAE 10.25 (Elo 10.33, SRS 10.37, close 9.84); availability +0.08 (borderline).
-- [ ] **MS-032** Game model and freeze:
-  - Factor selection on 2023–24.
-  - Key-number-aware probabilities; 2025 test run once.
-  - Parameter comparison against 538, ELWAY, nfelo and Inpredictable.
-  - `ratings-v1` registered, immutable 2026 forward test.
+- [x] **MS-032a** Factor selection and probabilities (ADR-038):
+  - Pre-registered rule; none of 10 candidates kept; RB absence dropped.
+  - Key-number margin distribution adopted.
+  - Against the close the model's cover probabilities are worse than a coin flip.
+- [ ] **MS-032b** 2025 test (once), parameter comparison, freeze `ratings-v1`, live `model_predictions`.
 - [ ] **MS-033** UI:
   - `/ratings` (KenPom table, time machine), `/ratings/{factors,luck,sos}`, `/matchups`, `/teams/[abbr]`, `/coaches`, `/model` scorecard.
   - Game-page Matchup panel with the model line, explained.

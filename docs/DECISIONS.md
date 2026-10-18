@@ -577,3 +577,34 @@ AWS Lambda + EventBridge remains an optional later upgrade (Phase 3).
   - Without the availability layer it is +0.08 worse (CI −0.00 to +0.17), borderline.
   - Vs Elo −0.08 (CI −0.31 to +0.15); vs SRS −0.12 (CI −0.31 to +0.08).
   - The model now leads both benchmarks, but not yet beyond noise. The close remains 0.41 ahead.
+
+## ADR-038 — Factor selection and win probabilities for ratings-v1 (2026-10-18)
+
+**Context.** The factor catalog marks rest, travel, time zones, altitude, division, playoffs and coaching changes as `test`: each must earn its place. RATINGS.md also specifies a key-number-aware margin distribution. Both rules were pre-registered in `ratings/selection_design.py` and committed before any candidate or distribution was fitted (commits 25c9382 and 193548f).
+
+**Decision.**
+
+- **Selection rule:** a candidate is added alone to the MS-031 game layer and kept only if both:
+  - its 2016–22 coefficient has the expected sign with |t| ≥ 2 (HC1), and
+  - on 2023–24, paired against the MS-031 model, Δ MAE ≤ 0 and Δ log loss ≤ 0.
+
+  The RB absence value faced the same test by removal.
+
+- **Speed-up:** candidates are tested by refitting only the linear game layer on the recorded walk-forward feature matrix. This is identical to the harness; the matrix reproduces the frozen layer exactly.
+- **Margin distribution:** a normal kernel on integer margins times key-number multipliers for |k| ≤ 21.
+  - Shape fitted on 1999–2015 closing lines; scale refitted on the model's 2016–22 predictions.
+  - Win probability = P(k > 0) + ½ P(0).
+  - Adopted only if its 2023–24 log loss is no worse than Φ(m / σ).
+
+**Consequences.**
+
+- **No candidate factor passed.**
+  - Rest, bye, travel, time zones, body clock and altitude are near zero or the wrong sign on 2016–22. That is consistent with the post-2011 rest null (arXiv 2408.10867).
+  - Playoff home edge: +1.2 points (t 0.9).
+  - New head coach: −1.4 points per game (t −2.2, the only one past |t| = 2), but no 2023–24 improvement.
+  - RB absence (t −1.8) is dropped.
+- **ratings-v1 game layer:** unit channels + QB + four absence groups + home. Its 2023–24 Δ vs the MS-031 model is +0.01 (CI −0.03 to +0.06).
+- **Key-number multipliers:** 3 → 2.9×, 7 → 2.0×, 10 → 1.4×, 14 → 1.4×, ties 0.04×. Scale 13.66 for the close, 13.05 for the model (in-sample).
+  - Adopted: log loss 0.6352 vs 0.6362 (Δ −0.0010, CI −0.0048 to +0.0025).
+  - It also gives push and cover probabilities.
+- **Against the closing line:** the model's P(home covers the close) has a log loss of 0.715, worse than a coin flip (0.693). Its disagreements with the market carry no information about who covers. That is the expected result for a model 0.4 points less accurate than the close, and it is why the UI shows a model estimate, never a pick.

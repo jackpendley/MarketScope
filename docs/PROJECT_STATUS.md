@@ -1,10 +1,10 @@
 # Project Status
 
-_Rewrite this file at the end of every session. Last updated: 2026-10-18 (session 1, continued; MS-031b)._
+_Rewrite this file at the end of every session. Last updated: 2026-10-18 (session 1, continued; MS-032a)._
 
 ## Current milestone
 
-**Phase 9 (MarketScope Ratings): MS-029 (harness), MS-030 (Kalman engine), MS-030b (KenPom contract + `rating_snapshots`) MS-031a (QB layer) and MS-031b (non-QB availability) are done. Next: MS-032 (factor selection, probabilities, 2025 test, freeze v1).**
+**Phase 9 (MarketScope Ratings): MS-029 (harness), MS-030 (Kalman engine), MS-030b (KenPom contract + `rating_snapshots`) MS-031a (QB layer) and MS-031b (non-QB availability) are done. MS-032a (factor selection, probabilities) is done. Next: MS-032b (2025 test, freeze v1, live predictions).**
 
 - **Scope extended 2026-10-17 (ADR-028):** football context and MarketScope Ratings, "KenPom for the NFL". The design is frozen in `docs/RATINGS.md`.
 - **Site:** deployed privately at https://marketscope-delta.vercel.app (user `marketscope`; the password is `VERCEL_SITE_PASSWORD` in `apps/web/.env.local`).
@@ -73,14 +73,19 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-18 (sessio
   - 2023–24: overall null (Δ −0.00); QB-change games −0.19 (CI −0.53 to +0.16); oracle starter would add 0.08.
   - Play-by-play cache now includes `passer_id` (Actions cache key bumped to `pbp-v2`).
 
-- **MS-031b (this PR):** non-QB availability (ADR-037).
+- **MS-031b** (#32): non-QB availability (ADR-037).
   - Expected absences per group (OL, WR/TE, RB, front 7, DB) = Σ P(miss | report or IR) × recent snap share; OLS positional values (OL −0.72, WR/TE −0.84, front 7 −0.55, DB −0.57; RB −2.41 noisy).
   - **2023–24 model MAE 10.25** (Elo 10.33, SRS 10.37, close 9.84); availability +0.08 (CI −0.00 to +0.17); vs Elo −0.08 and vs SRS −0.12, CIs include 0.
   - Report next-week estimates show QB and absence contributions.
 
+- **MS-032a (this PR):** factor selection and probabilities (ADR-038; rules pre-registered in separate commits).
+  - None of 10 candidates kept (rest, bye, travel, time zones, body clock, altitude, division, playoffs, new HC, new play-caller); RB absence dropped.
+  - Key-number margin distribution adopted (3 → 2.9×, 7 → 2.0×, ties 0.04×).
+  - The model's cover probabilities vs the close are worse than a coin flip (no information against the market).
+
 ## Tests
 
-- **Football pytest:** 81 (unit tests, plus integration against the migrated test DB; includes validation of the committed coaching CSV).
+- **Football pytest:** 85 (unit tests, plus integration against the migrated test DB; includes validation of the committed coaching CSV).
 - **Research pytest:** 25.
 - **TS:** db 36, shared 192, collector 51, web 83, e2e 18.
 
@@ -115,13 +120,10 @@ Nothing blocking.
 
 ## Next task
 
-**MS-032: factor selection, probabilities, the 2025 test, freeze `ratings-v1`.**
+**MS-032b:**
 
-1. **Factor selection on 2023–24** (pre-register the rule first: keep a factor if its paired Δ MAE or Δ log loss CI excludes 0, or if it is a design-core component that does not hurt). Candidates are the catalog's `test` factors:
-   - rest/bye, travel, time zones and body clock, division game
-   - venue-specific home field, weather (2024 only), new head coach/play-caller
-   - playoffs, RB value shrinkage
-2. **Probabilities:** a key-number-aware margin distribution conditional on the expected margin (fit on 1999–2015), giving win probability and cover/total probabilities; reliability curves.
-3. **Run the 2025 test once** (`allow_test=True`), logged in a new `model_runs` table.
-4. **Parameter-comparison table** vs 538, ELWAY, nfelo and Inpredictable.
-5. **Freeze `ratings-v1`;** start immutable pre-kickoff `model_predictions` for 2026 (live forward test).
+1. `model_runs` and `model_predictions` tables (migration 0013, RLS).
+2. Freeze `ratings-v1` (params sha256), with rating_snapshots under that version.
+3. Run the 2025 test once (`allow_test=True`), logged in `model_runs` and `reports/test-2025.md`.
+4. Parameter-comparison table vs 538, ELWAY, nfelo and Inpredictable.
+5. Daily `ingest predictions`: append-only pre-kickoff predictions for upcoming games (the live forward test).
