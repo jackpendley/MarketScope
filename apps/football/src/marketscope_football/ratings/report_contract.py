@@ -23,6 +23,7 @@ from .fit import load_inputs
 from .kenpom_classic import classic_ratings, season_team_games
 from .luck import game_net_epa
 from .outputs import MODEL_VERSION, complete_slots, home_advantage_points, snapshots
+from .margin_dist import MarginDistribution
 from .qb import QBAdjuster, QBParams, player_names
 from .availability_adj import AvailabilityAdjuster
 from .qb_fit import availability_inputs, qb_inputs
@@ -97,7 +98,10 @@ def main() -> None:
             r = st_idx.loc[(x.game_id, team)]
             n = names.get(r["exp_qb"], r["exp_qb"] or "?")
             return n + (f" ({r['status']}, {r['p_exp']:.0%})" if r["p_exp"] < 1 else "")
-        est.append((x.away, x.home, (t - m) / 2, (t + m) / 2, float(win_probability(np.array([m]), sigma)[0]), t, m,
+        md = params["model"].get("margin_dist")
+        pw = (MarginDistribution(md["scale"], md["weights"]).p_home([m])[0] if md and md["adopted"]
+              else win_probability(np.array([m]), sigma)[0])
+        est.append((x.away, x.home, (t - m) / 2, (t + m) / 2, float(pw), t, m,
                     who(x.away), who(x.home), layer.w["qb"] * f["qb"], apts))
 
     last_full = latest_season - 1

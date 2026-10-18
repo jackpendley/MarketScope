@@ -26,6 +26,7 @@ from .design import BURN_IN_FROM, NO_CONTINUITY, VARIANTS
 from .engine import PARAMS_PATH, UNIT_CHANNELS, Engine, GameLayer, KalmanRatings, load_params
 from .fit import load_inputs
 from .kalman import STParams, UnitParams
+from .margin_dist import MarginDistribution
 from .qb import QBAdjuster, QBParams
 from .qb_fit import NO_AVAIL, NO_QB, ORACLE, UNIT_ONLY, availability_inputs, qb_inputs
 from .availability_adj import FEATURES as AVAIL_FEATURES, AvailabilityAdjuster
@@ -55,11 +56,13 @@ def kalman_factory(variant: str, sigma: float, layer: GameLayer | None = None, q
     params = (units, st_p, layer)
     last = int(games["season"].max())
     avail = AvailabilityAdjuster(availability_inputs(games, last)) if any(k.startswith("avail_") for k in layer.w) else None
+    md = json.loads(PARAMS_PATH.read_text())[variant].get("margin_dist")
+    dist = MarginDistribution(md["scale"], md["weights"]) if md and md["adopted"] else None  # same mapping for every variant
     if "qb" not in layer.w:
-        return lambda: KalmanRatings(variant, teams, params, obs, sf, wf, sigma, avail=avail)
+        return lambda: KalmanRatings(variant, teams, params, obs, sf, wf, sigma, avail=avail, dist=dist)
     qp = QBParams(**json.loads(PARAMS_PATH.read_text())[variant]["qb"])
     starters, qbg = qb_inputs(games, last)
-    return lambda: KalmanRatings(variant, teams, params, obs, sf, wf, sigma, avail=avail,
+    return lambda: KalmanRatings(variant, teams, params, obs, sf, wf, sigma, avail=avail, dist=dist,
                                  qb=QBAdjuster(qp, starters, qbg, layer.n_pass, qb_mode or "expected"))
 
 

@@ -18,7 +18,8 @@ from .design import WARMUP_FROM
 CACHE_DIR = Path(__file__).resolve().parents[3] / ".cache" / "schedules"
 COLUMNS = ["game_id", "season", "game_type", "week", "gameday", "gametime", "home_team", "away_team", "location",
            "home_score", "away_score", "result", "total", "spread_line", "total_line", "home_moneyline",
-           "away_moneyline", "div_game", "home_qb_id", "away_qb_id"]
+           "away_moneyline", "div_game", "home_qb_id", "away_qb_id",
+           "stadium", "home_rest", "away_rest", "home_coach", "away_coach"]
 # Columns a model must never see before its game is played (the runner drops them).
 RESULT_COLUMNS = ("home_score", "away_score", "margin", "total", "home_win")
 
