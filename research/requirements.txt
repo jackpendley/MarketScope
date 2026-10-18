@@ -2,4 +2,6 @@
 numpy==2.4.6
 pandas==3.0.6
 psycopg[binary]==3.3.6
+scikit-learn==1.8.0
+scipy==1.16.3
 pytest==9.1.1

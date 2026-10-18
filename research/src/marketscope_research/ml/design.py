@@ -56,3 +56,39 @@ def split_for_week(week: int) -> str:
     if week >= FORWARD_FROM_WEEK:
         return "forward"
     return "excluded"
+
+# ---- Model protocol (MS-025) ------------------------------------------------------------------
+# Fixed 2026-10-18 after the gate report (which showed the positive rate rising by week) and
+# BEFORE any model was fit. Hyperparameters are chosen on validation (models fit on train);
+# every model is then refit on train + validation and scored ONCE on the test week.
+LR_C_GRID = (0.01, 0.03, 0.1, 0.3, 1.0, 3.0)
+SMOOTHING_ROWS = 10  # empirical-rate baselines shrink each bucket toward the overall rate
+BOOTSTRAP_RESAMPLES = 2000
+CALIBRATION_EDGES = (0.0, 0.1, 0.2, 0.3, 0.5, 1.0)
+
+# Headline "will it move" model: features present in BOTH sources, so the same model can be
+# applied to live data (the forward check). Pinnacle is tested as an ablation on imported weeks.
+MOVE_FEATURES = [
+    "abs_consensus",
+    "books",
+    "hours_to_kickoff",
+    "mean_abs_dev",
+    "max_abs_dev",
+    "range",
+    "abs_outlier_dev",
+    "abs_move_6h",
+    "abs_move_24h",
+    "changes_48h",
+    "median_quote_age_h",
+    "dist_key3",
+    "dist_key7",
+    "on_key",
+    "half_point",
+    "totals_abs_move_24h",
+]
+MOVE_CATEGORICAL = ["dow_et"]
+PINNACLE_ABLATION = ["abs_pinnacle_dev"]
+
+# Direction model (rows where the consensus moved): signed, home-oriented features.
+DIRECTION_FEATURES = ["consensus", "outlier_dev", "move_6h", "move_24h", "mean_abs_dev"]
+DIRECTION_PINNACLE_ABLATION = ["pinnacle_dev"]
