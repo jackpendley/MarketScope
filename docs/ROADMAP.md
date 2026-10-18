@@ -232,9 +232,11 @@ New Python app `apps/football/` (nflreadpy, polars, psycopg). The schema stays i
   - `kenpom_classic` benchmark.
   - Point-in-time `rating_snapshots` for 2016–26.
   - Totals from pace × points per drive (2023–24: −0.36 vs naive, +0.26 vs the close).
-- [ ] **MS-031** QB and availability:
-  - QB state, expected starter, P(plays | status), positional absence values.
-  - Oracle vs expected-starter leakage lesson.
+- [x] **MS-031a** QB layer (ADR-036):
+  - Point-in-time expected starter (92% accurate), shrunk QB ratings, team QB baseline, P(plays | Questionable).
+  - Oracle vs expected starter quantified. 2023–24: overall null; QB-change games −0.19 (CI includes 0).
+- [ ] **MS-031b** Non-QB availability:
+  - Snap-share-weighted absences by position group × learned values, expected value over P(plays | status).
 - [ ] **MS-032** Game model and freeze:
   - Factor selection on 2023–24.
   - Key-number-aware probabilities; 2025 test run once.

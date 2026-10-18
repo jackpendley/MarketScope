@@ -26,6 +26,8 @@ from .design import BURN_IN_FROM, NO_CONTINUITY, VARIANTS
 from .engine import PARAMS_PATH, UNIT_CHANNELS, Engine, GameLayer, KalmanRatings, load_params
 from .fit import load_inputs
 from .kalman import STParams, UnitParams
+from .qb import QBAdjuster, QBParams
+from .qb_fit import qb_inputs
 
 MODEL = "MarketScope Ratings (Kalman)"
 
@@ -42,12 +44,33 @@ def net_epa_column(games: pd.DataFrame, obs: pd.DataFrame) -> pd.Series:
     return pd.Series([one(g) for g in games.itertuples(index=False)], index=games.index)
 
 
-def kalman_factory(variant: str, sigma: float, layer: GameLayer | None = None):
+NO_QB = "no QB adjustment"
+ORACLE = "oracle starter (actual QB, hindsight)"
+
+
+def kalman_factory(variant: str, sigma: float, layer: GameLayer | None = None, qb_mode: str | None = None):
+    """A fresh KalmanRatings per call. `qb_mode` "expected"/"oracle" adds the QB layer (layer must
+    have a "qb" weight)."""
     measure = "model" if variant == NO_CONTINUITY else variant
     games, obs, teams, sf, wf = load_inputs(measure, variant != NO_CONTINUITY)
     units, st_p, default_layer = load_params(variant)
-    params = (units, st_p, layer or default_layer)
-    return lambda: KalmanRatings(variant, teams, params, obs, sf, wf, sigma)
+    layer = layer or default_layer
+    params = (units, st_p, layer)
+    if qb_mode is None and "qb" in layer.w:
+        qb_mode = "expected"
+    if qb_mode is None:
+        return lambda: KalmanRatings(variant, teams, params, obs, sf, wf, sigma)
+    qp = QBParams(**json.loads(PARAMS_PATH.read_text())[variant]["qb"])
+    starters, qbg = qb_inputs(games, int(games["season"].max()))
+    return lambda: KalmanRatings(variant, teams, params, obs, sf, wf, sigma,
+                                 qb=QBAdjuster(qp, starters, qbg, layer.n_pass, qb_mode))
+
+
+def qb_change_games(games: pd.DataFrame) -> set[str]:
+    """Games where either team's expected starter differs from its previous starter or may not play."""
+    starters, _ = qb_inputs(games, int(games["season"].max()))
+    flag = (starters["exp_qb"] != starters["prev_qb"]) | (starters["p_exp"] < 1)
+    return set(starters.loc[flag, "game_id"])
 
 
 def current_ratings(games: pd.DataFrame) -> tuple[pd.DataFrame, tuple[int, int]]:
@@ -147,15 +170,32 @@ def main() -> None:
     tune_scores = score_table(tune, ed.REFERENCE)
     vs = {ref: score_table(val[val["model"].isin([MODEL, ref])], ref) for ref in ("Elo (538)", "SRS (ridge)")}
 
-    abl = {MODEL: kalman_factory("model", sigma)}
+    alts = params["model"]["game_alternatives"]
+    qb_abl = {MODEL: kalman_factory("model", sigma),
+              NO_QB: kalman_factory("model", sigma, GameLayer(**alts[NO_QB])),
+              ORACLE: kalman_factory("model", sigma, GameLayer(**alts[ORACLE]), "oracle")}
+    qb_preds = run_models(games, qb_abl, ed.VALIDATION_SEASONS)
+    qb_scores = score_table(qb_preds, MODEL)
+    changed = qb_change_games(games)
+    qb_split = []
+    for label, sel in (("QB-change games", qb_preds["game_id"].isin(changed)),
+                       ("other games", ~qb_preds["game_id"].isin(changed))):
+        part = qb_preds[sel & qb_preds["model"].isin([MODEL, NO_QB])]
+        r = score_table(part, NO_QB).set_index("model").loc[MODEL]
+        qb_split.append(f"| {label} | {int(r['games'])} | {r['d_margin_mae']:+.2f} ({r['d_margin_mae_lo']:+.2f} to "
+                        f"{r['d_margin_mae_hi']:+.2f}) | {r['d_brier']:+.4f} ({r['d_brier_lo']:+.4f} to {r['d_brier_hi']:+.4f}) |")
+
+    # MS-030 ablations, paired against the model without the QB layer (what they were fitted with).
+    abl = {NO_QB: kalman_factory("model", sigma, GameLayer(**alts[NO_QB]))}
     for v in [*VARIANTS, NO_CONTINUITY]:
         if v != "model" and v in params:
             abl[v] = kalman_factory(v, sigma)
-    for name, layer in params["model"]["game_alternatives"].items():
-        abl[name] = kalman_factory("model", sigma, GameLayer(**layer))
+    for name, layer in alts.items():
+        if name not in (NO_QB, ORACLE):
+            abl[name] = kalman_factory("model", sigma, GameLayer(**layer))
     abl[epa_ridge[0]] = epa_ridge[1]
     abl_preds = run_models(games, abl, ed.VALIDATION_SEASONS)
-    abl_scores = score_table(abl_preds, MODEL)
+    abl_scores = score_table(abl_preds, NO_QB)
 
     by_phase = val.assign(err=(val["margin"] - val["actual_margin"]).abs(),
                           phase=np.where(val["week"] <= 4, "weeks 1–4", "weeks 5+")).pivot_table(
@@ -202,10 +242,16 @@ def main() -> None:
           + " | ".join(f"{v:.2f}" for v in by_phase.loc[m]) + " |" for m in by_season.index], "",
         f"## Tuning seasons, {ed.TUNING_SEASONS[0]}–{ed.TUNING_SEASONS[-1]} (in-sample for the model)", "",
         *main_table(tune_scores), "",
-        "## Ablations (validation seasons, paired against the model)", "",
+        "## QB layer (MS-031a; validation seasons, paired against the model)", "",
+        *diff_table(qb_scores, MODEL), "",
+        "The oracle row uses the actual starter, known only at kickoff: the gap between it and the model is the "
+        "cost of not knowing who starts. Paired Δ (model with the QB layer minus without), by game type:", "",
+        "| Games | n | Δ margin MAE | Δ Brier |", "|---|---|---|---|", *qb_split, "",
+        "QB-change games: either team's expected starter differs from its previous starter, or may not play.", "",
+        "## Ablations of the unit ratings (validation seasons, paired against the model without the QB layer)", "",
         "Measurement and structural variants are refitted on 2016–22 from scratch; channel ablations keep the "
         "filters and refit the game layer; the ridge row tunes its half-life and λ on 2016–22.", "",
-        *diff_table(abl_scores, MODEL), "",
+        *diff_table(abl_scores, NO_QB), "",
         "## Fitted parameters (maximum likelihood, 2016–22)", "",
         "| Channel | σ² | q week off / def | q season off / def | ρ off same / changed | ρ def same / changed | bump off / def | HFA | log lik |",
         "|---|---|---|---|---|---|---|---|---|",

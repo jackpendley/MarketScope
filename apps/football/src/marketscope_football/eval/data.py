@@ -18,7 +18,7 @@ from .design import WARMUP_FROM
 CACHE_DIR = Path(__file__).resolve().parents[3] / ".cache" / "schedules"
 COLUMNS = ["game_id", "season", "game_type", "week", "gameday", "gametime", "home_team", "away_team", "location",
            "home_score", "away_score", "result", "total", "spread_line", "total_line", "home_moneyline",
-           "away_moneyline", "div_game"]
+           "away_moneyline", "div_game", "home_qb_id", "away_qb_id"]
 # Columns a model must never see before its game is played (the runner drops them).
 RESULT_COLUMNS = ("home_score", "away_score", "margin", "total", "home_win")
 
@@ -66,6 +66,7 @@ def games_frame(schedules: pd.DataFrame) -> pd.DataFrame:
     ok = g["home_moneyline"].notna() & g["away_moneyline"].notna()
     g["close_p_home"] = np.nan
     g.loc[ok, "close_p_home"] = [no_vig_home(h, a) for h, a in zip(g.loc[ok, "home_moneyline"], g.loc[ok, "away_moneyline"])]
-    cols = ["game_id", "season", "game_type", "week", "kickoff_utc", "home", "away", "neutral", "division", "home_score",
+    cols = ["game_id", "season", "game_type", "week", "kickoff_utc", "home", "away", "neutral", "division", "home_qb_id",
+            "away_qb_id", "home_score",
             "away_score", "margin", "total", "home_win", "close_margin", "close_total", "close_p_home"]
     return g[cols].sort_values(["kickoff_utc", "game_id"]).reset_index(drop=True)

@@ -26,15 +26,28 @@ CACHE_DIR = Path(__file__).resolve().parents[3] / ".cache" / "ratings"
 STAFF_CSV = Path(__file__).resolve().parents[3] / "data" / "coaching_staff.csv"
 
 
-def channel_frame(pbp: pl.DataFrame, luck: bool = True, cap: bool = True, wp: bool = True) -> pl.DataFrame:
-    """(game_id, team) -> pass/rush mean EPA under the chosen adjustments, and success rate over all
-    scrimmage plays (column `succ_epa` so every unit channel has the same shape), with Kish n_eff."""
+def _plays(pbp: pl.DataFrame, luck: bool, cap: bool, wp: bool) -> pl.DataFrame:
+    """Scrimmage plays with the adjusted EPA `v` and play weight `w` (ADR-029)."""
     epa = pl.col("epa")
     if luck:
         epa = epa - fumble_luck() - interception_luck()
     if cap:
         epa = epa.clip(-d.EPA_CAP, d.EPA_CAP)
-    sc = scrimmage(pbp).with_columns(v=epa, w=wp_weight() if wp else pl.lit(1.0))
+    return scrimmage(pbp).with_columns(v=epa, w=wp_weight() if wp else pl.lit(1.0))
+
+
+def qb_game_frame(pbp: pl.DataFrame) -> pl.DataFrame:
+    """(game_id, team, passer_id) -> dropbacks, sum of play weights and of weighted adjusted EPA, for
+    the QB ratings (the same measurement as the pass channel)."""
+    sc = _plays(pbp, True, True, True).filter((pl.col("qb_dropback") == 1) & pl.col("passer_id").is_not_null())
+    return sc.group_by("game_id", pl.col("posteam").alias("team"), "passer_id").agg(
+        pl.len().alias("dropbacks"), pl.col("w").sum().alias("sw"), (pl.col("w") * pl.col("v")).sum().alias("swx"))
+
+
+def channel_frame(pbp: pl.DataFrame, luck: bool = True, cap: bool = True, wp: bool = True) -> pl.DataFrame:
+    """(game_id, team) -> pass/rush mean EPA under the chosen adjustments, and success rate over all
+    scrimmage plays (column `succ_epa` so every unit channel has the same shape), with Kish n_eff."""
+    sc = _plays(pbp, luck, cap, wp)
     out = []
     for name, cond in (("pass", pl.col("qb_dropback") == 1), ("rush", pl.col("rush") == 1)):
         g = sc.filter(cond).group_by("game_id", pl.col("posteam").alias("team")).agg(

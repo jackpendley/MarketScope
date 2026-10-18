@@ -25,6 +25,7 @@ PBP_COLUMNS = [
     "posteam_score", "posteam_score_post", "fourth_down_converted", "fourth_down_failed",
     "penalty", "penalty_team", "penalty_yards", "field_goal_attempt", "field_goal_result", "kick_distance",
     "extra_point_attempt", "extra_point_result", "return_touchdown", "td_team",
+    "passer_id",  # the dropback player (scrambles and sacks included): QB ratings (MS-031)
 ]
 
 
