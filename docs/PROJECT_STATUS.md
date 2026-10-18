@@ -92,7 +92,7 @@ Nothing blocking.
 - **Defensive play-callers** are mostly the coordinator default (90% of team-weeks), so treat defensive-caller findings as provisional.
 - **Live injury history** begins 2026-10-18 (Week 6). Earlier weeks are final reports only.
 - **Market model v2:** re-run once the live forward check has ≥ 15 games.
-- **Generated reports:** run `pnpm exec prettier --write research/reports apps/football/reports` after regenerating.
+- **Generated reports:** run `pnpm exec prettier --write research/reports apps/football/reports apps/football/src/marketscope_football/ratings/params.json` after regenerating.
 - `docs/PERFORMANCE.md` thresholds still apply. GitHub disables crons after 60 days without repo activity.
 
 ## Next task
