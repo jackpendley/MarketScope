@@ -20,7 +20,7 @@ PARAMS_PATH = Path(__file__).with_name("params.json")
 
 
 UNIT_CHANNELS = ("pass", "rush", "succ", "ppd")
-FEATURES = ("pass", "rush", "succ", "ppd", "st")  # + "qb" when the QB layer is on (qb.py)
+FEATURES = ("pass", "rush", "succ", "ppd", "st")  # + "qb" (qb.py) and "avail_*" (availability_adj.py)
 
 
 @dataclass
@@ -187,15 +187,17 @@ class KalmanRatings:
     """Walk-forward model: filtered ratings before each week -> expected margin and win probability."""
 
     def __init__(self, name: str, teams: list[str], params: tuple, obs: pd.DataFrame, season_flags: dict,
-                 week_flags: dict, sigma: float, use_st: bool = True, qb=None):
+                 week_flags: dict, sigma: float, use_st: bool = True, qb=None, avail=None):
         units, st_p, self.layer = params
-        self.name, self.sigma, self.qb = name, sigma, qb
+        self.name, self.sigma, self.qb, self.avail = name, sigma, qb, avail
         self.engine = Engine(teams, units, st_p, obs, season_flags, week_flags, use_st)
 
     def _features(self, g) -> dict[str, float]:
         f = self.engine.features(g.home, g.away, bool(g.neutral), self.layer)
         if self.qb is not None:
             f["qb"] = self.qb.feature(g)
+        if self.avail is not None:
+            f.update(self.avail.features(g))
         return f
 
     def predict(self, games: pd.DataFrame) -> pd.DataFrame:

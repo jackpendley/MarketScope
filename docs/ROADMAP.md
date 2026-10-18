@@ -235,8 +235,9 @@ New Python app `apps/football/` (nflreadpy, polars, psycopg). The schema stays i
 - [x] **MS-031a** QB layer (ADR-036):
   - Point-in-time expected starter (92% accurate), shrunk QB ratings, team QB baseline, P(plays | Questionable).
   - Oracle vs expected starter quantified. 2023–24: overall null; QB-change games −0.19 (CI includes 0).
-- [ ] **MS-031b** Non-QB availability:
+- [x] **MS-031b** Non-QB availability (ADR-037):
   - Snap-share-weighted absences by position group × learned values, expected value over P(plays | status).
+  - 2023–24: model MAE 10.25 (Elo 10.33, SRS 10.37, close 9.84); availability +0.08 (borderline).
 - [ ] **MS-032** Game model and freeze:
   - Factor selection on 2023–24.
   - Key-number-aware probabilities; 2025 test run once.
