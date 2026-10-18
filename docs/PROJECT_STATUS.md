@@ -1,10 +1,10 @@
 # Project Status
 
-_Rewrite this file at the end of every session. Last updated: 2026-10-18 (session 1, continued; MS-032b)._
+_Rewrite this file at the end of every session. Last updated: 2026-10-18 (session 1, continued; MS-033a)._
 
 ## Current milestone
 
-**Phase 9 (MarketScope Ratings): MS-029 (harness), MS-030 (Kalman engine), MS-030b (KenPom contract + `rating_snapshots`) MS-031a (QB layer) and MS-031b (non-QB availability) are done. MS-032a (factor selection, probabilities) and MS-032b (ratings-v1 frozen, 2025 test, live forward test) are done. Next: MS-033 (UI).**
+**Phase 9 (MarketScope Ratings): MS-029 (harness), MS-030 (Kalman engine), MS-030b (KenPom contract + `rating_snapshots`) MS-031a (QB layer) and MS-031b (non-QB availability) are done. MS-032a (factor selection, probabilities) and MS-032b (ratings-v1 frozen, 2025 test, live forward test) and MS-033a (ratings and team pages) are done. Next: MS-033b (matchups, model scorecard).**
 
 - **Scope extended 2026-10-17 (ADR-028):** football context and MarketScope Ratings, "KenPom for the NFL". The design is frozen in `docs/RATINGS.md`.
 - **Site:** deployed privately at https://marketscope-delta.vercel.app (user `marketscope`; the password is `VERCEL_SITE_PASSWORD` in `apps/web/.env.local`).
@@ -83,17 +83,22 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-18 (sessio
   - Key-number margin distribution adopted (3 → 2.9×, 7 → 2.0×, ties 0.04×).
   - The model's cover probabilities vs the close are worse than a coin flip (no information against the market).
 
-- **MS-032b (this PR):** ratings-v1 (ADR-039).
+- **MS-032b** (#34, rebase-merged; #35 docs): ratings-v1 (ADR-039).
   - Frozen: params sha256 `c2f6ed74…` pinned and test-guarded.
   - **2025 test (once): MAE 10.06** (Elo 10.19, SRS 10.19, market-implied 10.30, close 9.67); vs Elo −0.13 (CI −0.42 to +0.17); vs close +0.39 (CI +0.07 to +0.70). Cover probabilities vs the close worse than a coin flip.
   - `model_runs` + `model_predictions` (migration 0013); daily `ingest predictions` (append-only, before kickoff) and `ingest model-runs`.
   - Parameter-comparison table in RATINGS.md.
 
+- **MS-033a (this PR):** ratings UI (ADR-040).
+  - `/ratings`: KenPom table with week time machine, sortable ranks, AFC/NFC filter, ± SE, diverging rank shading.
+  - `/teams/[abbr]`: ratings header, AdjEM trend with SE band, Five Factors with ranks, luck decomposition, schedule (opponent ranks then/now, last pre-kickoff model estimate), coaching staff.
+  - `/api/ratings`; `queries/ratings.ts` with integration tests; synthetic ratings seed (`synthetic-demo`) and e2e tests; EXPLAIN on production (< 10 ms each).
+
 ## Tests
 
 - **Football pytest:** 88 (unit tests, plus integration against the migrated test DB; includes validation of the committed coaching CSV).
 - **Research pytest:** 25.
-- **TS:** db 36, shared 192, collector 51, web 83, e2e 18.
+- **TS:** db 41, shared 192, collector 51, web 91, e2e 26.
 
 ## Quotas
 
@@ -126,11 +131,9 @@ Nothing blocking.
 
 ## Next task
 
-**MS-033: UI** (Next.js, `apps/web`):
+**MS-033b:**
 
-1. **Data access:** `packages/db/src/queries/ratings.ts` (snapshots by week, team history, predictions, model runs), with EXPLAIN review.
-2. **`/ratings`:** the KenPom table with week time machine, sortable columns, ranks, ± SE.
-3. **`/teams/[abbr]`:** header, Five Factors, schedule with estimates, luck decomposition, rating trend, coaching staff.
-4. **`/matchups`:** the week's games with model scores, win probabilities and contributions, next to the consensus.
-5. **`/model`:** live scorecard (last estimate before kickoff vs results and the close) and the 2025 test.
-6. **Labels everywhere:** "model estimate" with its error; never pick, value or edge language.
+1. **`/matchups`:** the week's games with model scores, win probability, contributions (ratings, home, QB, absences) and expected QBs, next to our consensus line. Game-quality and excitement scores.
+2. **`/model`:** live scorecard: the last estimate before kickoff vs results and vs the close (MAE, Brier, CIs once there are enough games), plus the 2025 test record from `model_runs`.
+3. **Game page panel:** the model estimate and its contributions on `/nfl/games/[id]`.
+4. Then **MS-034 (stretch):** season simulation.

@@ -657,3 +657,30 @@ The test is only honest if the model is fixed before it runs and cannot be re-ru
 - P(cover the close) scores worse than a coin flip again (0.714 vs 0.693).
 - **The honest summary:** across validation and test, ratings-v1 is consistently a little better than Elo and SRS, but never beyond noise. It is clearly behind the market, and it holds no information about the market's errors. The interesting results are the components (QB, absences, luck, the parameter table), not a better line.
 - Any later model is `ratings-v2`, with new rows. 2025 is no longer a clean test for it; the live 2026 forward test is.
+
+## ADR-040 — Ratings pages: server-rendered KenPom table, URL state, honest labels (2026-10-18)
+
+**Context.** MS-033 puts the KenPom contract (`rating_snapshots`) and the live forward test (`model_predictions`) on the site. The pages must read like KenPom: dense, ranked, browsable by week. They must also follow the model rules: point-in-time, labeled model estimates with their error, and no pick language.
+
+**Decision.**
+
+- **Server components only.**
+  - `/ratings` and `/teams/[abbr]` query Postgres directly (`queries/ratings.ts`).
+  - Sorting, conference filter, season and week live in the URL (plain GET forms and header links, like the odds board). That makes them shareable and back-button friendly, with no client JavaScript.
+- **Which model is shown:** the frozen `ratings-v1` when present, else the newest other version. A version name containing "synthetic" triggers the synthetic-data banner; the e2e database is seeded with `synthetic-demo`. `/api/ratings` returns the same snapshot.
+- **Ranks:**
+  - Each sortable column sorts by its rank (AdjD's rank 1 = fewest points allowed).
+  - Rank cells use a diverging scale: accent for the top eighths, danger for the bottom eighths, neutral in between.
+  - The rank number is always shown, so color is never the only signal.
+  - Five Factors ranks are computed on the page from the same snapshot.
+- **Team pages:**
+  - a server-rendered SVG trend of AdjEM with a ±1 SE band (one series, so no legend; native tooltips per point)
+  - Five Factors, the luck decomposition, and the coaching staff with play-callers
+  - a schedule with opponent ranks then/now and the last pre-kickoff model estimate (team perspective)
+- **Labels:** the ratings intro states that every value is a point-in-time model estimate and gives the 2025-test error next to the market's. Schedule estimates say "not picks".
+
+**Consequences.**
+
+- **Speed:** every ratings query runs in under 10 ms on production (PERFORMANCE.md).
+- **Mobile:** tables scroll inside their cards, with no page-level horizontal scroll (an e2e check at Pixel 7 width).
+- **Still to come:** `/matchups`, the `/model` scorecard and the game-page matchup panel (MS-033b). The forward test needs a few weeks of results before its scorecard means anything.

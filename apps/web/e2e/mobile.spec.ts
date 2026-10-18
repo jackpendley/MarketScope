@@ -23,3 +23,14 @@ test("board, detail, and history fit a phone screen without horizontal scrolling
   await expect(page.locator("figure").first()).toBeVisible();
   await expectNoHorizontalScroll(page);
 });
+
+test("ratings and team pages fit a phone screen (tables scroll inside their card)", async ({
+  page,
+}) => {
+  await page.goto("/ratings");
+  await expect(page.getByRole("heading", { name: "MarketScope Ratings" })).toBeVisible();
+  await expectNoHorizontalScroll(page);
+  await page.goto("/teams/KC");
+  await expect(page.getByRole("heading", { name: /Kansas City Chiefs/ })).toBeVisible();
+  await expectNoHorizontalScroll(page);
+});

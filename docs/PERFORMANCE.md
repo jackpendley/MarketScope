@@ -39,6 +39,16 @@ The tool runs the app's own query functions with representative inputs, captures
 
 The first run after the index rebuild was cold and up to 2× slower. Shared free-tier hardware also varies by about ±30%, so compare medians, not single runs.
 
+## Ratings pages (MS-033, production, 2026-10-18)
+
+| Query (caller)                   | Exec   | Rows out | Plan                                                                        | Verdict                                                                          |
+| -------------------------------- | ------ | -------- | --------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `ratingVersion` (ratings pages)  | 8.4 ms | 1        | Seq scan `rating_snapshots` (7,392 rows), group by version                  | Fine: the table grows by 32 rows a week. Revisit if several versions accumulate. |
+| `ratingWeeks` (week selector)    | 3.8 ms | 231      | Index-only scan on the primary key                                          | Fine.                                                                            |
+| `ratingsForWeek` (ratings table) | 0.3 ms | 32       | Index scan on the primary key `(model_version, season, week, team)`         | Fine.                                                                            |
+| `teamRatingHistory` (team page)  | 0.2 ms | 6        | Index scan `rating_snapshots_team_idx`                                      | Fine.                                                                            |
+| `teamGames` (team page schedule) | 1.0 ms | 17       | Per-game index lookups for opponent ranks and the last pre-kickoff estimate | Fine.                                                                            |
+
 ## Findings and fixes
 
 1. **Index null ordering must match the query (migration 0006).**
