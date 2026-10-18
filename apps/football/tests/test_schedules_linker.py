@@ -79,3 +79,12 @@ def test_unknown_team_and_no_game():
     r = match_events(events(("e1", "Springfield Isotopes", "Seattle Seahawks", "2026-09-11T00:35:00Z"),
                             ("e2", "Los Angeles Rams", "San Francisco 49ers", "2026-09-20T00:35:00Z")), GAMES, NAMES)
     assert [i["reason"] for i in r.issues] == ["unknown_team", "no_game"]
+
+
+def test_current_season_rolls_over_in_march():
+    from datetime import datetime, timezone
+
+    from marketscope_football.ingest import current_season
+
+    assert current_season(datetime(2027, 2, 14, tzinfo=timezone.utc)) == 2026
+    assert current_season(datetime(2026, 9, 10, tzinfo=timezone.utc)) == 2026

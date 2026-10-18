@@ -155,6 +155,7 @@ describe("Data API lock-down (ADR-018)", () => {
       "market_signals",
       "nfl_games",
       "nfl_ingest_runs",
+      "nfl_team_game_stats",
       "nfl_teams",
       "odds_observations",
     ]);

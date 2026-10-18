@@ -19,5 +19,5 @@ export async function setupTestDatabase(): Promise<void> {
 
 /** Empty every data table (bookmakers are re-seeded by the collector or tests as needed). */
 export async function resetDatabase(sql: Sql): Promise<void> {
-  await sql`TRUNCATE nfl_games, nfl_teams, nfl_ingest_runs, market_signals, odds_observations, ingestion_payloads, ingestion_runs, events RESTART IDENTITY CASCADE`;
+  await sql`TRUNCATE nfl_team_game_stats, nfl_games, nfl_teams, nfl_ingest_runs, market_signals, odds_observations, ingestion_payloads, ingestion_runs, events RESTART IDENTITY CASCADE`;
 }

@@ -179,6 +179,12 @@ export default async function DataCoveragePage() {
               >
                 Same teams and orientation, kickoff within 36 h
               </Stat>
+              <Stat
+                label="Team-game stats"
+                value={`${football.statsGames.toLocaleString()} / ${football.finalGames.toLocaleString()}`}
+              >
+                Final games aggregated from play-by-play (EPA, success, drives)
+              </Stat>
               {football.latestRun && (
                 <Stat label="Last football ingest" value={football.latestRun.status}>
                   <time dateTime={football.latestRun.startedAt}>

@@ -73,3 +73,24 @@ def apply_links(conn: psycopg.Connection, result: LinkResult) -> int:
         cur.executemany("UPDATE nfl_games SET event_id = %s::uuid WHERE game_id = %s",
                         [(e, g) for g, e in result.links])
     return len(result.links)
+
+
+def final_game_ids(conn: psycopg.Connection, seasons: list[int]) -> set[str]:
+    """Games with a final score in nfl_games; only these get team-game stats (no partial games)."""
+    rows = conn.execute(
+        "SELECT game_id FROM nfl_games WHERE season = ANY(%s) AND home_score IS NOT NULL", (seasons,)
+    ).fetchall()
+    return {r[0] for r in rows}
+
+
+def replace_team_game_stats(conn: psycopg.Connection, season: int, rows: list[dict], stats_version: str) -> int:
+    """Replace one season's rows wholesale, so a definition change never leaves a mix of versions."""
+    if not rows:
+        return 0
+    cols = list(rows[0].keys()) + ["stats_version"]
+    with conn.cursor() as cur:
+        cur.execute("DELETE FROM nfl_team_game_stats WHERE season = %s", (season,))
+        with cur.copy(f"COPY nfl_team_game_stats ({', '.join(cols)}) FROM STDIN") as copy:
+            for r in rows:
+                copy.write_row([*r.values(), stats_version])
+    return len(rows)

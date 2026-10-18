@@ -333,3 +333,21 @@ AWS Lambda + EventBridge remains an optional later upgrade (Phase 3).
 - Storage: aggregates, snaps for the current and previous season, ratings and predictions are estimated at about 30–40 MB. Measured after the backfill against the PERFORMANCE.md thresholds.
 - A new scheduled workflow (`football-data.yml`) reuses the existing `DATABASE_URL` secret. No new secrets, cloud resources or paid plans.
 - Expected and stated up front: the model should beat SRS and Elo and lose to the closing line. The interesting findings are which components matter, and where performance and price disagree.
+
+## ADR-029 — Team-game measurement layer: definitions frozen before ratings (2026-10-18)
+
+**Context.** MarketScope Ratings (ADR-028) observe each team-game through efficiency "channels". How those channels are defined (which plays count, how garbage time and turnovers are treated) shapes every rating. Choosing definitions after seeing ratings would be tuning on the answer.
+
+**Decision.**
+
+- **One row per team per final game** (`nfl_team_game_stats`), offense plus own special teams. Defense is the opponent's row, so offense and defense come from the same observations.
+- **Raw and model channels side by side.** Raw EPA follows nflfastR conventions (passes incl. sacks/scrambles and runs, including penalty-nullified plays). The model channel (`adj_*`) applies, in order:
+  1. a **luck adjustment** that replaces fumble-recovery and interception outcomes with expectations (recoveries at the 2016–22 lost rate, 46.1%; interceptions at 19.0% of passes defensed);
+  2. a **cap** at ±4.5 EPA per play (≈ the 1st/99th percentile), so one return touchdown cannot dominate a game;
+  3. **win-probability weighting**: full weight inside 10–90% WP, falling linearly to 0.25 at the extremes (FPI-style garbage-time handling without discarding plays).
+- **Constants are fit on 2016–22 only** (`python -m marketscope_football.luck_fit`) and frozen in `design.py`. Changing any of them bumps `STATS_VERSION`, and each season is replaced wholesale, so versions never mix.
+- **Play-by-play stays out of Postgres.** A gitignored Parquet cache with a manifest (nflreadpy version, rows, SHA-256) records exactly what each run aggregated. The DB holds ~6K rows (≈ 2 MB).
+- **Cross-check, not trust.** Counts must match nflverse's independently built team stats; EPA must match once aligned to their definition. The report is committed.
+- **Automation.** `football-data.yml` runs daily at 13:00 UTC for the current season (schedules/results/links, then team stats), reusing the existing `DATABASE_URL` secret. Runs are idempotent per UTC day and data hash.
+
+**Consequences.** Whether each treatment helps (luck adjustment, WP weighting, cap) is an ablation in MS-030, measured on 2023–24, not an assumption. League-wide luck relative to the 2016–22 baseline is not exactly zero in later seasons (interception rates fell), which shifts all teams equally and cancels in opponent-adjusted ratings.
