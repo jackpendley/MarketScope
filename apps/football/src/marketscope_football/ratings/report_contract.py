@@ -75,12 +75,12 @@ def main() -> None:
 
     # Model estimates for the next unplayed games (same engine state as the latest snapshot), with the
     # QB layer replayed through the same games.
-    starters, qbg = qb_inputs(games, latest_season, refresh=True)
+    starters, qbg = qb_inputs(games, latest_season, refresh={latest_season})
     adj = QBAdjuster(QBParams(**params["model"]["qb"]), starters, qbg, layer.n_pass)
     played = complete_slots(games[games["margin"].notna() & (games["season"] >= BURN_IN_FROM)], obs)
     for _, slot in played.groupby(["season", "week"], sort=True):
         adj.update(slot)
-    av = AvailabilityAdjuster(availability_inputs(games, latest_season, refresh=True))
+    av = AvailabilityAdjuster(availability_inputs(games, latest_season, refresh={latest_season}))
     names = player_names()
     st_idx = starters.set_index(["game_id", "team"])
     nxt = games[(games["season"] == latest_season) & games["margin"].isna()]

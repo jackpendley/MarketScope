@@ -690,3 +690,68 @@ export const ratingSnapshots = pgTable(
     index("rating_snapshots_team_idx").on(t.team, t.season, t.week),
   ],
 ).enableRLS();
+
+/**
+ * Model evaluation runs (MS-032b, ADR-039): one row per scored run of a frozen model version, e.g. the
+ * one-time 2025 test. A version can have only one "test" run.
+ */
+export const modelRuns = pgTable(
+  "model_runs",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    modelVersion: text().notNull(),
+    /** validation, test (the untouched season, once), forward (live scorecard snapshots). */
+    runKind: text().notNull(),
+    seasons: text().notNull(),
+    games: integer().notNull(),
+    /** Per-model metrics with CIs, as written by the report generator. */
+    metrics: jsonb().$type<Record<string, unknown>>().notNull(),
+    /** sha256 of the canonical params JSON the run used. */
+    paramsSha256: text().notNull(),
+    codeSha: text().notNull(),
+    notes: text(),
+    ranAt: tstz().notNull(),
+    createdAt: tstz().notNull().defaultNow(),
+  },
+  (t) => [
+    check("model_runs_kind", sql`${t.runKind} IN ('validation', 'test', 'forward')`),
+    uniqueIndex("model_runs_one_test_per_version").on(t.modelVersion).where(sql`${t.runKind} = 'test'`),
+  ],
+).enableRLS();
+
+/**
+ * Live forward test (MS-032b, ADR-039): append-only model estimates made before kickoff. Each daily run
+ * adds a row per upcoming game; rows are never updated. The scorecard uses the last row before kickoff.
+ */
+export const modelPredictions = pgTable(
+  "model_predictions",
+  {
+    modelVersion: text().notNull(),
+    gameId: text()
+      .notNull()
+      .references(() => nflGames.gameId, { onDelete: "cascade" }),
+    predictedAt: tstz().notNull(),
+    kickoffUtc: tstz().notNull(),
+    homeTeam: text().notNull(),
+    awayTeam: text().notNull(),
+    /** Expected home margin (points) and the model's total. */
+    expectedMargin: doublePrecision().notNull(),
+    expectedTotal: doublePrecision(),
+    homeScore: doublePrecision(),
+    awayScore: doublePrecision(),
+    pHome: doublePrecision().notNull(),
+    /** Expected starting QBs (gsis ids) and the probability each plays. */
+    homeQb: text(),
+    awayQb: text(),
+    homeQbP: doublePrecision(),
+    awayQbP: doublePrecision(),
+    /** Additive contributions to the margin, e.g. {"ratings": 3.1, "home": 0.3, "qb": -1.2, "absences": -0.4}. */
+    contributions: jsonb().$type<Record<string, number>>().notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.modelVersion, t.gameId, t.predictedAt] }),
+    check("model_predictions_before_kickoff", sql`${t.predictedAt} < ${t.kickoffUtc}`),
+    check("model_predictions_p_range", sql`${t.pHome} >= 0 AND ${t.pHome} <= 1`),
+    index("model_predictions_game_idx").on(t.gameId),
+  ],
+).enableRLS();

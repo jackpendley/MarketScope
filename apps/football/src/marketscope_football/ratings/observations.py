@@ -63,6 +63,20 @@ def channel_frame(pbp: pl.DataFrame, luck: bool = True, cap: bool = True, wp: bo
         succ, on=["game_id", "team"], how="full", coalesce=True)
 
 
+def per_season(name: str, seasons: list[int], fetch, refresh: bool | set[int] = False) -> pd.DataFrame:
+    """Concatenate one cached Parquet file per season (CACHE_DIR/<name>_<season>.parquet), fetching
+    missing seasons and those in `refresh` (True = all). Past seasons rarely change, so the daily job
+    refreshes only the current one."""
+    CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    frames = []
+    for s in seasons:
+        path = CACHE_DIR / f"{name}_{s}.parquet"
+        if refresh is True or (isinstance(refresh, set) and s in refresh) or not path.exists():
+            fetch(s).to_parquet(path)
+        frames.append(pd.read_parquet(path))
+    return pd.concat(frames, ignore_index=True)
+
+
 def load_observations(seasons: list[int], variant: str = "model", refresh: bool = False) -> pd.DataFrame:
     """One row per (game_id, team): unit channel values and n_eff (pass/rush EPA, success rate, points
     per drive `ppd_epa` with n = drives), plus net special-teams EPA."""

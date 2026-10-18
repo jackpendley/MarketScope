@@ -26,7 +26,7 @@ import polars as pl
 
 from ..pbp import load_season
 from ..schedules import FRANCHISE
-from .observations import CACHE_DIR, qb_game_frame
+from .observations import CACHE_DIR, per_season, qb_game_frame
 
 P_PLAYS_QUESTIONABLE = 0.637
 TIMESTAMPED_DEPTH_FROM = 2025
@@ -49,53 +49,42 @@ class QBParams:
 
 # ---- Data (cached) --------------------------------------------------------------------------
 
-def load_qb_games(seasons: list[int], refresh: bool = False) -> pd.DataFrame:
-    path = CACHE_DIR / f"qb_games_{seasons[0]}_{seasons[-1]}.parquet"
-    if path.exists() and not refresh:
-        return pd.read_parquet(path)
-    CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    df = pl.concat([qb_game_frame(load_season(s)) for s in seasons]).to_pandas()
-    df["team"] = df["team"].map(_fr)
-    df.to_parquet(path)
-    return df
+def load_qb_games(seasons: list[int], refresh: bool | set[int] = False) -> pd.DataFrame:
+    def fetch(s):
+        df = qb_game_frame(load_season(s)).to_pandas()
+        df["team"] = df["team"].map(_fr)
+        return df
+    return per_season("qb_games", seasons, fetch, refresh)
 
 
-def load_depth(seasons: list[int], refresh: bool = False) -> pd.DataFrame:
+def load_depth(seasons: list[int], refresh: bool | set[int] = False) -> pd.DataFrame:
     """QB depth-chart rows: season, week (weekly charts), dt (timestamped charts), team, rank, gsis_id."""
-    path = CACHE_DIR / f"qb_depth_{seasons[0]}_{seasons[-1]}.parquet"
-    if path.exists() and not refresh:
-        return pd.read_parquet(path)
-    frames = []
-    for s in seasons:
+    def fetch(s):
         d = nfl.load_depth_charts([s]).to_pandas()
         if s < TIMESTAMPED_DEPTH_FROM:
             d = d[(d["position"] == "QB") & d["week"].notna() & d["depth_team"].astype(str).isin(["1", "2"])]
-            frames.append(pd.DataFrame({"season": s, "week": d["week"].astype(int), "dt": pd.NaT,
-                                        "team": d["club_code"].map(_fr), "rank": d["depth_team"].astype(int),
-                                        "gsis_id": d["gsis_id"]}))
-        else:
-            d = d[(d["pos_abb"] == "QB") & d["pos_rank"].isin([1, 2])]
-            frames.append(pd.DataFrame({"season": s, "week": -1, "dt": pd.to_datetime(d["dt"], utc=True),
-                                        "team": d["team"].map(_fr), "rank": d["pos_rank"].astype(int),
-                                        "gsis_id": d["gsis_id"]}))
-    df = pd.concat(frames, ignore_index=True)
-    CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    df.to_parquet(path)
+            return pd.DataFrame({"season": s, "week": d["week"].astype(int), "dt": pd.NaT,
+                                 "team": d["club_code"].map(_fr), "rank": d["depth_team"].astype(int),
+                                 "gsis_id": d["gsis_id"]})
+        d = d[(d["pos_abb"] == "QB") & d["pos_rank"].isin([1, 2])]
+        return pd.DataFrame({"season": s, "week": -1, "dt": pd.to_datetime(d["dt"], utc=True),
+                             "team": d["team"].map(_fr), "rank": d["pos_rank"].astype(int), "gsis_id": d["gsis_id"]})
+    df = per_season("qb_depth", seasons, fetch, refresh)
+    df["dt"] = pd.to_datetime(df["dt"], utc=True)
     return df
 
 
-def load_injury_status(seasons: list[int], refresh: bool = False) -> pd.DataFrame:
+def load_injury_status(seasons: list[int], refresh: bool | set[int] = False) -> pd.DataFrame:
     """Final weekly injury-report status per player: season, week, team, gsis_id, position, report_status."""
-    path = CACHE_DIR / f"injuries_{seasons[0]}_{seasons[-1]}.parquet"
-    if path.exists() and not refresh:
-        return pd.read_parquet(path)
-    d = nfl.load_injuries(seasons).to_pandas()
-    df = pd.DataFrame({"season": d["season"].astype(int), "week": d["week"].astype(int), "team": d["team"].map(_fr),
-                       "gsis_id": d["gsis_id"], "position": d["position"], "report_status": d["report_status"]})
-    df = df.drop_duplicates(["season", "week", "team", "gsis_id"], keep="last")
-    CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    df.to_parquet(path)
-    return df
+    def fetch(s):
+        try:
+            d = nfl.load_injuries([s]).to_pandas()
+        except Exception:  # a season without reports yet
+            return pd.DataFrame(columns=["season", "week", "team", "gsis_id", "position", "report_status"])
+        df = pd.DataFrame({"season": d["season"].astype(int), "week": d["week"].astype(int), "team": d["team"].map(_fr),
+                           "gsis_id": d["gsis_id"], "position": d["position"], "report_status": d["report_status"]})
+        return df.drop_duplicates(["season", "week", "team", "gsis_id"], keep="last")
+    return per_season("injuries", seasons, fetch, refresh)
 
 
 def player_names(refresh: bool = False) -> dict[str, str]:

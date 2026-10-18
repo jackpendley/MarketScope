@@ -31,7 +31,7 @@ NO_AVAIL = "no availability adjustment"
 ORACLE = "oracle starter (actual QB, hindsight)"
 
 
-def availability_inputs(games: pd.DataFrame, last_season: int, refresh: bool = False) -> pd.DataFrame:
+def availability_inputs(games: pd.DataFrame, last_season: int, refresh: bool | set[int] = False) -> pd.DataFrame:
     """Point-in-time expected absences per team-game (availability_adj.py)."""
     seasons = list(range(SNAPS_FROM, last_season + 1))
     g = games[games["season"] >= SNAPS_FROM]
@@ -39,7 +39,7 @@ def availability_inputs(games: pd.DataFrame, last_season: int, refresh: bool = F
                     load_reserve(seasons, refresh))
 
 
-def qb_inputs(games: pd.DataFrame, last_season: int, refresh: bool = False):
+def qb_inputs(games: pd.DataFrame, last_season: int, refresh: bool | set[int] = False):
     """Expected starters for every team-game since BURN_IN_FROM, and QB dropbacks per game.
     `refresh` re-reads the nflverse depth charts, injury reports and play-by-play aggregates."""
     seasons = list(range(BURN_IN_FROM, last_season + 1))
