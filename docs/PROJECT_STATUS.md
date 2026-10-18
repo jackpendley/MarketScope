@@ -1,10 +1,10 @@
 # Project Status
 
-_Rewrite this file at the end of every session. Last updated: 2026-10-17 (session 1, continued)._
+_Rewrite this file at the end of every session. Last updated: 2026-10-17 (session 1, continued; scope extension)._
 
 ## Current milestone
 
-**Phases 0–6 are complete. Next: Phase 7 (ML baseline).** The site is deployed privately at https://marketscope-delta.vercel.app (user `marketscope`; the password is `VERCEL_SITE_PASSWORD` in `apps/web/.env.local`).
+**Phases 0–6 are complete. Scope extended 2026-10-17 (ADR-028): football context and MarketScope Ratings, "KenPom for the NFL". Next: Phase 7, MS-024 (market ML gate).** The site is deployed privately at https://marketscope-delta.vercel.app (user `marketscope`; the password is `VERCEL_SITE_PASSWORD` in `apps/web/.env.local`).
 
 ## Done so far
 
@@ -48,18 +48,29 @@ Nothing blocking. Optional: mark the GitGuardian false-positive incident as reso
 
 ## Known issues / open decisions
 
-- **Phase 7 data gate:** decide thresholds from current data before modelling (games, positive labels per class). The study's 476 scored events from 83 games suggests a modest but workable sample.
-- **Revisit thresholds** are in `docs/PERFORMANCE.md`. The main one: `gameCoverage` > 500 ms means moving it to a summary table.
+- **Phase 7 gate:** the thresholds are pre-registered in `research/README.md` before results are read: ≥ 60 games, ≥ 150 positives, ≥ 15 test games.
+- **Phase 8 checks to run on first contact:**
+  - `nflreadpy.load_injuries` for 2025–26 (a 2025 issue reported it broken).
+  - The sign convention of the nflverse `spread_line`, checked against our consensus.
+- **Coaching staff** (coordinators, play-callers) has no free dataset. It will be a curated, sourced CSV (MS-027).
+- Revisit thresholds are in `docs/PERFORMANCE.md`. The main one: `gameCoverage` > 500 ms means moving it to a summary table.
 - GitHub disables scheduled workflows after 60 days without repo activity.
 - Revisit TS 7 when typescript-eslint supports it (ADR-004).
 
 ## Next task
 
-**Phase 7, MS-024: ML data gate and feature table.**
+**Phase 7, MS-024: market ML gate and feature table** (branch `ms-024-ml-gate`, `research/src/marketscope_research/ml/`).
 
-1. Define the prediction target. Candidate: "the consensus home spread moves ≥ 0.5 pts in the next 24 h", from the point-in-time consensus series.
-2. Count eligible snapshots and positives per game. Document the gate thresholds; if the data falls short, publish exploratory analysis only.
-3. Build a point-in-time feature table (SQL/pandas in `research/`): dispersion, divergence state, recent moves, time to kickoff, key-number proximity. Include a leakage audit.
-4. Use chronological, game-grouped splits.
+1. Pre-register the targets and gate in `research/README.md`:
+   - **Primary:** |consensus(t+24h) − consensus(t)| ≥ 0.5, nearest snapshot within ±3 h.
+   - **Secondary:** direction, given a move.
+2. Write the gate report: games, positives, missingness by source, week and time to kickoff.
+3. Build the point-in-time feature table, with a leakage-audit test that a planted leaky feature must fail.
+4. Use a chronological split, grouped by game.
 
-**Then MS-025:** baselines (majority, empirical frequency, volatility heuristic, logistic regression); Brier, log loss, calibration, game-clustered CIs; `docs/MODEL_CARD.md`.
+**Then:**
+
+- MS-025: baselines, metrics with game-clustered CIs, `docs/MODEL_CARD.md`.
+- Phase 8: `apps/football`, nflverse ingest, migration 0007.
+
+The full plan is in ROADMAP Phases 7–11 and `docs/RATINGS.md`.

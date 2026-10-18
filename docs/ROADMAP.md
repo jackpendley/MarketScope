@@ -6,16 +6,31 @@ Status legend: `[x]` done · `[~]` in progress · `[ ]` not started
 
 ## Goals
 
-1. **Product:** "Compare the market. Replay its history. Investigate the signals. Test the evidence."
+1. **Product:** "Compare the market. Replay its history. **Understand the matchup.** Investigate the signals. Test the evidence."
    - The odds board for 5 books (DraftKings, FanDuel, BetMGM, Caesars, Hard Rock AZ) is the entry point.
    - Historical replay and evidence-backed signals are the differentiators.
+   - **Football context (added 2026-10-17, ADR-028): "KenPom for the NFL".** MarketScope Ratings show adjusted offense, defense, special teams and pace (AdjO, AdjD, AdjST, AdjPace, AdjEM) with uncertainty, luck, strength of schedule and the Five Factors. Alongside them:
+     - results
+     - market-implied ratings
+     - injuries and availability
+     - weather, rest and travel
+     - coaching and play-callers
+     - a weekly Matchups page with predicted scores
+     - a labeled, explained model line next to the market
+     - a public live scorecard of how the model is doing
+
+     Design: `docs/RATINGS.md`.
 2. **Career:** a deployed, tested, documented, data-intensive system that Jack can explain without AI. It should demonstrate:
    - backend and API design
    - relational modeling
    - ingestion and data quality
    - cloud deployment
    - honest ML evaluation
-3. **Integrity:** no fabricated data, no causal claims from correlations, and uncertainty shown in the UI.
+   - multi-source pipelines (Python ↔ Postgres)
+   - point-in-time feature engineering
+   - state-space (Kalman) rating models
+   - walk-forward evaluation and event studies
+3. **Integrity:** no fabricated data, no causal claims from correlations, and uncertainty shown in the UI. Model output is always a labeled estimate with its measured error, never a pick.
 
 **Definition of done (portfolio-ready):**
 
@@ -166,17 +181,79 @@ Status legend: `[x]` done · `[~]` in progress · `[ ]` not started
   - Migration 0006: sort-matching `DESC NULLS FIRST` indexes (Signal Lab `LIMIT` stops early).
   - Fix: run-health queries count live runs only. Storage projection: about 35% of the free tier by the Super Bowl.
 
-## Phase 7 — ML baseline (MS-024–025)
+## Phase 7 — Market ML baseline (MS-024–025)
 
-- [ ] Gate: enough distinct games and positive labels, with thresholds documented. Otherwise publish exploratory analysis only.
-- [ ] Point-in-time features. Label: |consensus(t+24h) − consensus(t)| ≥ 0.5, with tolerance; missing labels stay missing.
-- [ ] Chronological, game-grouped split.
-- [ ] Baselines: majority class, empirical rate, volatility heuristic, logistic regression.
-- [ ] Report Brier, log loss, calibration, and bootstrap CIs. Write `docs/MODEL_CARD.md`.
+Market-only first, so Phase 10 can measure what football features add. Lives in `research/src/marketscope_research/ml/`.
 
-## Phase 8 — Portfolio release (MS-026–028)
+- [ ] **MS-024** Targets, gate, feature table.
+  - **Primary target:** |consensus(t+24h) − consensus(t)| ≥ 0.5, using the nearest snapshot within ±3 h. If none exists, the label is missing. Board books only, at least 3.
+  - **Secondary target:** direction, given a move.
+  - **Gate,** pre-registered before results: ≥ 60 games, ≥ 150 positives, ≥ 15 test games. Otherwise exploratory only.
+  - **Features:** dispersion, movement, volatility, quote age, key-number proximity, active divergence, Pinnacle − board (with a missingness flag), totals movement.
+  - **Leakage audit:** a planted leaky feature must fail it.
+  - **Split:** chronological and grouped by game.
+- [ ] **MS-025** Baselines and model card.
+  - Models: majority, empirical rate, volatility heuristic, logistic regression, and an outlier-direction rule.
+  - Metrics: Brier, log loss, reliability, precision/recall, each with a game-clustered CI, broken out by time-to-kickoff window.
+  - `docs/MODEL_CARD.md`.
 
-- [ ] Architecture diagram, schema docs, screenshots, accessibility pass, secret audit, case-study write-up.
+## Phase 8 — Football data foundation (MS-026–028)
+
+New Python app `apps/football/` (nflreadpy, polars, psycopg). The schema stays in Drizzle. Raw play-by-play stays in a gitignored Parquet cache; only aggregates go to Postgres.
+
+- [ ] **MS-026** Migration 0007:
+  - Tables: `nfl_teams`, `nfl_games` (results, venue, observed weather, referee, coaches, home-oriented nflverse close), `nfl_ingest_runs`.
+  - Linker from odds `events` to games.
+  - Seasons 2016–2026.
+  - Data-quality check: the nflverse close vs our last-pregame consensus, which also confirms the sign convention.
+- [ ] **MS-027** Data tables:
+  - Team-game efficiency channels: raw, neutral and luck-adjusted variants.
+  - Snaps, injuries (live: snapshotted daily), depth charts.
+  - Curated `nfl_coaching_staff` with play-callers and sources.
+  - P(plays | status, position).
+  - `football-data.yml`, using the existing secret.
+- [ ] **MS-028** Weather and context:
+  - Open-Meteo point-in-time forecasts.
+  - Rest, travel, time zones, altitude, coaching tenure, Week-18 state.
+
+## Phase 9 — MarketScope Ratings (MS-029–034)
+
+- [ ] **MS-029** Evaluation harness:
+  - Walk-forward runner, clustered CIs, ablations.
+  - Benchmarks: naive, SRS, Elo, market-implied ratings.
+- [ ] **MS-030** Kalman unit ratings in the KenPom contract:
+  - AdjO, AdjD, AdjST, AdjPace, AdjEM, each with a standard error.
+  - Luck and its decomposition, SOS, Five Factors.
+  - `kenpom_classic` benchmark.
+  - Point-in-time snapshots for 2016–26.
+- [ ] **MS-031** QB and availability:
+  - QB state, expected starter, P(plays | status), positional absence values.
+  - Oracle vs expected-starter leakage lesson.
+- [ ] **MS-032** Game model and freeze:
+  - Factor selection on 2023–24.
+  - Key-number-aware probabilities; 2025 test run once.
+  - Parameter comparison against 538, ELWAY, nfelo and Inpredictable.
+  - `ratings-v1` registered, immutable 2026 forward test.
+- [ ] **MS-033** UI:
+  - `/ratings` (KenPom table, time machine), `/ratings/{factors,luck,sos}`, `/matchups`, `/teams/[abbr]`, `/coaches`, `/model` scorecard.
+  - Game-page Matchup panel with the model line, explained.
+- [ ] **MS-034** (stretch) Season simulation: playoff, division and #1-seed odds.
+
+## Phase 10 — Research studies + ML with football features (MS-035–036)
+
+- [ ] **MS-035** Pre-registered studies:
+  - R1: market accuracy over time.
+  - R2: injury-news event study.
+  - R3: weather → totals.
+  - R4: is performance priced?
+  - R5: luck regression.
+  - R6: model + market blend.
+  - R7: play-caller impact.
+- [ ] **MS-036** Re-run the Phase 7 pipeline with football features. Report the lift, with CIs.
+
+## Phase 11 — Portfolio release (MS-037+)
+
+- [ ] Architecture diagram (including the Python pipeline), schema docs, screenshots, accessibility pass, secret audit, case-study write-up.
 
 ---
 
@@ -208,9 +285,13 @@ Jack doesn't write code for the project. These are the ideas he should be able t
 - `DISTINCT ON` for latest-quote-per-book: Phase 2
 - `LAG()` window functions for line movement: Phase 4
 - Data leakage and chronological, game-grouped splits: Phase 7
+- Point-in-time joins; filtered vs smoothed estimates (Kalman): Phases 8–9
+- Opponent adjustment (classic KenPom iteration vs state-space filter): Phase 9
+- Walk-forward evaluation, ablations, and why the closing line is the benchmark: Phase 9
+- Event studies (injury news, weather): Phase 10
 
 ## Out of scope until the core works
 
-Props, alternate lines, live betting, bet placement, other leagues, betting splits, sharp-book references, CLV tracking, and alerts. See spec §5 "Future releases".
+Props, alternate lines, live betting, bet placement, other leagues, betting splits, CLV tracking, and alerts. (Sharp-book references are done: Pinnacle is a reference book since MS-022.) See spec §5 "Future releases".
 
 One cheap future option: the 10-book region group has 5 free slots, so a sharp reference book could be added at zero extra credit cost.

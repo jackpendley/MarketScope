@@ -3006,3 +3006,35 @@ Do not substitute another broad project proposal for implementation.
 Our immediate goal is to establish a clean, working foundation and make the first real NFL odds API request.
 
 Build MarketScope incrementally, carefully, and with the expectation that it will eventually be demonstrated to professional software engineering interviewers.
+
+---
+
+# ADDENDUM — 2026-10-17 scope extension (football context)
+
+_Added after Phases 0–6 were complete. The original handoff text above is unchanged._
+
+At Jack's request, MarketScope models the football as well as the market. The goal is an internal **"KenPom for the NFL"** rating system:
+
+- opponent-adjusted offensive, defensive and special-teams efficiency built on EPA/play and EPA/dropback
+- adjusted pace
+- luck
+- strength of schedule
+
+It considers:
+
+- game results and home/away
+- weather forecasts
+- injuries and active players (snap-share-weighted availability, QB value)
+- snap counts
+- coaching staffs and play-callers
+- rest and travel
+
+This brings forward §16.3's "later features" (weather, injury information, team performance statistics). Licensed point-in-time sources now exist for them: nflverse (CC-BY 4.0) and Open-Meteo (CC-BY 4.0).
+
+Scope decisions:
+
+1. The app shows the model's predicted margin and score next to the market, labeled as a model estimate with its measured error. §15's rule still holds: nothing is presented as a betting recommendation.
+2. Player modeling is team ratings plus availability. Player on-field impact is optional local research.
+3. The market-only ML baseline (§16) is built first. Football features are then measured for lift.
+
+The design, validation protocol and prior-art review are in `docs/RATINGS.md`; the decision record is ADR-028; the phases are in `docs/ROADMAP.md` (Phases 7–11).

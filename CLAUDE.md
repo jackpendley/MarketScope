@@ -1,9 +1,10 @@
 # MarketScope — guide for Claude sessions
 
-MarketScope is an NFL sportsbook market-intelligence platform and a portfolio project. It has three parts:
+MarketScope is an NFL sportsbook market-intelligence platform and a portfolio project: "Compare the market. Replay its history. Understand the matchup. Investigate the signals. Test the evidence." It has four parts:
 
 - **Odds board:** compare five books.
 - **Market replay:** reconstruct line history from stored observations.
+- **Football context ("KenPom for the NFL"):** MarketScope Ratings (AdjO/AdjD/AdjST/AdjPace/AdjEM with uncertainty, luck, SOS, Five Factors), results, availability, weather, coaching, and a labeled model line. The design is frozen in `docs/RATINGS.md` (ADR-028).
 - **Signal lab and ML lab:** reproducible, evidence-backed research.
 
 The developer (Jack) is building it to move into a backend/full-stack software engineering role. Act as senior mentor and pair programmer: explain significant decisions and trade-offs, and keep the code understandable to him.
@@ -44,6 +45,27 @@ The developer (Jack) is building it to move into a backend/full-stack software e
 - Missing data is shown as missing. Never carry prices forward across gaps or treat missing as unchanged.
 - Signals describe observable evidence. They never claim "sharp action" or recommend bets.
 
+**Football and model rules (ADR-028):**
+
+1. **Point-in-time everything.**
+   - Every rating, availability estimate, forecast, feature and prediction carries `as_of`.
+   - It may use only data available before that time:
+     - games final before `as_of`
+     - injury reports fetched or published before it
+     - forecasts issued before it
+   - Observed game weather is post-hoc only.
+2. **A game's result never feeds features for that game.** Filtered (point-in-time) ratings drive predictions. Smoothed (hindsight) ratings are only for labeled retrospective charts.
+3. **The nflverse closing line is a labeled benchmark.**
+   - It never goes into `odds_observations`, because it has no observation timestamp.
+   - Convert it to home orientation on ingest. Verify the sign against our last-pregame consensus.
+4. **Model output is always labeled "model estimate"** and shown with its measured error. Never use bet, pick, value, edge, or lock language.
+5. **Attribution:**
+   - Credit nflverse (CC-BY 4.0), PFR snap counts via nflverse, and Open-Meteo (CC-BY 4.0).
+   - **FTN data (participation 2023+, charting) is CC-BY-SA 4.0.** It stays local research only and never feeds the product.
+6. **Predictions in `model_predictions` are immutable.** A new model version writes new rows. Forward-test rows must be created before kickoff.
+7. **The displayed MarketScope rating uses no market inputs.** Market-informed variants (blends, market priors) are research only. This keeps "ratings vs market" meaningful.
+8. **Factors earn their place.** A candidate enters the game model only if it improves 2023–24 validation beyond noise. The 2025 test season is evaluated exactly once.
+
 ## Security
 
 - Secrets live only in gitignored `.env.local` files. Never ask for keys in chat, never log request URLs (the Odds API key is in the query string), and never send them to the browser.
@@ -72,9 +94,13 @@ The developer (Jack) is building it to move into a backend/full-stack software e
 - `apps/web`: Next.js 16 App Router, React 19, Tailwind 4, TS strict. Pages call `lib/server/*` (server-only) → `@marketscope/db` queries; `/api/*` wraps the same functions (`docs/API.md`). Needs `apps/web/.env.local` with `DATABASE_URL` only. Read `apps/web/AGENTS.md`: Next 16 differs from older versions, so check the bundled docs in `node_modules/next/dist/docs/` before using unfamiliar APIs.
 - `apps/collector`: Node worker run via `tsx`. Config (Zod env), The Odds API client (retries, quota headers, redaction), `collect.ts` (claim → budget guard → fetch → one transaction), and scripts.
 - `packages/shared`: domain types, odds math, formatting, exact-line comparison, provider Zod schemas, normalizer. Synthetic fixture at `@marketscope/shared/fixtures`.
+- `apps/football` (Phase 8+, Python): nflverse ingest, team-game stats, coaching staff, weather, ratings, evaluation, predictions.
+  - Writes only `nfl_*`, `rating_*` and `model_*` tables.
+  - Raw play-by-play stays in a gitignored Parquet cache.
+- `research/` (Python): read-only studies and the market ML (`ml/`).
 - `packages/db`: Drizzle schema (`src/schema.ts`), committed SQL migrations (`drizzle/`), client, and test helpers (`@marketscope/db/testing`).
 - Local Postgres: Homebrew `postgresql@17`, with DBs `marketscope_dev` and `marketscope_test`. Tests use `TEST_DATABASE_URL` (default: local test DB). Root `pnpm test` runs packages sequentially because they share the test DB.
-- `docs/`: ROADMAP, PROJECT_STATUS, DECISIONS, ARCHITECTURE, API, DEPLOYMENT, DATA_DICTIONARY, PROVIDER_COVERAGE, PRODUCT_SPEC.
+- `docs/`: ROADMAP, PROJECT_STATUS, DECISIONS, ARCHITECTURE, API, DEPLOYMENT, DATA_DICTIONARY, PROVIDER_COVERAGE, PERFORMANCE, SIGNAL_DEFINITIONS, RATINGS (ratings design + results), MODEL_CARD (Phase 7+), PRODUCT_SPEC (with a 2026-10-17 scope addendum).
 - **Deployed site is private** (Basic auth via `apps/web/proxy.ts`, ADR-022). The Odds API terms forbid exposing our JSON API publicly; keep `/api/*` protected even if the UI is opened up later.
 
 Workspace packages export TypeScript source directly. There's no build step: Next uses `transpilePackages`, and the collector uses `tsx`.
