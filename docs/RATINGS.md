@@ -284,6 +284,19 @@ ADR-036. Validation 2023–24 (570 games), run once:
   - QB rating half-life 730 days, prior 250 dropbacks
   - game-layer weight 0.51 for the expected starter, 0.89 for the actual starter: the uncertainty about who starts halves the usable signal
 
+### Non-QB availability and the combined model (MS-031b)
+
+ADR-037. Validation 2023–24 (570 games), run once:
+
+| Model                                           | Margin MAE | Δ vs Elo (paired 95% CI) | Δ vs SRS               |
+| ----------------------------------------------- | ---------- | ------------------------ | ---------------------- |
+| MarketScope Ratings (units + QB + availability) | 10.25      | −0.08 (−0.31 to +0.15)   | −0.12 (−0.31 to +0.08) |
+| unit ratings only (MS-030)                      | 10.33      | +0.00                    | −0.04                  |
+
+- **The availability layer** is worth 0.08 (CI −0.00 to +0.17), and the QB layer 0.19 in QB-change games. Neither is yet beyond noise on two seasons.
+- **Positional values (points per missing full-time starter):** OL 0.72, WR/TE 0.84, front seven 0.55, secondary 0.57 (ELWAY: 0.5–1 typical). RB 2.41 is noisy (rare absences).
+- **The close is still 0.41 ahead** (9.84).
+
 ## Changelog
 
 - 2026-10-17: design frozen (ADR-028).
@@ -296,3 +309,4 @@ ADR-036. Validation 2023–24 (570 games), run once:
   - filter burn-in from 2012
 - 2026-10-18: KenPom contract outputs (MS-030b, ADR-035). Additions to the design: a pace filter (32 units + mean) for AdjPace and totals; expected wins from per-game net adjusted EPA with a home term.
 - 2026-10-18: QB layer (MS-031a, ADR-036). QB continuity at the season boundary is handled by the QB feature's baseline rather than by conditioning ρ_s.
+- 2026-10-18: non-QB availability (MS-031b, ADR-037).

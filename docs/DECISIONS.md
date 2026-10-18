@@ -541,3 +541,39 @@ AWS Lambda + EventBridge remains an optional later upgrade (Phase 3).
   - The layer points the right way where it should matter, but 87 games is too few to show it.
 - **QB continuity at the season boundary is not modeled separately.** The QB feature's baseline already handles a new starter in week 1.
 - **Cross-season and live use:** expected starters for upcoming games use today's depth chart and injury report, so the report's model estimates for the next week include them.
+
+## ADR-037 — Non-QB availability: expected absences from the injury report and recent snap shares (2026-10-18)
+
+**Context.** ELWAY values non-QB injuries at 0.5–1 point typically (max about 2). RATINGS.md specifies snap-share-weighted absences by position group × learned positional values, as an expected value over P(plays | status).
+
+**Decision.**
+
+- **Absence per group:** absence[group] = Σ P(miss) × recent share.
+  - Groups: OL, WR/TE, RB, DL+LB, DB.
+  - Recent share: the player's mean offensive or defensive snap share over the team's previous 3 games this season (0 for games he missed).
+  - P(miss) comes from this week's final injury report (Out 1.0, Doubtful 0.991, Questionable 0.323: P(plays | status) for 2016–22, ADR-030) or a reserve roster status (IR, PUP and so on: 1.0).
+- **Window effects:**
+  - Long-term absences drop out of the 3-game window. By then the filter's ratings reflect the team without the player.
+  - Returning players are not credited, a known asymmetry.
+  - A game with no snap rows enters the window as one where nobody played. A unit test caught that such games were being skipped.
+- **Game features:** home − away absence per group in the OLS game layer, fitted on 2016–22 alongside the QB feature.
+- **Data:** snap counts (PFR via nflverse) start in 2013, so 2013–15 give history before the fit seasons.
+
+**Consequences.**
+
+- **Positional values** (points of margin per missing full-time starter): OL −0.72, WR/TE −0.84, front seven −0.55, secondary −0.57, all inside ELWAY's range.
+  - RB −2.41 is implausibly large. RB absences are rare and small (mean 0.09 starter-equivalents), so the estimate is noisy. MS-032's factor selection should shrink or drop it.
+- **In-sample (2016–22) MAE:**
+
+  | Model          | MAE    |
+  | -------------- | ------ |
+  | unit ratings   | 10.019 |
+  | + QB           | 9.986  |
+  | + availability | 9.950  |
+  | oracle starter | 9.912  |
+
+- **Validation (2023–24, run once):**
+  - Model MAE 10.25 (was 10.33).
+  - Without the availability layer it is +0.08 worse (CI −0.00 to +0.17), borderline.
+  - Vs Elo −0.08 (CI −0.31 to +0.15); vs SRS −0.12 (CI −0.31 to +0.08).
+  - The model now leads both benchmarks, but not yet beyond noise. The close remains 0.41 ahead.

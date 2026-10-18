@@ -1,6 +1,8 @@
 """Fit the QB layer on 2016-22 (MS-031a): replacement level from QB debuts, a small grid over the
 rating and baseline memories and the prior weight (in-sample game-layer MAE with the expected
-starter), then the game layer with the QB feature. Frozen into params.json["model"].
+starter). Then the final game layer with the QB feature and the non-QB availability features
+(MS-031b), plus the layers the ablations need. Frozen into params.json["model"]. Run after
+`ratings.fit` (which writes the unit-ratings-only layer).
 
     PYTHONPATH=src .venv/bin/python -m marketscope_football.ratings.qb_fit
 """
@@ -16,9 +18,25 @@ import pandas as pd
 
 from .design import BURN_IN_FROM, LIKELIHOOD_SEASONS, QB_BASELINE_HALF_LIFE_GRID, QB_HALF_LIFE_GRID, QB_PRIOR_GRID
 from .engine import FEATURES, PARAMS_PATH, Engine, GameLayer, load_params
+from .availability_adj import FEATURES as AVAIL_FEATURES, SNAPS_FROM, AvailabilityAdjuster, absences, load_reserve, \
+    load_snaps
 from .fit import load_inputs
 from .qb import QBAdjuster, QBParams, expected_starters, load_depth, load_injury_status, load_qb_games, \
     replacement_level, team_games
+
+
+UNIT_ONLY = "unit ratings only"
+NO_QB = "no QB adjustment"
+NO_AVAIL = "no availability adjustment"
+ORACLE = "oracle starter (actual QB, hindsight)"
+
+
+def availability_inputs(games: pd.DataFrame, last_season: int, refresh: bool = False) -> pd.DataFrame:
+    """Point-in-time expected absences per team-game (availability_adj.py)."""
+    seasons = list(range(SNAPS_FROM, last_season + 1))
+    g = games[games["season"] >= SNAPS_FROM]
+    return absences(g, load_snaps(seasons, refresh), load_injury_status(list(range(BURN_IN_FROM, last_season + 1)), refresh),
+                    load_reserve(seasons, refresh))
 
 
 def qb_inputs(games: pd.DataFrame, last_season: int, refresh: bool = False):
@@ -33,6 +51,9 @@ def qb_inputs(games: pd.DataFrame, last_season: int, refresh: bool = False):
 def main() -> None:
     games, obs, teams, sf, wf = load_inputs("model")
     units, st, layer0 = load_params("model")
+    alts0 = json.loads(PARAMS_PATH.read_text())["model"]["game_alternatives"]
+    if UNIT_ONLY in alts0:  # a re-run: start from the unit-ratings-only layer written by ratings.fit
+        layer0 = GameLayer(**alts0[UNIT_ONLY])
     last = int(games["season"].max())
     starters, qbg = qb_inputs(games, last)
     r = replacement_level(qbg, games, range(BURN_IN_FROM + 1, max(LIKELIHOOD_SEASONS) + 1))
@@ -88,23 +109,30 @@ def main() -> None:
         return GameLayer(layer0.n_pass, layer0.n_rush, layer0.n_drives, {c: float(v) for c, v in zip(cols, beta[:-1])},
                          float(beta[-1]), layer0.total_a, layer0.total_b), mae
 
-    Xe = X.assign(qb=qb_features(p, "expected"))
-    Xo = X.assign(qb=qb_features(p, "oracle"))
-    lay_e, mae_e = layer(feats + ["qb"], Xe)
-    lay_o, mae_o = layer(feats + ["qb"], Xo)
+    av = AvailabilityAdjuster(availability_inputs(games, last))
+    av_rows = pd.DataFrame({gid: av.features(g) for (season, _), slot in slots if season in LIKELIHOOD_SEASONS
+                            for gid, g in zip(slot["game_id"], slot.itertuples(index=False))}).T
+    Xe = X.assign(qb=qb_features(p, "expected")).join(av_rows)
+    Xo = X.assign(qb=qb_features(p, "oracle")).join(av_rows)
+    avf = list(AVAIL_FEATURES)
+    lay_m, mae_m = layer(feats + ["qb"] + avf, Xe)
+    lay_q, mae_q = layer(feats + ["qb"], Xe)
+    lay_a, mae_a = layer(feats + avf, Xe)
+    lay_o, mae_o = layer(feats + ["qb"] + avf, Xo)
 
     params = json.loads(PARAMS_PATH.read_text())
     m = params["model"]
-    m["game_alternatives"]["no QB adjustment"] = asdict(layer0) if "qb" not in m else m["game_alternatives"].get("no QB adjustment", asdict(layer0))
-    m["game_alternatives"]["oracle starter (actual QB, hindsight)"] = asdict(lay_o)
-    m["game"] = asdict(lay_e)
+    m["game_alternatives"].update({UNIT_ONLY: asdict(layer0), NO_QB: asdict(lay_a), NO_AVAIL: asdict(lay_q),
+                                   ORACLE: asdict(lay_o)})
+    m["game"] = asdict(lay_m)
     m["qb"] = asdict(p)
-    m["meta"]["qb"] = {"replacement": r, "in_sample_mae": {"no QB adjustment": mae_none, "expected starter": mae_e,
-                                                          "oracle starter": mae_o},
+    m["meta"]["qb"] = {"replacement": r, "in_sample_mae": {UNIT_ONLY: mae_none, NO_QB: mae_a, NO_AVAIL: mae_q,
+                                                          "model": mae_m, ORACLE: mae_o},
                        "grid": grid.to_dict(orient="records")}
     PARAMS_PATH.write_text(json.dumps(params, indent=2))
-    print(f"replacement {r:+.3f}; best {asdict(p)}; MAE none {mae_none:.3f} expected {mae_e:.3f} oracle {mae_o:.3f}")
-    print(f"w_qb expected {lay_e.w['qb']:.3f}, oracle {lay_o.w['qb']:.3f}")
+    print(f"replacement {r:+.3f}; best {asdict(p)}")
+    print(f"in-sample MAE: unit only {mae_none:.3f}, +QB {mae_q:.3f}, +avail {mae_a:.3f}, model {mae_m:.3f}, oracle {mae_o:.3f}")
+    print("weights:", {k: round(v, 3) for k, v in lay_m.w.items()})
 
 
 if __name__ == "__main__":

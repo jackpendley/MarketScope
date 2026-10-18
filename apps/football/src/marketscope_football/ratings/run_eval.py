@@ -27,7 +27,8 @@ from .engine import PARAMS_PATH, UNIT_CHANNELS, Engine, GameLayer, KalmanRatings
 from .fit import load_inputs
 from .kalman import STParams, UnitParams
 from .qb import QBAdjuster, QBParams
-from .qb_fit import qb_inputs
+from .qb_fit import NO_AVAIL, NO_QB, ORACLE, UNIT_ONLY, availability_inputs, qb_inputs
+from .availability_adj import FEATURES as AVAIL_FEATURES, AvailabilityAdjuster
 
 MODEL = "MarketScope Ratings (Kalman)"
 
@@ -44,26 +45,34 @@ def net_epa_column(games: pd.DataFrame, obs: pd.DataFrame) -> pd.Series:
     return pd.Series([one(g) for g in games.itertuples(index=False)], index=games.index)
 
 
-NO_QB = "no QB adjustment"
-ORACLE = "oracle starter (actual QB, hindsight)"
-
-
 def kalman_factory(variant: str, sigma: float, layer: GameLayer | None = None, qb_mode: str | None = None):
-    """A fresh KalmanRatings per call. `qb_mode` "expected"/"oracle" adds the QB layer (layer must
-    have a "qb" weight)."""
+    """A fresh KalmanRatings per call. The QB layer is on when the game layer has a "qb" weight
+    (`qb_mode` "expected" by default, "oracle" for hindsight); availability when it has avail_* weights."""
     measure = "model" if variant == NO_CONTINUITY else variant
     games, obs, teams, sf, wf = load_inputs(measure, variant != NO_CONTINUITY)
     units, st_p, default_layer = load_params(variant)
     layer = layer or default_layer
     params = (units, st_p, layer)
-    if qb_mode is None and "qb" in layer.w:
-        qb_mode = "expected"
-    if qb_mode is None:
-        return lambda: KalmanRatings(variant, teams, params, obs, sf, wf, sigma)
+    last = int(games["season"].max())
+    avail = AvailabilityAdjuster(availability_inputs(games, last)) if any(k.startswith("avail_") for k in layer.w) else None
+    if "qb" not in layer.w:
+        return lambda: KalmanRatings(variant, teams, params, obs, sf, wf, sigma, avail=avail)
     qp = QBParams(**json.loads(PARAMS_PATH.read_text())[variant]["qb"])
-    starters, qbg = qb_inputs(games, int(games["season"].max()))
-    return lambda: KalmanRatings(variant, teams, params, obs, sf, wf, sigma,
-                                 qb=QBAdjuster(qp, starters, qbg, layer.n_pass, qb_mode))
+    starters, qbg = qb_inputs(games, last)
+    return lambda: KalmanRatings(variant, teams, params, obs, sf, wf, sigma, avail=avail,
+                                 qb=QBAdjuster(qp, starters, qbg, layer.n_pass, qb_mode or "expected"))
+
+
+def big_absence_games(games: pd.DataFrame, threshold: float = 1.0) -> set[str]:
+    """Games where the two teams' expected absences differ by at least `threshold` starter-equivalents."""
+    t = availability_inputs(games, int(games["season"].max()))
+    tot = t.set_index(["game_id", "team"])[list(AVAIL_FEATURES)].sum(axis=1)
+    out = set()
+    for g in games.itertuples(index=False):
+        h, a = tot.get((g.game_id, g.home)), tot.get((g.game_id, g.away))
+        if h is not None and a is not None and abs(h - a) >= threshold:
+            out.add(g.game_id)
+    return out
 
 
 def qb_change_games(games: pd.DataFrame) -> set[str]:
@@ -99,6 +108,14 @@ def current_ratings(games: pd.DataFrame) -> tuple[pd.DataFrame, tuple[int, int]]
     var += layer.w.get("st", 0.0) ** 2 * np.diag(st.P)
     out = pd.DataFrame({"team": teams, "adj_em": em, "adj_em_se": np.sqrt(var), **cols, "st": st.ratings()["st"]})
     return out.sort_values("adj_em", ascending=False).reset_index(drop=True), eng.slot
+
+
+def avail_lines(params: dict) -> list[str]:
+    w = params["model"]["game"]["w"]
+    names = {"avail_ol": "offensive line", "avail_skill": "WR/TE", "avail_rb": "RB", "avail_front7": "front seven (DL/LB)",
+             "avail_db": "secondary"}
+    return ["**Positional values** (2016–22 OLS; points of margin per missing starter-equivalent): "
+            + ", ".join(f"{names[k]} {w[k]:+.2f}" for k in names if k in w) + f"; QB layer weight {w.get('qb', float('nan')):.2f}."]
 
 
 def total_lines(val: pd.DataFrame) -> list[str]:
@@ -173,29 +190,33 @@ def main() -> None:
     alts = params["model"]["game_alternatives"]
     qb_abl = {MODEL: kalman_factory("model", sigma),
               NO_QB: kalman_factory("model", sigma, GameLayer(**alts[NO_QB])),
+              NO_AVAIL: kalman_factory("model", sigma, GameLayer(**alts[NO_AVAIL])),
+              UNIT_ONLY: kalman_factory("model", sigma, GameLayer(**alts[UNIT_ONLY])),
               ORACLE: kalman_factory("model", sigma, GameLayer(**alts[ORACLE]), "oracle")}
     qb_preds = run_models(games, qb_abl, ed.VALIDATION_SEASONS)
     qb_scores = score_table(qb_preds, MODEL)
-    changed = qb_change_games(games)
+    changed, absent = qb_change_games(games), big_absence_games(games)
     qb_split = []
-    for label, sel in (("QB-change games", qb_preds["game_id"].isin(changed)),
-                       ("other games", ~qb_preds["game_id"].isin(changed))):
-        part = qb_preds[sel & qb_preds["model"].isin([MODEL, NO_QB])]
-        r = score_table(part, NO_QB).set_index("model").loc[MODEL]
-        qb_split.append(f"| {label} | {int(r['games'])} | {r['d_margin_mae']:+.2f} ({r['d_margin_mae_lo']:+.2f} to "
+    for label, ref, ids in (("QB-change games", NO_QB, changed), ("other games", NO_QB, None),
+                            ("big absence gap (≥ 1 starter-equivalent)", NO_AVAIL, absent), ("other games ", NO_AVAIL, None)):
+        sel = qb_preds["game_id"].isin(ids if ids is not None else (changed if ref == NO_QB else absent))
+        sel = sel if ids is not None else ~sel
+        part = qb_preds[sel & qb_preds["model"].isin([MODEL, ref])]
+        r = score_table(part, ref).set_index("model").loc[MODEL]
+        qb_split.append(f"| {label.strip()} | vs {ref} | {int(r['games'])} | {r['d_margin_mae']:+.2f} ({r['d_margin_mae_lo']:+.2f} to "
                         f"{r['d_margin_mae_hi']:+.2f}) | {r['d_brier']:+.4f} ({r['d_brier_lo']:+.4f} to {r['d_brier_hi']:+.4f}) |")
 
-    # MS-030 ablations, paired against the model without the QB layer (what they were fitted with).
-    abl = {NO_QB: kalman_factory("model", sigma, GameLayer(**alts[NO_QB]))}
+    # MS-030 ablations, paired against the unit-ratings-only model (what they were fitted with).
+    abl = {UNIT_ONLY: kalman_factory("model", sigma, GameLayer(**alts[UNIT_ONLY]))}
     for v in [*VARIANTS, NO_CONTINUITY]:
         if v != "model" and v in params:
             abl[v] = kalman_factory(v, sigma)
     for name, layer in alts.items():
-        if name not in (NO_QB, ORACLE):
+        if name not in (NO_QB, NO_AVAIL, UNIT_ONLY, ORACLE):
             abl[name] = kalman_factory("model", sigma, GameLayer(**layer))
     abl[epa_ridge[0]] = epa_ridge[1]
     abl_preds = run_models(games, abl, ed.VALIDATION_SEASONS)
-    abl_scores = score_table(abl_preds, NO_QB)
+    abl_scores = score_table(abl_preds, UNIT_ONLY)
 
     by_phase = val.assign(err=(val["margin"] - val["actual_margin"]).abs(),
                           phase=np.where(val["week"] <= 4, "weeks 1–4", "weeks 5+")).pivot_table(
@@ -242,13 +263,15 @@ def main() -> None:
           + " | ".join(f"{v:.2f}" for v in by_phase.loc[m]) + " |" for m in by_season.index], "",
         f"## Tuning seasons, {ed.TUNING_SEASONS[0]}–{ed.TUNING_SEASONS[-1]} (in-sample for the model)", "",
         *main_table(tune_scores), "",
-        "## QB layer (MS-031a; validation seasons, paired against the model)", "",
+        "## QB and availability layers (MS-031; validation seasons, paired against the model)", "",
         *diff_table(qb_scores, MODEL), "",
         "The oracle row uses the actual starter, known only at kickoff: the gap between it and the model is the "
-        "cost of not knowing who starts. Paired Δ (model with the QB layer minus without), by game type:", "",
-        "| Games | n | Δ margin MAE | Δ Brier |", "|---|---|---|---|", *qb_split, "",
-        "QB-change games: either team's expected starter differs from its previous starter, or may not play.", "",
-        "## Ablations of the unit ratings (validation seasons, paired against the model without the QB layer)", "",
+        "cost of not knowing who starts. Paired Δ (model minus the model without that layer), by game type:", "",
+        "| Games | Compared with | n | Δ margin MAE | Δ Brier |", "|---|---|---|---|---|", *qb_split, "",
+        "QB-change games: either team's expected starter differs from its previous starter, or may not play. "
+        "Big absence gap: the teams' expected non-QB absences differ by at least one starter-equivalent.", "",
+        *avail_lines(params), "",
+        "## Ablations of the unit ratings (validation seasons, paired against the unit-ratings-only model)", "",
         "Measurement and structural variants are refitted on 2016–22 from scratch; channel ablations keep the "
         "filters and refit the game layer; the ridge row tunes its half-life and λ on 2016–22.", "",
         *diff_table(abl_scores, NO_QB), "",

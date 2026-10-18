@@ -1,10 +1,10 @@
 # Project Status
 
-_Rewrite this file at the end of every session. Last updated: 2026-10-18 (session 1, continued; MS-031a)._
+_Rewrite this file at the end of every session. Last updated: 2026-10-18 (session 1, continued; MS-031b)._
 
 ## Current milestone
 
-**Phase 9 (MarketScope Ratings): MS-029 (harness), MS-030 (Kalman engine), MS-030b (KenPom contract + `rating_snapshots`) and MS-031a (QB layer) are done. Next: MS-031b (non-QB availability).**
+**Phase 9 (MarketScope Ratings): MS-029 (harness), MS-030 (Kalman engine), MS-030b (KenPom contract + `rating_snapshots`) MS-031a (QB layer) and MS-031b (non-QB availability) are done. Next: MS-032 (factor selection, probabilities, 2025 test, freeze v1).**
 
 - **Scope extended 2026-10-17 (ADR-028):** football context and MarketScope Ratings, "KenPom for the NFL". The design is frozen in `docs/RATINGS.md`.
 - **Site:** deployed privately at https://marketscope-delta.vercel.app (user `marketscope`; the password is `VERCEL_SITE_PASSWORD` in `apps/web/.env.local`).
@@ -67,15 +67,20 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-18 (sessio
   - Classic KenPom agrees with the Kalman ranks: ≈ 0.6 at week 4, ≈ 0.92 at the end of the season.
   - Report: `apps/football/reports/ratings-contract.md`, with the current table and model estimates for next week.
 
-- **MS-031a (this PR):** QB layer (ADR-036).
+- **MS-031a** (#31): QB layer (ADR-036).
   - Expected starter: previous starter, injury report (Out/Doubtful → depth chart), week-1 depth chart; Questionable plays 64%. Names the actual starter 92% of the time (vs 88%).
   - QB ratings (shrunk, decayed adjusted EPA/dropback; replacement −0.106), team QB baseline, game feature.
   - 2023–24: overall null (Δ −0.00); QB-change games −0.19 (CI −0.53 to +0.16); oracle starter would add 0.08.
   - Play-by-play cache now includes `passer_id` (Actions cache key bumped to `pbp-v2`).
 
+- **MS-031b (this PR):** non-QB availability (ADR-037).
+  - Expected absences per group (OL, WR/TE, RB, front 7, DB) = Σ P(miss | report or IR) × recent snap share; OLS positional values (OL −0.72, WR/TE −0.84, front 7 −0.55, DB −0.57; RB −2.41 noisy).
+  - **2023–24 model MAE 10.25** (Elo 10.33, SRS 10.37, close 9.84); availability +0.08 (CI −0.00 to +0.17); vs Elo −0.08 and vs SRS −0.12, CIs include 0.
+  - Report next-week estimates show QB and absence contributions.
+
 ## Tests
 
-- **Football pytest:** 77 (unit tests, plus integration against the migrated test DB; includes validation of the committed coaching CSV).
+- **Football pytest:** 81 (unit tests, plus integration against the migrated test DB; includes validation of the committed coaching CSV).
 - **Research pytest:** 25.
 - **TS:** db 36, shared 192, collector 51, web 83, e2e 18.
 
@@ -110,11 +115,13 @@ Nothing blocking.
 
 ## Next task
 
-**MS-031b: non-QB availability** (`ratings/availability_adj.py`):
+**MS-032: factor selection, probabilities, the 2025 test, freeze `ratings-v1`.**
 
-1. **Data:** snap counts 2012+ (PFR, gsis-matched), final injury reports, weekly roster status (RES = reserve/IR), all cached.
-2. **Absence per position group** (OL, WR/TE, RB, front 7, secondary): Σ P(not play | status) × the player's recent snap share (last 3 team games). Long-term absences carry no recent snaps, so the filter's ratings already reflect them.
-3. **Game features:** home − away absence per group; OLS weights on 2016–22 = positional values (compare ELWAY's 0.5–1 pt typical, max ≈ 2).
-4. **Evaluate:** paired vs the MS-031a model on 2023–24, once.
-
-**Then:** MS-032, factor selection, the key-number margin distribution, calibration, the 2025 test, freeze `ratings-v1`, and start the live `model_predictions`.
+1. **Factor selection on 2023–24** (pre-register the rule first: keep a factor if its paired Δ MAE or Δ log loss CI excludes 0, or if it is a design-core component that does not hurt). Candidates are the catalog's `test` factors:
+   - rest/bye, travel, time zones and body clock, division game
+   - venue-specific home field, weather (2024 only), new head coach/play-caller
+   - playoffs, RB value shrinkage
+2. **Probabilities:** a key-number-aware margin distribution conditional on the expected margin (fit on 1999–2015), giving win probability and cover/total probabilities; reliability curves.
+3. **Run the 2025 test once** (`allow_test=True`), logged in a new `model_runs` table.
+4. **Parameter-comparison table** vs 538, ELWAY, nfelo and Inpredictable.
+5. **Freeze `ratings-v1`;** start immutable pre-kickoff `model_predictions` for 2026 (live forward test).

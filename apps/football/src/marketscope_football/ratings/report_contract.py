@@ -24,7 +24,8 @@ from .kenpom_classic import classic_ratings, season_team_games
 from .luck import game_net_epa
 from .outputs import MODEL_VERSION, complete_slots, home_advantage_points, snapshots
 from .qb import QBAdjuster, QBParams, player_names
-from .qb_fit import qb_inputs
+from .availability_adj import AvailabilityAdjuster
+from .qb_fit import availability_inputs, qb_inputs
 
 
 def fmt_rank(v, r, digits=2, sign=False):
@@ -78,6 +79,7 @@ def main() -> None:
     played = complete_slots(games[games["margin"].notna() & (games["season"] >= BURN_IN_FROM)], obs)
     for _, slot in played.groupby(["season", "week"], sort=True):
         adj.update(slot)
+    av = AvailabilityAdjuster(availability_inputs(games, latest_season, refresh=True))
     names = player_names()
     st_idx = starters.set_index(["game_id", "team"])
     nxt = games[(games["season"] == latest_season) & games["margin"].isna()]
@@ -86,7 +88,9 @@ def main() -> None:
     for x in nxt.itertuples(index=False):
         f = eng.features(x.home, x.away, bool(x.neutral), layer)
         f["qb"] = adj.feature(x)
+        f.update(av.features(x))
         m = layer.margin(f, bool(x.neutral))
+        apts = sum(layer.w[k] * f[k] for k in f if k.startswith("avail_"))
         t = layer.total(eng.raw_total(x.home, x.away, bool(x.neutral)))
 
         def who(team):
@@ -94,7 +98,7 @@ def main() -> None:
             n = names.get(r["exp_qb"], r["exp_qb"] or "?")
             return n + (f" ({r['status']}, {r['p_exp']:.0%})" if r["p_exp"] < 1 else "")
         est.append((x.away, x.home, (t - m) / 2, (t + m) / 2, float(win_probability(np.array([m]), sigma)[0]), t, m,
-                    who(x.away), who(x.home), layer.w["qb"] * f["qb"]))
+                    who(x.away), who(x.home), layer.w["qb"] * f["qb"], apts))
 
     last_full = latest_season - 1
     reg_week = int(games[(games["season"] == last_full) & (games["game_type"] == "REG")]["week"].max())
@@ -172,12 +176,12 @@ def main() -> None:
               "Predicted score for each team (they sum to the model total and differ by the model margin). "
               "Model estimate only; on 2023–24 its margin missed by 10.3 points on average (the market close: 9.8).", "",
               "Expected starters are point-in-time (previous starter, injury report, depth chart); the QB column "
-              "is the QB layer's contribution to the home margin.", "",
-              "| Away | Home | Expected QBs (away / home) | Model score | Home win prob | Total | QB pts |",
-              "|---|---|---|---|---|---|---|"]
-        for a, h, sa, sh, p, t, m, qa, qh, qpts in est:
+              "is the QB layer's contribution to the home margin, Absences the non-QB injury report's.", "",
+              "| Away | Home | Expected QBs (away / home) | Model score | Home win prob | Total | QB pts | Absences pts |",
+              "|---|---|---|---|---|---|---|---|"]
+        for a, h, sa, sh, p, t, m, qa, qh, qpts, apts in est:
             assert abs((sa + sh) - t) < 1e-9 and abs((sh - sa) - m) < 1e-9
-            L.append(f"| {a} | {h} | {qa} / {qh} | {sa:.1f}–{sh:.1f} | {p:.0%} | {t:.1f} | {qpts:+.1f} |")
+            L.append(f"| {a} | {h} | {qa} / {qh} | {sa:.1f}–{sh:.1f} | {p:.0%} | {t:.1f} | {qpts:+.1f} | {apts:+.1f} |")
     L += ["", f"## {last_full} at the end of the regular season (week {reg_week})", "",
           "| Rk | Team | W-L | AdjEM | AdjO | AdjD | Luck |", "|---|---|---|---|---|---|---|"]
     for _, r in pd.concat([lf.head(10), lf.tail(5)]).iterrows():
