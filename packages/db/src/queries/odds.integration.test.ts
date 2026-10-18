@@ -9,6 +9,7 @@ import {
   latestQuotesForEvents,
   listGames,
   observationSummaries,
+  recentRuns,
   selectionHistory,
 } from "./odds";
 
@@ -20,10 +21,11 @@ async function run(
   jobKey: string,
   startedAt: string,
   status: "completed" | "failed" = "completed",
+  requestType: "live" | "historical" = "live",
 ) {
   const [row] = await db
     .insert(ingestionRuns)
-    .values({ jobKey, provider: "the-odds-api", requestType: "live", status, startedAt })
+    .values({ jobKey, provider: "the-odds-api", requestType, status, startedAt })
     .returning({ id: ingestionRuns.id });
   return row!.id;
 }
@@ -202,6 +204,13 @@ describe("latestCompletedRun", () => {
     await run("ok", "2026-10-16T01:00:00Z");
     await run("bad", "2026-10-16T07:00:00Z", "failed");
     expect((await latestCompletedRun(db))?.jobKey).toBe("ok");
+  });
+
+  it("ignores historical imports, which say nothing about live collection health", async () => {
+    await run("live", "2026-10-16T01:00:00Z");
+    await run("import", "2026-10-18T01:00:00Z", "completed", "historical");
+    expect((await latestCompletedRun(db))?.jobKey).toBe("live");
+    expect((await recentRuns(db, 10)).map((r) => r.jobKey)).toEqual(["live"]);
   });
 });
 

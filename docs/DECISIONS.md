@@ -269,3 +269,23 @@ AWS Lambda + EventBridge remains an optional later upgrade (Phase 3).
 - Replay, signals, and the study work unchanged on imported games. The replay page labels the source.
 - Carry-forward depends on OddsPapi capturing every change, which is why BetMGM is excluded. Treat imported timing as approximate within a snapshot.
 - Uses about 1 billable request per run (fixtures). History calls are free.
+
+## ADR-027 — Sort-matching indexes, live-only run health, coverage page (2026-10-17)
+
+**Context:** MS-023 reviewed the hot queries with `EXPLAIN ANALYZE` against production (about 160K observations after the OddsPapi import).
+**Decision:**
+
+- **Indexes match the query's ORDER BY exactly, including null ordering.** A plain `ORDER BY x DESC` means `NULLS FIRST`, and Drizzle's `.desc()` index generates `NULLS LAST`. The planner won't treat those as the same ordering, even on a NOT NULL column. So:
+  - Signal Lab read every row in its window and heap-sorted it.
+  - `latestQuotesForEvents` sorted instead of reading groups off the index.
+
+  Migration 0006 rebuilds the three `DESC` indexes as `DESC NULLS FIRST`. The signals index becomes `(detected_at DESC, id)` to match `listSignals`' tie-breaker.
+
+- **Run health counts live collection only.** `latestCompletedRun` and `recentRuns` filter `request_type = 'live'`. Before this, the import's 79 `completed` runs made the board's "snapshot collected" label and `/api/health/data` report the import time, which would have masked a dead cron.
+- **Coverage page** (`/data`): counts only, never prices. Coverage is measured on the home spread, the one market every book posts. Feeds are mapped to board columns in SQL so Hard Rock's two feeds count once per snapshot.
+- **Reproducible EXPLAIN tool** (`packages/db/src/scripts/explain.ts`): runs the real query functions, captures their SQL via Drizzle's logger, and explains each one in a read-only transaction.
+
+**Consequences:**
+
+- Index matching is now a review rule for any new `ORDER BY … DESC` query.
+- The coverage query aggregates once and joins. Correlated per-game subqueries cost 575 ms; the rewrite costs 141 ms. If it passes about 500 ms as history grows, move it to a summary table refreshed after each collection run.

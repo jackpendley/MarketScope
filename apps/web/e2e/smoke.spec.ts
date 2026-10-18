@@ -199,3 +199,25 @@ test.describe("signal lab", () => {
     await expect(page.getByRole("link", { name: /All signals for this game/ })).toBeVisible();
   });
 });
+
+test.describe("data coverage", () => {
+  test("shows live collection health and per-book coverage for every seeded game", async ({
+    page,
+  }) => {
+    await page.goto("/data");
+    await expect(page.getByRole("heading", { name: "Data Coverage" })).toBeVisible();
+    await expect(page.getByText("Synthetic data: not real odds.")).toBeVisible();
+    await expect(page.locator("[data-status='ok']")).toBeVisible();
+
+    const table = page.getByRole("table", { name: /Pregame spread coverage/ });
+    await expect(table.locator("tbody tr")).toHaveCount(3);
+    await expect(table.getByRole("columnheader", { name: /Pinnacle/ })).toBeVisible();
+    // Coverage is text, not color alone: every cell is a percentage or an em dash.
+    const cells = await table.locator("tbody td span").allInnerTexts();
+    expect(cells.length).toBeGreaterThan(0);
+    for (const c of cells) expect(c).toMatch(/^(\d{1,3}%|—)$/);
+
+    await table.getByRole("link", { name: "Replay →" }).first().click();
+    await expect(page.getByRole("heading", { name: /Market replay/ })).toBeVisible();
+  });
+});
