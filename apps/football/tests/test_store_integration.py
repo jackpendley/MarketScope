@@ -1,0 +1,88 @@
+"""Integration tests against the migrated test database (TEST_DATABASE_URL; must contain 'test').
+Migrations are applied by the TypeScript migrator (`pnpm db:migrate`), never by Python."""
+
+import os
+import uuid
+from datetime import datetime, timezone
+
+import psycopg
+import pytest
+
+from marketscope_football.db import claim_run, fail_run, finish_run
+from marketscope_football.linker import LinkResult
+from marketscope_football.store import apply_links, upsert_games, upsert_teams
+
+URL = os.environ.get("TEST_DATABASE_URL", "postgres://localhost:5432/marketscope_test")
+assert "test" in URL.rsplit("/", 1)[-1], "refusing to run against a non-test database"
+
+
+@pytest.fixture
+def conn():
+    try:
+        c = psycopg.connect(URL, connect_timeout=5)
+    except psycopg.OperationalError:
+        pytest.skip("test database unavailable")
+    c.execute("TRUNCATE nfl_games, nfl_teams, nfl_ingest_runs, events RESTART IDENTITY CASCADE")
+    c.commit()
+    yield c
+    c.rollback()
+    c.close()
+
+
+TEAMS = [
+    {"abbr": a, "franchise": a, "full_name": n, "nickname": n.split()[-1], "conference": "NFC",
+     "division": "NFC West", "odds_api_name": n}
+    for a, n in [("LA", "Los Angeles Rams"), ("SF", "San Francisco 49ers")]
+]
+
+
+def game(**overrides):
+    row = {c: None for c in [
+        "home_rest_days", "away_rest_days", "home_score", "away_score", "overtime", "stadium_id", "stadium", "roof",
+        "surface", "observed_temp_f", "observed_wind_mph", "referee", "home_coach", "away_coach", "home_qb_id",
+        "away_qb_id", "nflverse_close_home_spread", "nflverse_close_total", "nflverse_close_home_moneyline",
+        "nflverse_close_away_moneyline"]}
+    row.update(game_id="2026_01_SF_LA", season=2026, game_type="REG", week=1,
+               kickoff_utc=datetime(2026, 9, 11, 0, 35, tzinfo=timezone.utc), home_team="LA", away_team="SF",
+               neutral_site=True, division_game=True)
+    row.update(overrides)
+    return row
+
+
+def test_claim_is_idempotent_and_failed_runs_are_reclaimed(conn):
+    first = claim_run(conn, "schedules:test", "schedules")
+    assert first.status == "claimed"
+    assert claim_run(conn, "schedules:test", "schedules").status == "in-progress"
+    fail_run(conn, first.run_id, "boom")
+    again = claim_run(conn, "schedules:test", "schedules")
+    assert again.status == "claimed" and again.run_id == first.run_id
+    finish_run(conn, again.run_id, 3, "v")
+    assert claim_run(conn, "schedules:test", "schedules").status == "already-completed"
+    assert conn.execute("SELECT attempt, rows_upserted FROM nfl_ingest_runs").fetchone() == (2, 3)
+
+
+def test_final_observed_at_only_stamps_games_we_saw_become_final(conn):
+    upsert_teams(conn, TEAMS)
+    upsert_games(conn, [game(home_score=7, away_score=27)])  # already final at first sight
+    assert conn.execute("SELECT final_observed_at FROM nfl_games").fetchone()[0] is None
+    upsert_games(conn, [game(game_id="2026_09_LA_SF", home_team="SF", away_team="LA")])  # future game
+    upsert_games(conn, [game(game_id="2026_09_LA_SF", home_team="SF", away_team="LA", home_score=20, away_score=17)])
+    stamped = conn.execute("SELECT final_observed_at FROM nfl_games WHERE game_id = '2026_09_LA_SF'").fetchone()[0]
+    assert stamped is not None
+    upsert_games(conn, [game(game_id="2026_09_LA_SF", home_team="SF", away_team="LA", home_score=20, away_score=17)])
+    assert conn.execute("SELECT final_observed_at FROM nfl_games WHERE game_id = '2026_09_LA_SF'").fetchone()[0] == stamped
+
+
+def test_apply_links_moves_and_clears(conn):
+    upsert_teams(conn, TEAMS)
+    upsert_games(conn, [game(), game(game_id="2026_09_LA_SF", home_team="SF", away_team="LA")])
+    e1, e2 = str(uuid.uuid4()), str(uuid.uuid4())
+    for e in (e1, e2):
+        conn.execute("""INSERT INTO events (id, provider_event_id, sport_key, season, home_team, away_team, commence_time_utc)
+                        VALUES (%s, %s, 'americanfootball_nfl', 2026, 'x', 'y', now())""", (e, e))
+    apply_links(conn, LinkResult(links=[("2026_01_SF_LA", e1)]))
+    apply_links(conn, LinkResult(links=[("2026_09_LA_SF", e1), ("2026_01_SF_LA", e2)]))
+    got = dict(conn.execute("SELECT game_id, event_id::text FROM nfl_games").fetchall())
+    assert got == {"2026_09_LA_SF": e1, "2026_01_SF_LA": e2}
+    apply_links(conn, LinkResult(links=[]))
+    assert conn.execute("SELECT count(event_id) FROM nfl_games").fetchone()[0] == 0

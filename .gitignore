@@ -26,6 +26,8 @@ fixtures/**/local/
 # python research environment and data
 research/.venv/
 research/data/
+apps/football/.venv/
+apps/football/.cache/
 __pycache__/
 .ipynb_checkpoints/
 

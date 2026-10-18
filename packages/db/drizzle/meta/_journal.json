@@ -50,6 +50,13 @@
       "when": 1792286599722,
       "tag": "0006_sort_matching_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792294894407,
+      "tag": "0007_football_schedules",
+      "breakpoints": true
     }
   ]
 }
