@@ -146,10 +146,11 @@ Status legend: `[x]` done · `[~]` in progress · `[ ]` not started
   - Idempotent recompute after every scheduled collection.
   - `/signals` lab with filters, definitions, and replay deep links; game-page signals; `/api/signals`.
   - Documented in `docs/SIGNAL_DEFINITIONS.md` and ADR-024.
-- [ ] **MS-021** First study: does an outlier book (`book_divergence`) predict consensus convergence within 24 h?
-  - Python `research/` with a reproducible script and report.
-  - Game-clustered sample sizes, a baseline, and limitations; null results are published too.
-  - Needs several days of real history.
+- [x] **MS-021** First study (`research/`, Python):
+  - Pre-registered design; point-in-time `book_divergence` onsets; outcome = consensus 18–30 h later moved toward / away / not at all.
+  - Chance baseline; game-clustered bootstrap CI; Python consensus cross-checked against stored signals.
+  - **v1 result (2026-10-17): inconclusive.** 9 scored events from 5 games, below the pre-registered 30/15 minimum. Cross-check 13/13.
+  - Re-run as history accumulates (`research/reports/outlier-convergence-v1.md`).
 
 ## Phase 6 — Historical import (decision gate: $30 plan?)
 

@@ -234,3 +234,16 @@ AWS Lambda + EventBridge remains an optional later upgrade (Phase 3).
 - The UI (`/signals`, plus game pages) and `/api/signals` only read stored rows.
 - Every signal deep-links to the replay at its snapshot (`?at=`).
 - Changing a definition means bumping its version; old rows remain for comparison.
+
+## ADR-025 — Research in Python with pre-registered designs (2026-10-17)
+
+**Decision:**
+
+- Studies live in `research/` (Python 3.11, pandas, psycopg; pinned `requirements.txt`) and read the database through a **read-only session**.
+- Each study fixes its event definition, outcome, baseline, and minimum sample in code and in the report _before_ results are read. Below the minimum, the verdict is "inconclusive" and no claim is made.
+- Inference resamples games (clustered bootstrap), because observations within a game are correlated.
+- Key quantities are recomputed independently in Python (e.g. the consensus) and cross-checked against what the TypeScript engine stored.
+- Synthetic data is never mixed with real data.
+- Pytest runs in CI.
+
+**Consequences:** The first study (outlier → convergence) is honestly inconclusive on 2 days of data, and the report is the reproducible baseline to re-run. Phase 7 (ML) will follow the same rules.
