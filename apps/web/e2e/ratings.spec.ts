@@ -65,3 +65,41 @@ test("the ratings API returns the latest snapshot in the standard envelope", asy
   expect(body.meta).toMatchObject({ count: 8, modelVersion: "synthetic-demo", week: 3 });
   expect(body.data[0]).toMatchObject({ team: "BUF", adjEmRank: 1 });
 });
+
+test.describe("season projections", () => {
+  test("the projections page groups teams by division with labeled simulated odds", async ({
+    page,
+  }) => {
+    await page.goto("/projections");
+    await expect(page.getByRole("heading", { name: "Season projections" })).toBeVisible();
+    await expect(
+      page.getByText("Synthetic projections: demo data, not real model output."),
+    ).toBeVisible();
+    await expect(page.getByText("model estimate", { exact: false }).first()).toBeVisible();
+    await expect(page.getByRole("table")).toHaveCount(3); // AFC East, AFC West, NFC East
+    const west = page.getByRole("table", { name: "AFC West" });
+    await expect(west.locator("tbody tr")).toHaveCount(4);
+    await page.goto("/projections?conf=NFC");
+    await expect(page.getByRole("table")).toHaveCount(1);
+  });
+
+  test("a team page shows its season outlook and win distribution", async ({ page }) => {
+    await page.goto("/teams/BUF");
+    await expect(page.getByRole("heading", { name: /Season outlook/ })).toBeVisible();
+    await expect(page.getByRole("img", { name: /simulated regular-season wins/ })).toBeVisible();
+    await expect(page.getByRole("img", { name: /Playoff odds by week/ })).toBeVisible();
+  });
+
+  test("the projections API returns the latest week", async ({ request }) => {
+    const res = await request.get("/api/projections");
+    expect(res.ok()).toBe(true);
+    const body = await res.json();
+    expect(body.meta).toMatchObject({
+      count: 8,
+      modelVersion: "synthetic-demo",
+      week: 3,
+      sims: 10000,
+    });
+    expect(body.data[0].winDist).toHaveLength(18);
+  });
+});

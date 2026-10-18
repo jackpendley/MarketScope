@@ -327,6 +327,18 @@ Append-only model estimates made before kickoff by the daily job (`ingest predic
 | `home_qb`, `away_qb`, `home_qb_p`, `away_qb_p`                  | Expected starters (gsis id) and the probability each plays (Questionable: 0.64)                   |
 | `contributions`                                                 | Additive parts of the margin: `ratings` (unit channels + special teams), `home`, `qb`, `absences` |
 
+### `season_projections`: simulated season odds (MS-034)
+
+Written by the daily job (`ingest projections`), replaced per model version: every team before week 1 (week 0) and after every completed regular-season week of every season since 2016, from the same point-in-time state as `rating_snapshots` (the week matches). 10,000 simulated seasons for the current season, 2,000 for history. PK `(model_version, season, week, team)`; a CHECK keeps the probabilities in [0, 1]. Model estimates, never picks.
+
+| Column                               | Definition                                                                                                                                         |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sims`, `games_played`               | Simulated seasons; regular-season games whose results were fixed (the latest projection also counts final results whose play-by-play isn't in yet) |
+| `strength`                           | Points vs an average team on a neutral field used for playoff games (ratings plus the team's current QB term)                                      |
+| `mean_wins`, `win_dist`              | Mean regular-season wins; P(exactly k wins), k = 0..17 (JSON array)                                                                                |
+| `playoff_p`, `division_p`, `seed1_p` | Made the playoffs, won the division, earned the conference's #1 seed                                                                               |
+| `conf_p`, `sb_p`                     | Won the conference (reached the Super Bowl), won the Super Bowl                                                                                    |
+
 ### `nfl_ingest_runs`
 
 The same claim pattern as `ingestion_runs`. `job_key` is unique (`schedules:<seasons>:<UTC date>`, `team-stats:<seasons>:<UTC date>:<data hash>`, `snaps:<seasons>:<UTC date>:<data hash>`, `injuries:<seasons>:<UTC hour>`, `coaching:<csv hash>`, `context:<UTC date>:<hash>`, `weather:<seasons>:<UTC hour>[:recent]`, or a manual key). Also `dataset`, `status`, `attempt` (increments when a failed or stale run is reclaimed), `rows_upserted`, `source_version` (nflreadpy version + dataset SHA-256), and a sanitized `error_message`.

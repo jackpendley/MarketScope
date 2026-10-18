@@ -1,10 +1,10 @@
 # Project Status
 
-_Rewrite this file at the end of every session. Last updated: 2026-10-18 (session 1, continued; MS-033b)._
+_Rewrite this file at the end of every session. Last updated: 2026-10-18 (session 1, continued; MS-034)._
 
 ## Current milestone
 
-**Phase 9 (MarketScope Ratings): MS-029 (harness), MS-030 (Kalman engine), MS-030b (KenPom contract + `rating_snapshots`) MS-031a (QB layer) and MS-031b (non-QB availability) are done. MS-032a (factor selection, probabilities), MS-032b (ratings-v1 frozen, 2025 test, live forward test), MS-033a (ratings and team pages) and MS-033b (matchups, scorecard, game panel) are done. Next: MS-034 (stretch: season simulation).**
+**Phase 9 (MarketScope Ratings): MS-029 (harness), MS-030 (Kalman engine), MS-030b (KenPom contract + `rating_snapshots`) MS-031a (QB layer) and MS-031b (non-QB availability) are done. MS-032a (factor selection, probabilities), MS-032b (ratings-v1 frozen, 2025 test, live forward test), MS-033a (ratings and team pages), MS-033b (matchups, scorecard, game panel) and MS-034 (season simulation) are done: Phase 9 is complete. Next: Phase 10, MS-035 (pre-registered research studies).**
 
 - **Scope extended 2026-10-17 (ADR-028):** football context and MarketScope Ratings, "KenPom for the NFL". The design is frozen in `docs/RATINGS.md`.
 - **Site:** deployed privately at https://marketscope-delta.vercel.app (user `marketscope`; the password is `VERCEL_SITE_PASSWORD` in `apps/web/.env.local`).
@@ -94,17 +94,24 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-18 (sessio
   - `/teams/[abbr]`: ratings header, AdjEM trend with SE band, Five Factors with ranks, luck decomposition, schedule (opponent ranks then/now, last pre-kickoff model estimate), coaching staff.
   - `/api/ratings`; `queries/ratings.ts` with integration tests; synthetic ratings seed (`synthetic-demo`) and e2e tests; EXPLAIN on production (< 10 ms each).
 
-- **MS-033b (this PR):** matchups, scorecard and game panel (ADR-041).
+- **MS-033b** (#37): matchups, scorecard and game panel (ADR-041).
   - `/matchups`: a week's games (default: the next week with an unplayed game) with model scores, win probability, a contribution waterfall (ratings, home, QB, absences), expected QBs, the board consensus (or the nflverse close once final), and quality/excitement scores.
   - `/model`: the live forward test (last pre-kickoff estimate vs result and close: margin MAE, Brier, total MAE, paired bootstrap CIs from 30 games, weekly table, calibration from 50) and the 2025 test record from `model_runs`.
   - Game pages: a model panel for the linked football game. `/api/matchups`, `/api/model`; `queries/model.ts` with integration tests; nav adds Matchups.
   - Forward test so far: 18 estimates, 0 scored (it began with today's week-6 late games).
 
+- **MS-034 (this PR):** season simulation (ADR-042).
+  - `ratings/simulate.py` (pure: posterior strength draws with full covariance + weekly drift, key-number games, NFL tiebreakers through SOS then coin flip, bracket with re-seeding) and `ratings/project.py` (point-in-time inputs from the running model; next week = full model estimate; final-week rest for clinched #1 seeds).
+  - Game noise 12.64 (fitted 13.05 minus rating-error variance 10.55 pts², 2016–22) in `ratings/simulation.json`.
+  - Tiebreakers reproduce every 2016–24 playoff field and Wild Card matchup (fixture `tests/fixtures/results_2016_2024.csv`).
+  - Backtest 2016–24 (`reports/season-sim.md`): vs home-field coin flips, Brier playoffs −0.0077, division −0.018, #1 seed −0.005, wins MAE −0.22 (all CIs exclude 0); calibrated (70–80% → 69%); Super Bowl no skill; rating uncertainty ≈ no effect on scores.
+  - `season_projections` (migration 0014, RLS), daily `ingest projections` (every week since 2016; 10k sims current season, 2k history); `/projections`, team-page season outlook (win distribution, odds by week), `/api/projections`; nav adds Projections.
+
 ## Tests
 
-- **Football pytest:** 88 (unit tests, plus integration against the migrated test DB; includes validation of the committed coaching CSV).
+- **Football pytest:** 103 (unit tests, plus integration against the migrated test DB; includes validation of the committed coaching CSV and the 2016–24 seeding reproduction).
 - **Research pytest:** 25.
-- **TS:** db 46, shared 192, collector 51, web 101, e2e 33.
+- **TS:** db 47, shared 192, collector 51, web 104, e2e 36.
 
 ## Quotas
 
@@ -114,7 +121,7 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-18 (sessio
 ## Data (production, Supabase)
 
 - **Size:** ≈ 75 MB of odds data plus ≈ 20 MB of football tables (team-game stats 3 MB, snaps 9 MB, injuries 3 MB, the rest small).
-- **Migrations:** 0007–0013 applied in production.
+- **Migrations:** 0007–0014 applied in production (0014 applies on merge).
 
 ## Waiting on Jack
 
@@ -137,9 +144,10 @@ Nothing blocking.
 
 ## Next task
 
-**MS-034 (stretch): season simulation.**
+**Phase 10, MS-035: pre-registered research studies** (ROADMAP §Phase 10). Pre-register each study's question, data window, metric and decision rule in `research/` before looking at results; publish nulls.
 
-1. Simulate the rest of the season 10,000 times from the frozen ratings-v1 game model, propagating rating uncertainty (the filter covariance) and updating ratings inside each simulated branch.
-2. NFL tiebreakers to depth 3 (nflseedR logic), Week-18 rest behavior.
-3. Outputs: playoff, division and #1-seed odds and projected records, shown on `/ratings` and team pages as model estimates.
-4. Watch the forward test: once week 6–7 games are final, check `/model` against the stored rows.
+1. **R1 Market accuracy over time:** consensus at T−7d vs T−1h vs results; which book is most accurate (Pinnacle reference).
+2. **R5 Luck regression:** do the biggest actual-minus-expected-win gaps regress, and does the market price it? (Uses `rating_snapshots` 2016–24.)
+3. **R4 Is performance priced?** MarketScope AdjEM vs market-implied ratings: does the gap predict closing moves or results against the close?
+4. Then R2 (injury-news event study, needs more live 2026 weeks), R3 (wind → totals), R6 (model + market blend), R7 (play-caller impact).
+5. Keep an eye on `/model` as week 6–7 results arrive, and on the daily projections run time.

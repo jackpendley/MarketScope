@@ -15,6 +15,7 @@ import {
   nflPlayerGameSnaps,
   nflTeams,
   ratingSnapshots,
+  seasonProjections,
 } from "@marketscope/db";
 import { sql } from "drizzle-orm";
 
@@ -218,6 +219,48 @@ export async function seedSyntheticRatings(db: Database, now: Date): Promise<num
     }
   }
   await db.insert(ratingSnapshots).values(snaps);
+
+  // Synthetic season projections per snapshot week: smooth functions of the synthetic ratings (not
+  // simulated), with divisions summing to one and win distributions binomial over 17 games.
+  const binomial = (n: number, p: number) =>
+    Array.from({ length: 18 }, (_, k) => {
+      if (k > n) return 0;
+      let c = 1;
+      for (let j = 0; j < k; j++) c = (c * (n - j)) / (j + 1);
+      return c * p ** k * (1 - p) ** (n - k);
+    });
+  const projections = [];
+  for (let week = 0; week <= 3; week++) {
+    const em = snaps.filter((x) => x.week === week).map((x) => x.adjEm);
+    const share = (t: number, peers: number[]) =>
+      Math.exp(em[t]! / 2) / peers.reduce((sum, j) => sum + Math.exp(em[j]! / 2), 0);
+    const peers = (key: 2 | 3) => (t: number) =>
+      TEAMS.map((x, j) => [x, j] as const)
+        .filter(([x]) => x[key] === TEAMS[t]![key])
+        .map(([, j]) => j);
+    for (let t = 0; t < TEAMS.length; t++) {
+      const divisionP = share(t, peers(3)(t));
+      const confShare = share(t, peers(2)(t));
+      const meanWins = Math.min(16, Math.max(1, 8.5 + em[t]! / 2));
+      projections.push({
+        modelVersion: SYNTHETIC_RATINGS_VERSION,
+        season,
+        week,
+        team: TEAMS[t]![0],
+        sims: 10000,
+        gamesPlayed: week * 4,
+        strength: em[t]!,
+        meanWins,
+        winDist: binomial(17, meanWins / 17),
+        playoffP: Math.max(divisionP, 1 / (1 + Math.exp(-em[t]! / 2))),
+        divisionP,
+        seed1P: confShare * 0.6,
+        confP: confShare * 0.4,
+        sbP: confShare * 0.2,
+      });
+    }
+  }
+  await db.insert(seasonProjections).values(projections);
 
   await db.insert(nflCoachingStaff).values(
     TEAMS.map(([abbr], t) => ({

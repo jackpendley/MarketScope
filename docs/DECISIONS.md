@@ -703,3 +703,23 @@ The test is only honest if the model is fixed before it runs and cannot be re-ru
 - **Speed:** all new queries run in under 3 ms on production (PERFORMANCE.md).
 - **Small samples:** the scorecard starts with zero scored games and will be noisy for weeks. The intervals and minimums make that visible rather than hiding it.
 - **e2e:** the synthetic seed links week-4 games to the synthetic odds events, adds estimates for played weeks, closes, QB names and a synthetic test record, so every page and the game panel are covered with a synthetic banner.
+
+## ADR-042 — Season simulation: posterior draws, NFL tiebreakers, stored per week (2026-10-18)
+
+**Context.** MS-034 adds playoff, division, #1-seed, conference and Super Bowl odds. The choices: how to carry rating uncertainty, how far to take the tiebreakers, what to assume about future weeks, and how to check it all without touching the 2025 test season.
+
+**Decision.**
+
+- **Uncertainty by posterior draws, not in-branch updating.** Each simulated season draws all 32 true strengths once from the filter posterior (full covariance on the points scale, mapped from the channel filters through the game-layer weights), then adds the filter's weekly random-walk drift. Updating ratings inside a branch (538, ELWAY) approximates the same thing; drawing from the posterior is exact for this model.
+- **No double-counted noise.** The key-number distribution's scale was fitted on model errors, which include rating error, so games are played with scale √(13.05² − 10.55) = 12.64. The 10.55 pts² is the average rating-error variance of a matchup at prediction time over 2016–22 (`ratings/simulation.json`).
+- **Point in time.** Next week's games use the full model estimate (the same as the stored predictions). Later games use ratings, home field and each team's current QB term: future injury reports aren't known. A team that has clinched the #1 seed (no rival can reach its win total) rests its starter in the final week with probability ⅔ (ELWAY), costing the starter-vs-replacement QB gap.
+- **Tiebreakers through strength of schedule, then a coin flip** (nflseedR's default depth): the points-based steps need simulated scores and almost never decide. Division and wild-card procedures follow the NFL's two-club and multi-club rules, including the revert-to-step-one rule and one club per division in wild-card ties.
+- **Verification before use.** On the real results the tiebreakers reproduce every 2016–24 playoff field and Wild Card matchup (a committed fixture and test). The backtest covers 2016–24 only, nothing is tuned on it, and it is published with its baselines.
+- **Storage.** `season_projections` holds every team after every week since 2016 (10,000 simulated seasons for the current season, 2,000 for history), rebuilt daily with fixed seeds per (season, week), so history is reproducible.
+- **Labels.** "100%" means every simulated season, never "clinched". All pages call the odds model estimates.
+
+**Consequences.**
+
+- **Backtest:** clearly better than home-field coin flips for playoffs, division, #1 seed, conference and wins; well calibrated; no skill for the Super Bowl winner. Rating uncertainty barely changes the scores.
+- **Cost:** about 2 minutes per daily run (10,000 seasons take ≈ 2 s; history dominates).
+- **Not modeled:** seeds other than #1 resting starters, in-season coaching changes beyond the filter's bumps, and future injuries.

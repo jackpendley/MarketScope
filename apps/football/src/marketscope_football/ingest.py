@@ -33,7 +33,7 @@ from .linker import match_events
 from .schedules import game_rows, team_rows
 from .store import (apply_injury_plan, apply_links, final_game_ids, latest_injury_rows, load_games_frame,
                     load_link_inputs, replace_coaching_staff, replace_game_context, replace_rating_snapshots, replace_snaps,
-                    insert_predictions, upsert_model_run,
+                    insert_predictions, replace_season_projections, upsert_model_run,
                     replace_team_game_stats, team_kickoffs, upsert_games, upsert_teams, upsert_weather)
 from .team_stats import team_game_stats
 
@@ -303,6 +303,33 @@ def ingest_predictions(dry_run: bool, job_key: str | None, horizon_days: int = 8
             lambda conn: (insert_predictions(conn, rows, MODEL_VERSION, now), f"appended {len(rows)} estimates"))
 
 
+def ingest_projections(dry_run: bool, job_key: str | None, history_sims: int = 2000) -> None:
+    """Season projections (MS-034): replay ratings-v1 and simulate every season from 2016 before week 1
+    and after each completed regular-season week (10,000 seasons for the current one, 2,000 for history),
+    then replace season_projections for the model version."""
+    from .eval.run_benchmarks import prepare
+    from .ratings.design import LIKELIHOOD_SEASONS
+    from .ratings.live import build_model
+    from .ratings.project import LIVE_SIMS, load_sim_params, season_projections
+    from .ratings.version import MODEL_VERSION
+
+    last = current_season()
+    games, sigma, _ = prepare(refresh=True)
+    model, _, obs = build_model(games, sigma, refresh={last})
+    scale = load_sim_params()["game_scale"]
+    seasons = set(range(min(LIKELIHOOD_SEASONS), last + 1))
+    frame = season_projections(model, games, obs, seasons, history_sims, scale, include_unobserved_finals=True,
+                               latest_sims=LIVE_SIMS)
+    latest = frame[["season", "week"]].drop_duplicates().iloc[-1]
+    print(f"projections: {len(frame)} rows, latest {latest['season']} week {latest['week']}")
+    if dry_run:
+        return
+    digest = hashlib.sha256(pd.util.hash_pandas_object(
+        frame.drop(columns=["win_dist"]).round(9).astype(str), index=False).values.tobytes()).hexdigest()[:12]
+    run_job(job_key or f"projections:{_today()}:{digest}", "projections", f"{MODEL_VERSION} sha:{digest}",
+            lambda conn: (replace_season_projections(conn, frame, MODEL_VERSION), f"wrote {len(frame)} projections"))
+
+
 def ingest_model_runs(dry_run: bool, job_key: str | None) -> None:
     """Load the committed evaluation records (reports/model_runs/*.json) into model_runs (idempotent)."""
     import json
@@ -322,7 +349,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     sub = parser.add_subparsers(dest="dataset", required=True)
     for name in ("schedules", "team-stats", "snaps", "injuries", "coaching", "context", "weather", "ratings",
-                 "predictions", "model-runs"):
+                 "predictions", "model-runs", "projections"):
         p = sub.add_parser(name)
         p.add_argument("--seasons", default="current")
         p.add_argument("--dry-run", action="store_true")
@@ -347,6 +374,8 @@ def main() -> None:
         ingest_ratings(args.dry_run, args.job_key)
     elif args.dataset == "predictions":
         ingest_predictions(args.dry_run, args.job_key)
+    elif args.dataset == "projections":
+        ingest_projections(args.dry_run, args.job_key)
     elif args.dataset == "model-runs":
         ingest_model_runs(args.dry_run, args.job_key)
     elif args.dataset == "weather":

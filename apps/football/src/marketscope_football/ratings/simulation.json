@@ -1,0 +1,8 @@
+{
+  "model_version": "ratings-v1",
+  "fitted_scale": 13.05079687813807,
+  "rating_error_variance": 10.547359229502982,
+  "rating_error_games": 1906,
+  "game_scale": 12.64025078568125,
+  "seasons": "2016-2022"
+}

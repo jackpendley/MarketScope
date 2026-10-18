@@ -123,6 +123,10 @@ Each row: game identity and kickoff, franchise abbreviations and names, final sc
 
 The live forward-test scorecard and the committed evaluation records. `data.scorecard`: games scored; margin MAE, win-probability Brier (the close's from no-vig moneylines) and total MAE for the model and the close, with the paired difference and a 95% game-bootstrap interval from 30 games; the share of games the model favorite won; a per-week table; calibration bins from 50 games. `data.games` lists every scored game, `data.pending` counts estimated games not yet final, and `data.runs` holds the `model_runs` records (the one-time 2025 test first). 404 `NOT_FOUND` before any model output exists.
 
+## `GET /api/projections`
+
+Simulated season odds for every team after one week, best playoff odds first (`docs/DATA_DICTIONARY.md` → `season_projections`). Params `season` and `week` as for `/api/ratings`. Rows: team, names, `sims`, `gamesPlayed`, `strength`, `meanWins`, `winDist` (18 probabilities), `playoffP`, `divisionP`, `seed1P`, `confP`, `sbP`, plus the same week's record and AdjEM. `meta` gives `modelVersion`, `season`, `week`, `sims` and a disclaimer. 404 `NOT_FOUND` before any projections exist.
+
 ## `GET /api/health/live`
 
 Liveness only: `{ "status": "ok" }` without touching the database. Used by the Playwright web-server check and suitable for process supervisors. Readiness and data health live in `/api/health/data`.

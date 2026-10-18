@@ -260,6 +260,25 @@ def replace_rating_snapshots(conn: psycopg.Connection, frame: pd.DataFrame, mode
     return len(frame)
 
 
+PROJECTION_COLUMNS = ["model_version", "season", "week", "team", "sims", "games_played", "strength", "mean_wins",
+                      "win_dist", "playoff_p", "division_p", "seed1_p", "conf_p", "sb_p"]
+
+
+def replace_season_projections(conn: psycopg.Connection, frame: pd.DataFrame, model_version: str) -> int:
+    """Replace every season projection of one model version (deterministic given the data and seeds,
+    so a rebuild rewrites identical history and adds the new weeks)."""
+    import json as _json
+
+    with conn.cursor() as cur:
+        cur.execute("DELETE FROM season_projections WHERE model_version = %s", (model_version,))
+        with cur.copy(f"COPY season_projections ({', '.join(PROJECTION_COLUMNS)}) FROM STDIN") as copy:
+            for r in frame.assign(model_version=model_version)[PROJECTION_COLUMNS].itertuples(index=False):
+                row = [v.item() if hasattr(v, "item") else v for v in r]
+                row[PROJECTION_COLUMNS.index("win_dist")] = _json.dumps([float(x) for x in r.win_dist])
+                copy.write_row(row)
+    return len(frame)
+
+
 def insert_predictions(conn: psycopg.Connection, rows: list[dict], model_version: str, predicted_at) -> int:
     """Append-only: one new row per game per run; existing rows are never touched."""
     import json as _json

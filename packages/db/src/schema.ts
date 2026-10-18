@@ -692,6 +692,48 @@ export const ratingSnapshots = pgTable(
 ).enableRLS();
 
 /**
+ * Season projections (MS-034, ADR-042): simulated rest-of-season odds for every team before week 1
+ * (week 0) and after every regular-season week, from the same point-in-time state as
+ * rating_snapshots. Written by apps/football (`ingest projections`); replaced per model version.
+ */
+export const seasonProjections = pgTable(
+  "season_projections",
+  {
+    modelVersion: text().notNull(),
+    season: integer().notNull(),
+    /** Projection after all games through this week (matches rating_snapshots.week); 0 = preseason. */
+    week: integer().notNull(),
+    team: text()
+      .notNull()
+      .references(() => nflTeams.abbr),
+    /** Simulated seasons behind the probabilities. */
+    sims: integer().notNull(),
+    /** Regular-season games whose results were fixed (not simulated). */
+    gamesPlayed: integer().notNull(),
+    /** Team strength used for playoff games: points vs average on a neutral field, incl. its QB term. */
+    strength: doublePrecision().notNull(),
+    /** Mean regular-season wins and P(exactly k wins) for k = 0..17. */
+    meanWins: doublePrecision().notNull(),
+    winDist: jsonb().$type<number[]>().notNull(),
+    playoffP: doublePrecision().notNull(),
+    divisionP: doublePrecision().notNull(),
+    seed1P: doublePrecision().notNull(),
+    /** Wins the conference (reaches the Super Bowl) / wins the Super Bowl. */
+    confP: doublePrecision().notNull(),
+    sbP: doublePrecision().notNull(),
+    computedAt: tstz().notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.modelVersion, t.season, t.week, t.team] }),
+    index("season_projections_team_idx").on(t.team, t.season, t.week),
+    check(
+      "season_projections_p_range",
+      sql`${t.playoffP} BETWEEN 0 AND 1 AND ${t.divisionP} BETWEEN 0 AND 1 AND ${t.seed1P} BETWEEN 0 AND 1 AND ${t.confP} BETWEEN 0 AND 1 AND ${t.sbP} BETWEEN 0 AND 1`,
+    ),
+  ],
+).enableRLS();
+
+/**
  * Model evaluation runs (MS-032b, ADR-039): one row per scored run of a frozen model version, e.g. the
  * one-time 2025 test. A version can have only one "test" run.
  */
