@@ -289,3 +289,47 @@ AWS Lambda + EventBridge remains an optional later upgrade (Phase 3).
 
 - Index matching is now a review rule for any new `ORDER BY … DESC` query.
 - The coverage query aggregates once and joins. Correlated per-game subqueries cost 575 ms; the rewrite costs 141 ms. If it passes about 500 ms as history grows, move it to a summary table refreshed after each collection run.
+
+## ADR-028 — Football context and MarketScope Ratings ("KenPom for the NFL") (2026-10-17)
+
+**Context:** Jack asked for MarketScope to model the football itself as well as the market: results, home/away, weather, injuries and active players, snap counts, coaching and play-callers. The core is an internal team model of offense, defense and special teams built on EPA, in the style of KenPom (adjusted efficiency, tempo, luck, strength of schedule). The original spec listed weather, injuries and team stats as later ML features, "subject to licensed point-in-time availability". Free, licensed sources now cover them:
+
+- nflverse (CC-BY 4.0): play-by-play with EPA since 1999, schedules, injuries, PFR snap counts, depth charts, rosters, officials.
+- Open-Meteo Previous Runs (CC-BY 4.0): point-in-time forecasts from 2024.
+
+**Decision:**
+
+- **New product pillar, "Football context."** MarketScope Ratings follow a KenPom output contract:
+  - AdjO and AdjD in points per drive, AdjPace, AdjST, and AdjEM in points per game, each with a standard error.
+  - Luck (actual minus expected wins) and its decomposition.
+  - SOS (played, remaining, non-division, opponents' AdjO/AdjD) and the Five Factors.
+  - A weekly Matchups page with predicted scores, and a week-by-week time machine.
+
+  The full design is frozen in `docs/RATINGS.md` before any data is seen.
+
+- **The engine is a dynamic, opponent-adjusted Kalman filter** (Glickman–Stern state-space) over unit strengths. It is fed luck-adjusted, win-probability-weighted EPA channels and has a QB layer and an availability layer.
+  - Continuity of play-caller and QB conditions the between-season carryover.
+  - A classic KenPom iterative adjustment runs alongside it as an explainable benchmark.
+- **The model line is shown in the app** (Jack's decision), labeled "model estimate" with its measured historical error. It is never presented as a pick.
+  - The displayed rating uses no market inputs. Market-implied ratings are shown beside it for comparison.
+  - A model + market blend is research only.
+- **Validation:**
+  - Walk-forward, week by week.
+  - Seasons: 2016–22 for fitting, 2023–24 for validation and factor selection, 2025 as a test run exactly once.
+  - **2026 is a live forward test**, with immutable predictions written before kickoff.
+  - Benchmarks: naive, SRS, Elo, market-implied ratings, and the closing line.
+  - A candidate factor enters the model only if it improves validation beyond noise.
+- **New Python app `apps/football/`.**
+  - Why Python: nflverse and the numerical tooling are Python-native. `research/` stays read-only.
+  - The schema stays in Drizzle migrations, with RLS on every table.
+  - Raw play-by-play and participation stay in a gitignored local cache; only aggregates go to Supabase.
+  - Coordinators and play-callers come from a curated, sourced CSV, because no free dataset covers them.
+- **Order** (Jack's decision): the market-only ML baseline first (Phase 7), then football data (8), ratings (9), and studies plus ML with football features (10). That way the football features' lift is measured, not assumed.
+- **Player depth** (Jack's decision): team ratings plus an availability adjustment (snap-share-weighted, probabilistic by injury status, separate QB value). Player on-field impact from participation data is local research only, because FTN's data is CC-BY-SA and only arrives after each season.
+
+**Consequences:**
+
+- New CLAUDE.md rules: point-in-time features, no same-game results, the nflverse close as a labeled benchmark, labeled model output, attribution, immutable predictions, no market inputs in the displayed rating, factors earn their place.
+- Storage: aggregates, snaps for the current and previous season, ratings and predictions are estimated at about 30–40 MB. Measured after the backfill against the PERFORMANCE.md thresholds.
+- A new scheduled workflow (`football-data.yml`) reuses the existing `DATABASE_URL` secret. No new secrets, cloud resources or paid plans.
+- Expected and stated up front: the model should beat SRS and Elo and lose to the closing line. The interesting findings are which components matter, and where performance and price disagree.
