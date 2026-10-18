@@ -32,13 +32,14 @@ jobs:
       run:
         working-directory: apps/football
     steps:
+      # Checkout first: the default working directory (apps/football) must exist.
+      - uses: actions/checkout@v7
       - name: Check secret is configured
         run: |
           if [ -z "$DATABASE_URL" ]; then
             echo "::error::Repository secret DATABASE_URL is required."
             exit 1
           fi
-      - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
