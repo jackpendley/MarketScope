@@ -2,7 +2,7 @@ name: Football data
 
 # nflverse refresh for the current season (ADR-028/029/030).
 # 13:00 UTC: schedules and results (and event links), team-game stats from the latest
-#   play-by-play, snap counts and injury reports. nflverse rebuilds overnight, so this picks up
+#   play-by-play, snap counts, injury reports, and the curated coaching staff (+ drift check). nflverse rebuilds overnight, so this picks up
 #   Sunday, Monday and Thursday games the next morning.
 # 23:00 UTC: injury reports only, a second daily snapshot after teams publish their reports
 #   (≈ 4 pm ET), so status changes get a tighter first-seen time.
@@ -60,3 +60,12 @@ jobs:
         run: PYTHONPATH=src python -m marketscope_football.ingest snaps --seasons "$SEASONS"
       - name: Injury reports
         run: PYTHONPATH=src python -m marketscope_football.ingest injuries --seasons "$SEASONS"
+      # Loads data/coaching_staff.csv when it changed (job key = file hash), then flags drift
+      # between the CSV and teams' current Wikipedia staff pages as warnings (never fails).
+      - name: Coaching staff
+        if: github.event.schedule != '0 23 * * *'
+        run: PYTHONPATH=src python -m marketscope_football.ingest coaching
+      - name: Coaching staff drift check
+        if: github.event.schedule != '0 23 * * *'
+        continue-on-error: true
+        run: PYTHONPATH=src python -m marketscope_football.coaching_build --check

@@ -71,6 +71,13 @@
       "when": 1792307342912,
       "tag": "0009_availability",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792308883205,
+      "tag": "0010_coaching_staff",
+      "breakpoints": true
     }
   ]
 }

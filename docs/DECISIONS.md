@@ -367,3 +367,31 @@ AWS Lambda + EventBridge remains an optional later upgrade (Phase 3).
   - The last practice of the week moved the Questionable rate from 41% (missed) to 85% (full) in 2016–22, but only from 52% to 71% in 2023–25. MS-031 therefore lets the practice effect drift instead of freezing 2016–22 values.
 
 **Consequences.** Live injury history starts on 2026-10-18 (Week 6). Earlier 2026 weeks and 2025 exist only as final reports. Injury-news timing studies can use only live rows, and timing is known only to the interval between two snapshots, as with odds.
+
+## ADR-031 — Coaching staff and play-callers: assembled, sourced, validated (2026-10-18)
+
+**Context.** The ratings design conditions season-to-season carryover on play-caller and QB continuity, and Jack asked for coaching to be modelled. No free dataset records coordinators or play-callers. nflverse has head coaches per game, but they turned out to be stale for recent seasons: interims are missing from 2024, and the season in progress shows last season's coaches.
+
+**Decision.**
+
+- **Assemble rather than hand-type.**
+  - Head coaches come from nflverse (exact weeks) wherever it names every head coach the Wikipedia staff page lists. Elsewhere they come from the staff page plus dated changes.
+  - Coordinators come from Wikipedia's end-of-season staff (current staff templates for 2026), cited by revision.
+  - The Wikipedia pages are fetched through the MediaWiki API (polite user agent, cached).
+- **Play-callers are a separate fact from titles.** Several OCs did not call plays (Lombardi 2022–23) and several callers held no coordinator title (Patricia 2022, Sullivan 2023, Downing 2024, Steve Belichick 2019–23).
+  - The caller for each team-week is a season list, then dated overrides, then the default rule (the side's coordinator, or the head coach when there is none).
+  - Every row states its basis (`list`, `direct`, `bracketed`, `stint`, `rule`) and source. Unsourced defaults are visible, not hidden.
+- **One CSV is the source of truth**, versioned in git and validated before load:
+  - exactly one HC, one offensive and one defensive play-caller per team-week
+  - no overlapping spans
+  - a source on every sourced fact
+
+  CI runs the same validation on the committed file.
+
+- **Current season.** Changes are applied by hand when announced, with their effective date. A daily drift check warns when a team's Wikipedia staff page differs from the CSV.
+
+**Consequences.**
+
+- Offensive play-callers are sourced for about 69% of team-weeks (51% by full season lists); defensive play-callers for about 10%.
+- Defensive analyses must treat the coordinator-calls default as an assumption. RATINGS.md R7 states this.
+- About 40–55% of teams start each season with a new offensive play-caller, so the continuity factor has plenty of variation.

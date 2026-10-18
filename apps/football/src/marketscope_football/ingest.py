@@ -4,6 +4,7 @@
     DATABASE_URL=... .venv/bin/python -m marketscope_football.ingest team-stats --seasons 2016-2026 [--refresh] [--dry-run]
     DATABASE_URL=... .venv/bin/python -m marketscope_football.ingest snaps      --seasons 2025-2026 [--dry-run]
     DATABASE_URL=... .venv/bin/python -m marketscope_football.ingest injuries   --seasons 2025-2026 [--dry-run]
+    DATABASE_URL=... .venv/bin/python -m marketscope_football.ingest coaching   [--dry-run]   (data/coaching_staff.csv)
 
 `--seasons` accepts `2016-2026`, `2025,2026` or `current`. Every run claims a job key first
 (see db.py), so a repeated or overlapping run is harmless.
@@ -22,12 +23,14 @@ import psycopg
 
 from . import pbp
 from .availability import injury_rows, plan_injury_changes, snap_rows
+from .coaching import validate_staff
 from .db import claim_run, connect, fail_run, finish_run
 from .design import STATS_VERSION
 from .linker import match_events
 from .schedules import game_rows, team_rows
 from .store import (apply_injury_plan, apply_links, final_game_ids, latest_injury_rows, load_link_inputs,
-                    replace_snaps, replace_team_game_stats, team_kickoffs, upsert_games, upsert_teams)
+                    replace_coaching_staff, replace_snaps, replace_team_game_stats, team_kickoffs, upsert_games,
+                    upsert_teams)
 from .team_stats import team_game_stats
 
 
@@ -162,10 +165,33 @@ def ingest_injuries(seasons: list[int], dry_run: bool, job_key: str | None) -> N
     run_job(job_key or f"injuries:{_span(seasons)}:{now:%Y-%m-%dT%H}", "injuries", f"nflreadpy {nfl.__version__}", work)
 
 
+def ingest_coaching(dry_run: bool, job_key: str | None) -> None:
+    """Load the curated coaching CSV (validated first: a broken file never reaches the DB)."""
+    import csv
+    from pathlib import Path
+
+    path = Path(__file__).resolve().parents[2] / "data" / "coaching_staff.csv"
+    raw = path.read_bytes()
+    rows = list(csv.DictReader(raw.decode().splitlines()))
+    problems = validate_staff(rows)
+    if problems:
+        raise SystemExit("coaching_staff.csv is invalid:\n" + "\n".join(problems[:20]))
+    digest = hashlib.sha256(raw).hexdigest()[:12]
+    print(f"coaching staff: {len(rows)} rows, seasons {min(r['season'] for r in rows)}-{max(r['season'] for r in rows)}")
+    if dry_run:
+        return
+
+    def work(conn: psycopg.Connection) -> tuple[int, str]:
+        n = replace_coaching_staff(conn, rows)
+        return n, f"loaded {n} coaching rows"
+
+    run_job(job_key or f"coaching:{digest}", "coaching", f"coaching_staff.csv sha256:{digest}", work)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     sub = parser.add_subparsers(dest="dataset", required=True)
-    for name in ("schedules", "team-stats", "snaps", "injuries"):
+    for name in ("schedules", "team-stats", "snaps", "injuries", "coaching"):
         p = sub.add_parser(name)
         p.add_argument("--seasons", default="current")
         p.add_argument("--dry-run", action="store_true")
@@ -180,6 +206,8 @@ def main() -> None:
         ingest_team_stats(seasons, args.refresh, args.dry_run, args.job_key)
     elif args.dataset == "snaps":
         ingest_snaps(seasons, args.dry_run, args.job_key)
+    elif args.dataset == "coaching":
+        ingest_coaching(args.dry_run, args.job_key)
     else:
         ingest_injuries(seasons, args.dry_run, args.job_key)
 

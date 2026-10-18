@@ -225,6 +225,30 @@ Live history is append-only before kickoff: a status change adds a row, an uncha
 
 The "known before kickoff" assumption for backfill rows: NFL teams must publish their final game-status report the day before a game (two days before for Monday games), so the final weekly report precedes kickoff. Rates of players actually playing by status are in `apps/football/reports/plays-given-status.md`.
 
+### `nfl_coaching_staff`: coaches and play-callers by team-week span (MS-027)
+
+Loaded from the curated, versioned `apps/football/data/coaching_staff.csv` (ADR-031), which `coaching_build.py` assembles from:
+
+1. **Head coaches:** nflverse schedules (per game, exact change weeks), except where nflverse is stale (missing interim head coaches; the season in progress still shows last season's coaches). There the Wikipedia staff page plus dated changes are used.
+2. **Coordinators** (OC, DC, special teams): each team's Wikipedia season article (`{{NFL final staff}}`), or its current staff template for the season in progress. The source is cited by revision (`oldid`). Facts only; no text is copied.
+3. **Curated inputs**, one cited source per row:
+   - `coordinator_changes.csv`: mid-season changes with effective dates; co-coordinators; listed coaches who did not serve.
+   - `playcaller_lists.csv`: season-wide lists of every team's offensive play-caller (ESPN 2023–26, 4for4 2020, partial 2016/2018 head-coach lists).
+   - `playcaller_overrides.csv`: dated exceptions and handoffs.
+
+| Column                                      | Notes                                                                                                                                                                                                                                        |
+| ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `season`, `team`, `role`                    | `role`: HC, OC, DC, STC, or PC (called plays without one of those titles, e.g. Steve Belichick 2019–23, Mike Sullivan 2023)                                                                                                                  |
+| `coach_id`, `coach_name`                    | `coach_id` is stable across teams: the Wikipedia article title, else `name:<slug>`                                                                                                                                                           |
+| `from_week`, `to_week`                      | NFL weeks (postseason 19–22). Spans are continuous across byes: a change made during a bye covers it                                                                                                                                         |
+| `offense_playcaller`, `defense_playcaller`  | Exactly one of each per team-week (validated before load). When a caller holds two titles, the flag sits on the side's coordinator row, else the HC row                                                                                      |
+| `source_url`                                | Source of the title: nflverse, a Wikipedia revision, or a news report                                                                                                                                                                        |
+| `playcaller_basis`, `playcaller_source_url` | `list`, `direct` (source about that coach and season), `bracketed` (same coach in lists before and after), `stint` (source covering the tenure), or `rule` (unsourced default: the side's coordinator, or the head coach when there is none) |
+
+Coverage by basis, plus play-caller turnover by season: `apps/football/reports/coaching-staff.md`. About 31% of offensive and 90% of defensive team-weeks rest on the rule, because defensive play-calling is rarely reported team by team.
+
+The table is replaced whole on each load (job key = CSV hash). A daily drift check compares the CSV with each team's current Wikipedia staff template and prints warnings. Unique `(season, team, role, coach_id, from_week)`; index `coach_id`.
+
 ### `nfl_ingest_runs`
 
-The same claim pattern as `ingestion_runs`. `job_key` is unique (`schedules:<seasons>:<UTC date>`, `team-stats:<seasons>:<UTC date>:<data hash>`, `snaps:<seasons>:<UTC date>:<data hash>`, `injuries:<seasons>:<UTC hour>`, or a manual key). Also `dataset`, `status`, `attempt` (increments when a failed or stale run is reclaimed), `rows_upserted`, `source_version` (nflreadpy version + dataset SHA-256), and a sanitized `error_message`.
+The same claim pattern as `ingestion_runs`. `job_key` is unique (`schedules:<seasons>:<UTC date>`, `team-stats:<seasons>:<UTC date>:<data hash>`, `snaps:<seasons>:<UTC date>:<data hash>`, `injuries:<seasons>:<UTC hour>`, `coaching:<csv hash>`, or a manual key). Also `dataset`, `status`, `attempt` (increments when a failed or stale run is reclaimed), `rows_upserted`, `source_version` (nflreadpy version + dataset SHA-256), and a sanitized `error_message`.

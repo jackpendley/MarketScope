@@ -1,0 +1,41 @@
+season,team,role,kind,coach_out,coach_in,effective_date,source_url,note
+2016,BAL,OC,change,Marc Trestman,Marty Mornhinweg,2016-10-10,https://en.wikipedia.org/wiki/2016_Baltimore_Ravens_season,
+2016,JAX,OC,change,Greg Olson,Nathaniel Hackett,2016-10-29,https://nfl.com/_amp/jaguars-fire-offensive-coordinator-greg-olson-0ap3000000729489,
+2016,KC,OC,co,Brad Childress,Matt Nagy,,https://en.wikipedia.org/wiki/2016_Kansas_City_Chiefs_season,co-offensive coordinators
+2017,CIN,OC,change,Ken Zampese,Bill Lazor,2017-09-15,https://www.si.com/nfl/2017/09/15/bengals-ken-zampese-offensive-coordinator-fired,
+2018,BAL,OC,ignore,Greg Roman,,,https://en.wikipedia.org/wiki/2018_Baltimore_Ravens_season,listed as interim OC; Marty Mornhinweg was OC all season (Roman promoted for 2019)
+2018,CLE,OC,change,Todd Haley,Freddie Kitchens,2018-10-29,https://en.wikipedia.org/wiki/2018_Cleveland_Browns_season,
+2018,JAX,OC,change,Nathaniel Hackett,Scott Milanovich,2018-11-26,https://mynews13.com/fl/orlando/sports/2018/11/26/jacksonville-jaguars-fire-offensive-coordinator,
+2018,CIN,DC,change,Teryl Austin,,2018-11-12,https://africa.espn.com/nfl/story/_/id/25256032/cincinnati-bengals-fire-defensive-coordinator-teryl-austin,head coach Marvin Lewis took over the defense
+2019,CAR,OC,change,Norv Turner,Scott Turner,2019-12-03,https://panthers.com/news/scott-turner-embracing-the-opportunity-to-call-plays-for-the-first-time,
+2020,MIN,DC,co,Andre Patterson,Adam Zimmer,,https://en.wikipedia.org/wiki/2020_Minnesota_Vikings_season,co-defensive coordinators
+2021,MIN,DC,co,Andre Patterson,Adam Zimmer,,https://en.wikipedia.org/wiki/2021_Minnesota_Vikings_season,co-defensive coordinators
+2021,CAR,OC,change,Joe Brady,Jeff Nixon,2021-12-05,https://sports.yahoo.com/panthers-fire-oc-joe-brady-184336774.html,
+2021,JAX,STC,ignore,Brian Schneider,,,https://www.espn.com/nfl/story/_/id/31485215/top-special-teams-coach-brian-schneider-steps-away-jaguars-personal-reasons,left the team in May 2021
+2021,MIA,OC,co,Eric Studesville,George Godsey,,https://en.wikipedia.org/wiki/2021_Miami_Dolphins_season,co-offensive coordinators; play-calling split not sourced
+2021,NYG,OC,change,Jason Garrett,Freddie Kitchens,2021-11-23,https://www.cbssports.com/nfl/news/giants-fire-jason-garrett-new-yorks-offensive-coordinator-out-after-loss-to-buccaneers,
+2022,NO,DC,co,Ryan Nielsen,Kris Richard,,https://en.wikipedia.org/wiki/2022_New_Orleans_Saints_season,co-defensive coordinators; play-calling split not sourced
+2023,BUF,OC,change,Ken Dorsey,Joe Brady,2023-11-14,https://nfl.com/news/bills-fire-offensive-coordinator-ken-dorsey-joe-brady-to-take-over-as-interim-oc,
+2023,CHI,DC,change,Alan Williams,,2023-09-20,https://www.espn.co.uk/nfl/story/_/id/38447917/alan-williams-resigns-bears-defensive-coordinator,
+2023,LV,OC,change,Mick Lombardi,Bo Hardegree,2023-11-01,https://www.news4jax.com/sports/2023/11/01/raiders-fire-offensive-coordinator-mick-lombardi-ap-source-says/,
+2023,PIT,OC,change,Matt Canada,Eddie Faulkner,2023-11-21,https://www.cbssports.com/nfl/news/steelers-fire-oc-matt-canada-mike-tomlin-says-decision-mine-and-mine-alone-kenny-pickett-to-remain-starter,
+2023,WAS,DC,change,Jack Del Rio,Ron Rivera,2023-11-24,https://www.nationalfootballpost.com/commanders-fire-dc-jack-del-rio-dbs-coach,head coach Ron Rivera took the interim DC role
+2024,CHI,OC,change,Shane Waldron,Thomas Brown,2024-11-12,https://new.cbssports.com/nfl/news/bears-fire-offensive-coordinator-shane-waldron-thomas-brown-to-take-over-play-calling-duties-per-report/,
+2024,CHI,OC,change,Thomas Brown,Chris Beatty,2024-12-02,https://en.wikipedia.org/wiki/2024_Chicago_Bears_season,Brown became interim head coach; Beatty interim OC
+2024,LV,OC,change,Luke Getsy,Scott Turner,2024-11-04,https://www.fox5vegas.com/2024/11/04/raiders-fire-offensive-coordinator-luke-getsy-2-other-offensive-coaches,
+2024,WAS,OC,add,,Kliff Kingsbury,,https://en.wikipedia.org/wiki/2024_Washington_Commanders_season,staff page has no staff template; named in the article lead
+2024,WAS,DC,add,,Joe Whitt Jr.,,https://en.wikipedia.org/wiki/2024_Washington_Commanders_season,staff page has no staff template; named in the article lead
+2024,CHI,HC,change,Matt Eberflus,Thomas Brown,2024-11-29,https://en.wikipedia.org/wiki/2024_Chicago_Bears_season,interim head coach
+2024,NYJ,HC,change,Robert Saleh,Jeff Ulbrich,2024-10-08,https://www.nfl.com/news/jets-interim-coach-jeff-ulbrich-todd-downing-offensive-play-calling-duties-oc-nathaniel-hackett,interim head coach
+2024,NO,HC,change,Dennis Allen,Darren Rizzi,2024-11-04,https://en.wikipedia.org/wiki/2024_New_Orleans_Saints_season,interim head coach
+2025,NYG,HC,change,Brian Daboll,Mike Kafka,2025-11-10,https://www.giants.com/news/brian-daboll-relieved-of-duties-mike-kafka-to-serve-as-giants-interim-head-coach,interim head coach
+2025,NYG,OC,change,Mike Kafka,Tim Kelly,2025-11-10,https://en.wikipedia.org/wiki/2025_New_York_Giants_season,Kafka became interim head coach
+2025,TEN,HC,change,Brian Callahan,Mike McCoy,2025-10-13,https://www.actionnetwork.com/nfl/how-nfl-teams-perform-after-firing-their-head-coach-midseason-titans-fire-brian-callahan,interim head coach
+2025,LV,OC,change,Chip Kelly,Greg Olson,2025-11-23,https://www.cbssports.com/nfl/news/raiders-fire-offensive-coordinator-chip-kelly-amid-2-9-start-per-report/,
+2020,DET,OC,add,,Darrell Bevell,,https://www.4for4.com/2020/preseason/how-play-calling-tendencies-affect-fantasy-football-2020,OC until named interim head coach; the final staff lists him only as interim HC
+2016,LA,HC,change,Jeff Fisher,John Fassel,2016-12-12,https://en.wikipedia.org/wiki/2016_Los_Angeles_Rams_season,interim head coach (nflverse lists Fisher all season)
+2019,CAR,HC,change,Ron Rivera,Perry Fewell,2019-12-03,https://www.si.com/nfl/falcons/onsi/news/atlanta-falcons-carolina-panthers-week-14-questions-and-answers,interim head coach (nflverse lists Rivera all season)
+2016,MIN,OC,change,Norv Turner,Pat Shurmur,2016-11-02,https://en.wikipedia.org/wiki/2016_Minnesota_Vikings_season,Turner resigned; the final staff omits the OC
+2016,BUF,OC,change,Greg Roman,Anthony Lynn,2016-09-16,https://en.wikipedia.org/wiki/2016_Buffalo_Bills_season,Roman fired after Week 2; Lynn later interim HC; the final staff omits the OC
+2017,NYG,DC,add,,Steve Spagnuolo,,https://en.wikipedia.org/wiki/2017_New_York_Giants_season,DC all season (interim HC from Week 14); the final staff omits the DC
+2021,JAX,OC,add,,Darrell Bevell,,https://en.wikipedia.org/wiki/2021_Jacksonville_Jaguars_season,OC all season (interim HC from Week 15); the final staff omits the OC
