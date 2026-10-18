@@ -133,7 +133,8 @@ def main() -> None:
     REPORT.write_text("\n".join(L))
     metrics = {r["model"]: {k: (None if pd.isna(r[k]) else float(r[k])) for k in r.index if k != "model"}
                for _, r in scores.iterrows()}
-    metrics["paired_vs_benchmarks"] = {ref: {k: float(r[k]) for k in r.index if k.startswith("d_")} for ref, r in vs.items()}
+    metrics["paired_vs_benchmarks"] = {ref: {k: (None if pd.isna(r[k]) else float(r[k])) for k in r.index if k.startswith("d_")}
+                                       for ref, r in vs.items()}
     metrics["cover_log_loss"] = cover_ll
     RECORD.parent.mkdir(parents=True, exist_ok=True)
     RECORD.write_text(json.dumps({"model_version": MODEL, "run_kind": "test", "seasons": str(test[0]),

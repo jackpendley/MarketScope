@@ -305,6 +305,28 @@ Written by `ingest ratings` (ADR-035). The Kalman filter is replayed from 2012 w
 | `off_*` / `def_*` Five Factors                                    | Season to date, raw: success rate (play-weighted), explosiveness (EPA per successful play), average starting yard line, points per trip inside the 40, turnovers per game (giveaways / takeaways) |
 | `computed_at`                                                     | When the row was written. A rebuild rewrites identical history (filtered snapshots don't change when later games arrive)                                                                          |
 
+### `model_runs`: scored evaluation runs (MS-032b)
+
+One row per scored run of a frozen model version, loaded from the committed records in `apps/football/reports/model_runs/` by `ingest model-runs` (ADR-039). A partial unique index allows one `test` run per version.
+
+| Column                                          | Definition                                                                              |
+| ----------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `model_version`, `run_kind`, `seasons`, `games` | e.g. `ratings-v1`, `test`, `2025`, 285. Kinds: validation, test, forward                |
+| `metrics`                                       | Per-model point estimates and 95% CIs, paired differences vs benchmarks, cover log loss |
+| `params_sha256`, `code_sha`                     | The frozen parameters and the commit that ran the evaluation                            |
+| `ran_at`, `created_at`                          | When the evaluation ran / was loaded                                                    |
+
+### `model_predictions`: the live forward test (MS-032b)
+
+Append-only model estimates made before kickoff by the daily job (`ingest predictions`), one row per upcoming game (next 8 days) per run. Rows are never updated; a CHECK requires `predicted_at < kickoff_utc`. The scorecard uses each game's last row before kickoff. PK `(model_version, game_id, predicted_at)`. Model estimates, never picks.
+
+| Column                                                          | Definition                                                                                        |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `expected_margin`, `expected_total`, `home_score`, `away_score` | Home margin and total (points). Team scores = (total ± margin) / 2                                |
+| `p_home`                                                        | P(home win) from the key-number margin distribution (ties count half)                             |
+| `home_qb`, `away_qb`, `home_qb_p`, `away_qb_p`                  | Expected starters (gsis id) and the probability each plays (Questionable: 0.64)                   |
+| `contributions`                                                 | Additive parts of the margin: `ratings` (unit channels + special teams), `home`, `qb`, `absences` |
+
 ### `nfl_ingest_runs`
 
 The same claim pattern as `ingestion_runs`. `job_key` is unique (`schedules:<seasons>:<UTC date>`, `team-stats:<seasons>:<UTC date>:<data hash>`, `snaps:<seasons>:<UTC date>:<data hash>`, `injuries:<seasons>:<UTC hour>`, `coaching:<csv hash>`, `context:<UTC date>:<hash>`, `weather:<seasons>:<UTC hour>[:recent]`, or a manual key). Also `dataset`, `status`, `attempt` (increments when a failed or stale run is reclaimed), `rows_upserted`, `source_version` (nflreadpy version + dataset SHA-256), and a sanitized `error_message`.

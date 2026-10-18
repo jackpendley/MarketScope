@@ -216,9 +216,9 @@
         "d_log_loss": -0.00551041695835186,
         "d_log_loss_lo": -0.02675562128291472,
         "d_log_loss_hi": 0.015343053917925788,
-        "d_total_mae": NaN,
-        "d_total_mae_lo": NaN,
-        "d_total_mae_hi": NaN
+        "d_total_mae": null,
+        "d_total_mae_lo": null,
+        "d_total_mae_hi": null
       },
       "SRS (ridge)": {
         "d_margin_mae": -0.1251638395211483,
@@ -233,9 +233,9 @@
         "d_log_loss": -0.0008234225359985414,
         "d_log_loss_lo": -0.017828710243904207,
         "d_log_loss_hi": 0.015457282921519017,
-        "d_total_mae": NaN,
-        "d_total_mae_lo": NaN,
-        "d_total_mae_hi": NaN
+        "d_total_mae": null,
+        "d_total_mae_lo": null,
+        "d_total_mae_hi": null
       },
       "market-implied ratings": {
         "d_margin_mae": -0.23686929427877246,
@@ -250,9 +250,9 @@
         "d_log_loss": -0.016224165380606337,
         "d_log_loss_lo": -0.033030719682156956,
         "d_log_loss_hi": 0.0009837187400565574,
-        "d_total_mae": NaN,
-        "d_total_mae_lo": NaN,
-        "d_total_mae_hi": NaN
+        "d_total_mae": null,
+        "d_total_mae_lo": null,
+        "d_total_mae_hi": null
       },
       "naive home field": {
         "d_margin_mae": -0.9557362455447294,

@@ -1,10 +1,10 @@
 # Project Status
 
-_Rewrite this file at the end of every session. Last updated: 2026-10-18 (session 1, continued; MS-032a)._
+_Rewrite this file at the end of every session. Last updated: 2026-10-18 (session 1, continued; MS-032b)._
 
 ## Current milestone
 
-**Phase 9 (MarketScope Ratings): MS-029 (harness), MS-030 (Kalman engine), MS-030b (KenPom contract + `rating_snapshots`) MS-031a (QB layer) and MS-031b (non-QB availability) are done. MS-032a (factor selection, probabilities) is done. Next: MS-032b (2025 test, freeze v1, live predictions).**
+**Phase 9 (MarketScope Ratings): MS-029 (harness), MS-030 (Kalman engine), MS-030b (KenPom contract + `rating_snapshots`) MS-031a (QB layer) and MS-031b (non-QB availability) are done. MS-032a (factor selection, probabilities) and MS-032b (ratings-v1 frozen, 2025 test, live forward test) are done. Next: MS-033 (UI).**
 
 - **Scope extended 2026-10-17 (ADR-028):** football context and MarketScope Ratings, "KenPom for the NFL". The design is frozen in `docs/RATINGS.md`.
 - **Site:** deployed privately at https://marketscope-delta.vercel.app (user `marketscope`; the password is `VERCEL_SITE_PASSWORD` in `apps/web/.env.local`).
@@ -78,14 +78,20 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-18 (sessio
   - **2023–24 model MAE 10.25** (Elo 10.33, SRS 10.37, close 9.84); availability +0.08 (CI −0.00 to +0.17); vs Elo −0.08 and vs SRS −0.12, CIs include 0.
   - Report next-week estimates show QB and absence contributions.
 
-- **MS-032a (this PR):** factor selection and probabilities (ADR-038; rules pre-registered in separate commits).
+- **MS-032a** (#33, rebase-merged to keep the pre-registration commits): factor selection and probabilities (ADR-038; rules pre-registered in separate commits).
   - None of 10 candidates kept (rest, bye, travel, time zones, body clock, altitude, division, playoffs, new HC, new play-caller); RB absence dropped.
   - Key-number margin distribution adopted (3 → 2.9×, 7 → 2.0×, ties 0.04×).
   - The model's cover probabilities vs the close are worse than a coin flip (no information against the market).
 
+- **MS-032b (this PR):** ratings-v1 (ADR-039).
+  - Frozen: params sha256 `c2f6ed74…` pinned and test-guarded.
+  - **2025 test (once): MAE 10.06** (Elo 10.19, SRS 10.19, market-implied 10.30, close 9.67); vs Elo −0.13 (CI −0.42 to +0.17); vs close +0.39 (CI +0.07 to +0.70). Cover probabilities vs the close worse than a coin flip.
+  - `model_runs` + `model_predictions` (migration 0013); daily `ingest predictions` (append-only, before kickoff) and `ingest model-runs`.
+  - Parameter-comparison table in RATINGS.md.
+
 ## Tests
 
-- **Football pytest:** 85 (unit tests, plus integration against the migrated test DB; includes validation of the committed coaching CSV).
+- **Football pytest:** 88 (unit tests, plus integration against the migrated test DB; includes validation of the committed coaching CSV).
 - **Research pytest:** 25.
 - **TS:** db 36, shared 192, collector 51, web 83, e2e 18.
 
@@ -120,10 +126,11 @@ Nothing blocking.
 
 ## Next task
 
-**MS-032b:**
+**MS-033: UI** (Next.js, `apps/web`):
 
-1. `model_runs` and `model_predictions` tables (migration 0013, RLS).
-2. Freeze `ratings-v1` (params sha256), with rating_snapshots under that version.
-3. Run the 2025 test once (`allow_test=True`), logged in `model_runs` and `reports/test-2025.md`.
-4. Parameter-comparison table vs 538, ELWAY, nfelo and Inpredictable.
-5. Daily `ingest predictions`: append-only pre-kickoff predictions for upcoming games (the live forward test).
+1. **Data access:** `packages/db/src/queries/ratings.ts` (snapshots by week, team history, predictions, model runs), with EXPLAIN review.
+2. **`/ratings`:** the KenPom table with week time machine, sortable columns, ranks, ± SE.
+3. **`/teams/[abbr]`:** header, Five Factors, schedule with estimates, luck decomposition, rating trend, coaching staff.
+4. **`/matchups`:** the week's games with model scores, win probabilities and contributions, next to the consensus.
+5. **`/model`:** live scorecard (last estimate before kickoff vs results and the close) and the 2025 test.
+6. **Labels everywhere:** "model estimate" with its error; never pick, value or edge language.

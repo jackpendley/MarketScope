@@ -331,6 +331,41 @@ ADR-038; report `apps/football/reports/factor-selection.md`.
 - **Key-number margin distribution:** 3 is 2.9× and 7 is 2.0× as likely as a smooth curve implies; ties 0.04×. It was adopted for win probability (log loss 0.6352 vs 0.6362).
 - **The model has no information against the close.** Its probability of covering the closing line scores worse than a coin flip (log loss 0.715 vs 0.693).
 
+### ratings-v1 and the 2025 test (MS-032b)
+
+`ratings-v1` was frozen (params sha256 `c2f6ed74…`, ADR-039) before the one-time test on the untouched 2025 season (285 games). Report: `apps/football/reports/test-2025.md`.
+
+| Model                  | Margin MAE | Δ vs ratings-v1 (paired 95% CI)   |
+| ---------------------- | ---------- | --------------------------------- |
+| **ratings-v1**         | **10.06**  | –                                 |
+| Elo (538)              | 10.19      | ratings-v1 −0.13 (−0.42 to +0.17) |
+| SRS (ridge)            | 10.19      | ratings-v1 −0.13 (−0.39 to +0.14) |
+| market-implied ratings | 10.30      | ratings-v1 −0.24 (−0.57 to +0.08) |
+| nflverse close         | 9.67       | ratings-v1 +0.39 (+0.07 to +0.70) |
+
+- **The pre-stated expectation held:** "the model beats SRS and Elo and loses to the close." It beats them in direction on 2023–24 and 2025, but never beyond noise, and it loses to the close clearly.
+- **No information against the market:** its probability of covering the closing line scores worse than a coin flip on 2025 too (0.714 vs 0.693).
+- **The live 2026 forward test** (`model_predictions`, append-only, before kickoff) began 2026-10-18.
+
+### Parameter comparison (fitted values vs published models)
+
+| Parameter                                | MarketScope (fitted 2016–22)               | Published                                                               |
+| ---------------------------------------- | ------------------------------------------ | ----------------------------------------------------------------------- |
+| Home-field advantage (points)            | 1.6                                        | 538: 65 Elo (≈ 2.6 pts), later ≈ 48 Elo; ELWAY 1–3.5; Inpredictable ≈ 2 |
+| Extra home edge in the playoffs          | +1.2 (t 0.9; not kept)                     | ELWAY +0.75                                                             |
+| Bye week                                 | -0.2 (t -0.3; not kept)                    | 538 +25 Elo (≈ 1 pt); ELWAY ≈ +1; arXiv 2408.10867 ≈ 0 since 2011       |
+| Each extra day of rest                   | +0.02 (t 0.2; not kept)                    | ELWAY +0.3                                                              |
+| Travel (per 1000 km)                     | -0.09 (t -0.3; not kept)                   | 538: travel-distance term                                               |
+| New head coach (first 10 games)          | -1.4 (t -2.2; not kept)                    | ELWAY: negative for ≈ 10 games                                          |
+| Rating kept between seasons              | pass off 0.72 / def 0.40; rush 0.58 / 0.58 | 538 keeps ⅔; nfelo reversion ≈ 0.53                                     |
+| P(QB plays \| Questionable)              | 0.64                                       | ELWAY ≈ 0.70                                                            |
+| P(plays \| Doubtful), all positions      | 0.01                                       | ELWAY ≈ 0.07 (QBs)                                                      |
+| Best starting QB vs replacement (points) | 4.5                                        | ELWAY: QB ≈ 30% of a team's player value                                |
+| Missing starter, non-QB (points)         | OL 0.73, WR/TE 0.90, front 7 0.59, DB 0.58 | ELWAY 0.5–1 typical, max ≈ 2                                            |
+| Pythagorean exponent                     | 2.79                                       | classic NFL 2.37                                                        |
+| Margin of exactly 3 vs a smooth curve    | 2.9×                                       | (key number)                                                            |
+| Model + market blend                     | not tested (research R6)                   | nfelo: ≈ 65% market weight optimal                                      |
+
 ## Changelog
 
 - 2026-10-17: design frozen (ADR-028).
@@ -346,3 +381,4 @@ ADR-038; report `apps/football/reports/factor-selection.md`.
 - 2026-10-18: non-QB availability (MS-031b, ADR-037).
 - 2026-10-18: factor-selection rule pre-registered (MS-032), committed before any candidate was fitted.
 - 2026-10-18: factor selection run (no candidate kept; RB absence dropped) and the margin distribution adopted (ADR-038).
+- 2026-10-18: ratings-v1 frozen, 2025 test run once, live forward test started (ADR-039).

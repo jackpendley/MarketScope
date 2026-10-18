@@ -580,7 +580,7 @@ AWS Lambda + EventBridge remains an optional later upgrade (Phase 3).
 
 ## ADR-038 — Factor selection and win probabilities for ratings-v1 (2026-10-18)
 
-**Context.** The factor catalog marks rest, travel, time zones, altitude, division, playoffs and coaching changes as `test`: each must earn its place. RATINGS.md also specifies a key-number-aware margin distribution. Both rules were pre-registered in `ratings/selection_design.py` and committed before any candidate or distribution was fitted (commits 25c9382 and 193548f).
+**Context.** The factor catalog marks rest, travel, time zones, altitude, division, playoffs and coaching changes as `test`: each must earn its place. RATINGS.md also specifies a key-number-aware margin distribution. Both rules were pre-registered in `ratings/selection_design.py` and committed before any candidate or distribution was fitted (commits a48d601 and 73a9f33 on main).
 
 **Decision.**
 
@@ -608,3 +608,52 @@ AWS Lambda + EventBridge remains an optional later upgrade (Phase 3).
   - Adopted: log loss 0.6352 vs 0.6362 (Δ −0.0010, CI −0.0048 to +0.0025).
   - It also gives push and cover probabilities.
 - **Against the closing line:** the model's P(home covers the close) has a log loss of 0.715, worse than a coin flip (0.693). Its disagreements with the market carry no information about who covers. That is the expected result for a model 0.4 points less accurate than the close, and it is why the UI shows a model estimate, never a pick.
+
+## ADR-039 — Freezing ratings-v1, the one-time 2025 test, and the live forward test (2026-10-18)
+
+**Context.** RATINGS.md's validation protocol has three stages:
+
+- 2023–24 for selection
+- 2025 as an untouched test, evaluated once
+- 2026 as a live forward test with immutable pre-kickoff predictions
+
+The test is only honest if the model is fixed before it runs and cannot be re-run after a peek.
+
+**Decision.**
+
+- **Freeze.** `ratings-v1` is the MS-032a parameters. Their canonical sha256 (`c2f6ed74…`) is pinned in `ratings/version.py`, and a test fails if `params.json` changes, so a change requires a new version. Snapshots are written under `ratings-v1`; the earlier `kalman-v0` rows are removed.
+- **Test, once.** `ratings/run_test.py`:
+  - refuses to run if its report exists or if the parameters differ from the frozen ones
+  - requires `--confirm-once`
+  - was rehearsed on 2024 (already scored) so a bug could not spend the test
+  - writes `reports/test-2025.md` and a run record (`reports/model_runs/`) that `ingest model-runs` loads into `model_runs`
+
+  `model_runs` allows one `test` row per version (a partial unique index).
+
+  Commit order on the branch: freeze (20d04a0), test script (30ab657), result (f567682). The record's NaN entries for metrics a model does not produce were rewritten as JSON null so Postgres accepts them; no result changed.
+
+- **Live forward test.** `model_predictions` is append-only:
+  - The daily job adds one row per upcoming game (next 8 days) with the margin, total, team scores, P(home), the expected QBs and the additive contributions (ratings, home, QB, absences).
+  - Rows are never updated, and a CHECK requires `predicted_at < kickoff_utc`.
+  - The scorecard (MS-033) uses each game's last row before kickoff.
+- **Daily inputs.** Depth charts, injury reports, snap counts and weekly rosters are cached per season, and the daily job refreshes only the current season.
+
+**Consequences (2025, 285 games).**
+
+| Model                  | Margin MAE |
+| ---------------------- | ---------- |
+| ratings-v1             | 10.06      |
+| Elo                    | 10.19      |
+| SRS                    | 10.19      |
+| market-implied ratings | 10.30      |
+| close                  | 9.67       |
+
+- Paired results:
+  - vs Elo −0.13 (CI −0.42 to +0.17)
+  - vs SRS −0.13 (CI −0.39 to +0.14)
+  - vs market-implied −0.24 (CI −0.57 to +0.08)
+  - vs the close +0.39 (CI +0.07 to +0.70)
+- Totals: MAE 10.60 (close 10.42, naive 11.01).
+- P(cover the close) scores worse than a coin flip again (0.714 vs 0.693).
+- **The honest summary:** across validation and test, ratings-v1 is consistently a little better than Elo and SRS, but never beyond noise. It is clearly behind the market, and it holds no information about the market's errors. The interesting results are the components (QB, absences, luck, the parameter table), not a better line.
+- Any later model is `ratings-v2`, with new rows. 2025 is no longer a clean test for it; the live 2026 forward test is.

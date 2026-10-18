@@ -24,7 +24,7 @@ RATING_FEATURES = (*UNIT_CHANNELS, "st")
 def build_model(games: pd.DataFrame, sigma: float, refresh: bool | set[int] = False, name: str = "ratings-v1") -> tuple:
     """A fresh ratings-v1 KalmanRatings plus its expected-starter table. `refresh` re-reads the
     nflverse depth charts, injury reports, snaps and rosters for those seasons."""
-    _, obs, teams, sf, wf = load_inputs("model")
+    _, obs, teams, sf, wf = load_inputs("model", refresh=bool(refresh))
     units, st, layer = load_params("model")
     p = json.loads(PARAMS_PATH.read_text())["model"]
     last = int(games["season"].max())

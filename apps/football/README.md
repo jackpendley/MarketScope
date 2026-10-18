@@ -48,6 +48,7 @@ PYTHONPATH=src DATABASE_URL=... .venv/bin/python -m marketscope_football.ingest 
 - **KenPom contract** (`ratings/outputs.py`, `luck.py`, `kenpom_classic.py`, ADR-035): weekly point-in-time snapshots (AdjEM/AdjO/AdjD/AdjST/AdjPace with SEs and ranks, luck and its decomposition, SOS, Five Factors) written to `rating_snapshots`; a pace filter feeds AdjPace and game totals. See `reports/ratings-contract.md`.
 - **QB layer** (`ratings/qb.py`, `qb_fit.py`, ADR-036): point-in-time expected starter (previous starter, injury report, depth chart), shrunk QB ratings from dropbacks, the team's QB baseline, and the game feature. Depth charts, injury reports and per-QB dropbacks are cached in `.cache/ratings/`.
 - **Availability** (`ratings/availability_adj.py`, ADR-037): expected non-QB absences per position group from the final injury report, reserve roster status and recent snap shares (2013+); fitted with the QB layer by `qb_fit`.
+- **ratings-v1** (`ratings/version.py`, `live.py`, `run_test.py`, ADR-039): parameters frozen (sha256 pinned, test-guarded); the one-time 2025 test (`reports/test-2025.md`); `ingest predictions` appends pre-kickoff estimates to `model_predictions` daily; `ingest model-runs` loads `reports/model_runs/*.json`.
 - `final_observed_at` is stamped only when a game we already held becomes final. Backfilled history never gets the import time.
 
 Data: [nflverse](https://github.com/nflverse) (CC-BY 4.0). Coaching facts: Wikipedia (cited by revision) and the news sources in `data/*.csv`.
