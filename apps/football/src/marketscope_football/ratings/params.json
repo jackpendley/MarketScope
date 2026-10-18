@@ -1,0 +1,1310 @@
+{
+  "model": {
+    "pass": {
+      "sigma2": 2.3656840242287207,
+      "q_week_off": 0.00015447451154952449,
+      "q_week_def": 0.00012213906919824393,
+      "q_season_off": 0.0026858831617195106,
+      "q_season_def": 0.0019937336079175116,
+      "rho_off_same": 0.7172027028141819,
+      "rho_off_changed": 0.5800688818358347,
+      "rho_def_same": 0.40164581218498874,
+      "rho_def_changed": 0.6776456240786894,
+      "hfa": 0.007207572334491943,
+      "q_week_mean": 1.592881507900718e-05,
+      "q_season_mean": 2.507209082088483e-05,
+      "bump_off": 0.006606649547017276,
+      "bump_def": 0.009162390764366916
+    },
+    "rush": {
+      "sigma2": 0.8719465519039402,
+      "q_week_off": 8.213970382940301e-05,
+      "q_week_def": 7.757508304280535e-05,
+      "q_season_off": 0.0009141882672419414,
+      "q_season_def": 0.00046417000989975877,
+      "rho_off_same": 0.5797894724759042,
+      "rho_off_changed": 0.5813155010828094,
+      "rho_def_same": 0.5838184007099831,
+      "rho_def_changed": 0.2979887872724747,
+      "hfa": -0.016477762743275743,
+      "q_week_mean": 1.2452439089755163e-05,
+      "q_season_mean": 7.048180853906739e-07,
+      "bump_off": 0.0015020965817862466,
+      "bump_def": 0.005041059281322949
+    },
+    "succ": {
+      "sigma2": 0.270115941295653,
+      "q_week_off": 1.5347730742731442e-05,
+      "q_week_def": 6.000961035703932e-06,
+      "q_season_off": 0.0003979948638553734,
+      "q_season_def": 0.00017717620507714797,
+      "rho_off_same": 0.5901961601401673,
+      "rho_off_changed": 0.5782645877248369,
+      "rho_def_same": 0.580840492365554,
+      "rho_def_changed": 0.5555083813013507,
+      "hfa": 0.0038349356162374316,
+      "q_week_mean": 1.9010216519402542e-07,
+      "q_season_mean": 0.00019746973521054636,
+      "bump_off": 0.0002575760139004867,
+      "bump_def": 5.638946881267605e-05
+    },
+    "ppd": {
+      "sigma2": 6.9389852433163,
+      "q_week_off": 0.0016850065849503843,
+      "q_week_def": 0.0019497295178408896,
+      "q_season_off": 0.06176354762089968,
+      "q_season_def": 0.004897314559247617,
+      "rho_off_same": 0.6364261615035818,
+      "rho_off_changed": 0.4622805992188486,
+      "rho_def_same": 0.5012598357189257,
+      "rho_def_changed": 0.7836741425645717,
+      "hfa": 0.14129923280900186,
+      "q_week_mean": 0.00033116471981918614,
+      "q_season_mean": 0.012544812486324178,
+      "bump_off": 0.04969722908855006,
+      "bump_def": 0.00012797138800579083
+    },
+    "st": {
+      "sigma2": 21.98631484002281,
+      "q_week": 0.025962869637252257,
+      "q_season": 0.00025502526793317606,
+      "rho": 0.7928662960969939,
+      "hfa": 0.3787757960997301
+    },
+    "game": {
+      "n_pass": 38.59076600209863,
+      "n_rush": 24.88090241343127,
+      "n_drives": 11.1204092339979,
+      "w": {
+        "pass": 0.19699593259521028,
+        "rush": 0.1620828857427669,
+        "succ": 58.20662586741359,
+        "ppd": 0.542823027189545,
+        "st": 0.8488891039870389
+      },
+      "c": 0.24083182329150532
+    },
+    "game_alternatives": {
+      "no success-rate channel": {
+        "n_pass": 38.59076600209863,
+        "n_rush": 24.88090241343127,
+        "n_drives": 11.1204092339979,
+        "w": {
+          "pass": 0.4028640311740752,
+          "rush": 0.5322094563401428,
+          "ppd": 0.6546263891895596,
+          "st": 0.7490077765078207
+        },
+        "c": 0.42860425415292447
+      },
+      "no points-per-drive channel": {
+        "n_pass": 38.59076600209863,
+        "n_rush": 24.88090241343127,
+        "n_drives": 11.1204092339979,
+        "w": {
+          "pass": 0.5627854884209407,
+          "rush": 0.5424350037173528,
+          "succ": 69.15314620185072,
+          "st": 1.2450902904020114
+        },
+        "c": 0.9548275587876622
+      },
+      "EPA channels only (pass, rush, special teams)": {
+        "n_pass": 38.59076600209863,
+        "n_rush": 24.88090241343127,
+        "n_drives": 11.1204092339979,
+        "w": {
+          "pass": 0.9103414101983448,
+          "rush": 1.0967110811914356,
+          "st": 1.222500883986179
+        },
+        "c": 1.3686582943455188
+      },
+      "no special-teams channel": {
+        "n_pass": 38.59076600209863,
+        "n_rush": 24.88090241343127,
+        "n_drives": 11.1204092339979,
+        "w": {
+          "pass": 0.06317406580042709,
+          "rush": 0.09387600460278815,
+          "succ": 53.242011678734805,
+          "ppd": 0.7439617764398327
+        },
+        "c": 0.28383956004924094
+      },
+      "points per drive + special teams only": {
+        "n_pass": 38.59076600209863,
+        "n_rush": 24.88090241343127,
+        "n_drives": 11.1204092339979,
+        "w": {
+          "ppd": 1.1247817576118648,
+          "st": 0.4391597049273867
+        },
+        "c": -0.29431584091167656
+      }
+    },
+    "meta": {
+      "pass": {
+        "loglik": -463.077145545077,
+        "observations": 3812,
+        "converged": true,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "iterations": 199,
+        "seconds": 183.1
+      },
+      "rush": {
+        "loglik": 609.9151638308837,
+        "observations": 3812,
+        "converged": true,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "iterations": 269,
+        "seconds": 304.2
+      },
+      "succ": {
+        "loglik": 4663.654715307928,
+        "observations": 3812,
+        "converged": true,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "iterations": 173,
+        "seconds": 167.3
+      },
+      "ppd": {
+        "loglik": -4770.645757890667,
+        "observations": 3812,
+        "converged": true,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "iterations": 199,
+        "seconds": 177.6
+      },
+      "st": {
+        "loglik": -5698.128219252083,
+        "observations": 1906,
+        "converged": true,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "iterations": 40,
+        "seconds": 4.6
+      },
+      "game": {
+        "games": 1906,
+        "mae": 10.01872463726249,
+        "rmse": 12.931743409026156,
+        "alternatives": {
+          "no success-rate channel": {
+            "mae": 10.04060846430581,
+            "rmse": 12.963776128453675
+          },
+          "no points-per-drive channel": {
+            "mae": 10.046704888091886,
+            "rmse": 12.960994867155174
+          },
+          "EPA channels only (pass, rush, special teams)": {
+            "mae": 10.079893030624076,
+            "rmse": 13.0078978843149
+          },
+          "no special-teams channel": {
+            "mae": 10.012930604390641,
+            "rmse": 12.954971912113393
+          },
+          "points per drive + special teams only": {
+            "mae": 10.057777131191026,
+            "rmse": 12.990177877485229
+          }
+        },
+        "one EPA coefficient (pass + rush + st)": {
+          "mae": 10.072233155943607,
+          "rmse": 13.012959103163775
+        }
+      }
+    }
+  },
+  "no luck adjustment": {
+    "succ": {
+      "sigma2": 0.270115941295653,
+      "q_week_off": 1.5347730742731442e-05,
+      "q_week_def": 6.000961035703932e-06,
+      "q_season_off": 0.0003979948638553734,
+      "q_season_def": 0.00017717620507714797,
+      "rho_off_same": 0.5901961601401673,
+      "rho_off_changed": 0.5782645877248369,
+      "rho_def_same": 0.580840492365554,
+      "rho_def_changed": 0.5555083813013507,
+      "hfa": 0.0038349356162374316,
+      "q_week_mean": 1.9010216519402542e-07,
+      "q_season_mean": 0.00019746973521054636,
+      "bump_off": 0.0002575760139004867,
+      "bump_def": 5.638946881267605e-05
+    },
+    "ppd": {
+      "sigma2": 6.9389852433163,
+      "q_week_off": 0.0016850065849503843,
+      "q_week_def": 0.0019497295178408896,
+      "q_season_off": 0.06176354762089968,
+      "q_season_def": 0.004897314559247617,
+      "rho_off_same": 0.6364261615035818,
+      "rho_off_changed": 0.4622805992188486,
+      "rho_def_same": 0.5012598357189257,
+      "rho_def_changed": 0.7836741425645717,
+      "hfa": 0.14129923280900186,
+      "q_week_mean": 0.00033116471981918614,
+      "q_season_mean": 0.012544812486324178,
+      "bump_off": 0.04969722908855006,
+      "bump_def": 0.00012797138800579083
+    },
+    "st": {
+      "sigma2": 21.984770910040456,
+      "q_week": 0.02601075703695562,
+      "q_season": 0.0005117459475538017,
+      "rho": 0.7919644706917799,
+      "hfa": 0.3785124196474528
+    },
+    "pass": {
+      "sigma2": 2.526377907976449,
+      "q_week_off": 0.00013347230905915228,
+      "q_week_def": 4.927858253497651e-05,
+      "q_season_off": 0.0031360140950948976,
+      "q_season_def": 0.002580682118715524,
+      "rho_off_same": 0.7207462050565534,
+      "rho_off_changed": 0.5920456906714682,
+      "rho_def_same": 0.40010359103459286,
+      "rho_def_changed": 0.7889740145385213,
+      "hfa": 0.003979619684778246,
+      "q_week_mean": 1.4158154177549031e-05,
+      "q_season_mean": 1.0970548599021293e-05,
+      "bump_off": 0.004578294760879567,
+      "bump_def": 0.012097008159701815
+    },
+    "rush": {
+      "sigma2": 0.8878966839284664,
+      "q_week_off": 9.370055836439477e-05,
+      "q_week_def": 5.820817703269851e-05,
+      "q_season_off": 0.0009847946603074324,
+      "q_season_def": 0.000528327595246321,
+      "rho_off_same": 0.5430620611208762,
+      "rho_off_changed": 0.5439882828902405,
+      "rho_def_same": 0.6311909562482851,
+      "rho_def_changed": 0.38232293457353483,
+      "hfa": -0.017102388003933627,
+      "q_week_mean": 1.5730404676388536e-05,
+      "q_season_mean": 2.2940654133166124e-06,
+      "bump_off": 0.0027685855206767626,
+      "bump_def": 0.0020759483346950445
+    },
+    "game": {
+      "n_pass": 38.59076600209863,
+      "n_rush": 24.88090241343127,
+      "n_drives": 11.1204092339979,
+      "w": {
+        "pass": 0.1659716467287732,
+        "rush": 0.018298459005577937,
+        "succ": 62.82355475145373,
+        "ppd": 0.5612735202006465,
+        "st": 0.8399356644037393
+      },
+      "c": 0.16800035922442874
+    },
+    "game_alternatives": {
+      "no success-rate channel": {
+        "n_pass": 38.59076600209863,
+        "n_rush": 24.88090241343127,
+        "n_drives": 11.1204092339979,
+        "w": {
+          "pass": 0.3823495225125909,
+          "rush": 0.4008272338687983,
+          "ppd": 0.67963437193668,
+          "st": 0.7163136089955177
+        },
+        "c": 0.40838604643350745
+      },
+      "no points-per-drive channel": {
+        "n_pass": 38.59076600209863,
+        "n_rush": 24.88090241343127,
+        "n_drives": 11.1204092339979,
+        "w": {
+          "pass": 0.5547017281128082,
+          "rush": 0.41612709420664296,
+          "succ": 71.44070361209053,
+          "st": 1.2170698959090935
+        },
+        "c": 0.9836960947639081
+      },
+      "EPA channels only (pass, rush, special teams)": {
+        "n_pass": 38.59076600209863,
+        "n_rush": 24.88090241343127,
+        "n_drives": 11.1204092339979,
+        "w": {
+          "pass": 0.9040839304090695,
+          "rush": 0.9623249475172799,
+          "st": 1.1654361621553897
+        },
+        "c": 1.466630272757741
+      },
+      "no special-teams channel": {
+        "n_pass": 38.59076600209863,
+        "n_rush": 24.88090241343127,
+        "n_drives": 11.1204092339979,
+        "w": {
+          "pass": 0.02090380166302066,
+          "rush": -0.061828098664972186,
+          "succ": 57.51662134381333,
+          "ppd": 0.7836496247336945
+        },
+        "c": 0.15333716982663045
+      },
+      "points per drive + special teams only": {
+        "n_pass": 38.59076600209863,
+        "n_rush": 24.88090241343127,
+        "n_drives": 11.1204092339979,
+        "w": {
+          "ppd": 1.1248085952402789,
+          "st": 0.4392620322636044
+        },
+        "c": -0.2942795833892391
+      }
+    },
+    "meta": {
+      "succ": {
+        "loglik": 4663.654715307928,
+        "observations": 3812,
+        "converged": true,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "iterations": 173,
+        "seconds": 170.4
+      },
+      "ppd": {
+        "loglik": -4770.645757890667,
+        "observations": 3812,
+        "converged": true,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "iterations": 199,
+        "seconds": 177.7
+      },
+      "st": {
+        "loglik": -5698.1282707166165,
+        "observations": 1906,
+        "converged": true,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "iterations": 42,
+        "seconds": 6.0
+      },
+      "pass": {
+        "loglik": -576.8592208090544,
+        "observations": 3812,
+        "converged": true,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "iterations": 1,
+        "seconds": 2.4
+      },
+      "rush": {
+        "loglik": 574.7194115836256,
+        "observations": 3812,
+        "converged": true,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "iterations": 67,
+        "seconds": 59.6
+      },
+      "game": {
+        "games": 1906,
+        "mae": 10.020068182535917,
+        "rmse": 12.932720024613262,
+        "alternatives": {
+          "no success-rate channel": {
+            "mae": 10.049157170838305,
+            "rmse": 12.971860281402662
+          },
+          "no points-per-drive channel": {
+            "mae": 10.0506699400896,
+            "rmse": 12.958191872054192
+          },
+          "EPA channels only (pass, rush, special teams)": {
+            "mae": 10.08891091995579,
+            "rmse": 13.010185379615297
+          },
+          "no special-teams channel": {
+            "mae": 10.012790593986235,
+            "rmse": 12.95519888474859
+          },
+          "points per drive + special teams only": {
+            "mae": 10.057776036021156,
+            "rmse": 12.990192073098955
+          }
+        },
+        "one EPA coefficient (pass + rush + st)": {
+          "mae": 10.08388233703189,
+          "rmse": 13.012820052216778
+        }
+      }
+    }
+  },
+  "no EPA cap": {
+    "pass": {
+      "sigma2": 2.4837122440170236,
+      "q_week_off": 0.00016540238993695825,
+      "q_week_def": 0.0001386335447485205,
+      "q_season_off": 0.002761005890660686,
+      "q_season_def": 0.001870289046901142,
+      "rho_off_same": 0.7100527192049544,
+      "rho_off_changed": 0.5860408737691587,
+      "rho_def_same": 0.41192232024439884,
+      "rho_def_changed": 0.6802918702684344,
+      "hfa": 0.004237115122009553,
+      "q_week_mean": 1.6305634918647714e-05,
+      "q_season_mean": 1.850312903602519e-05,
+      "bump_off": 0.006695487374640472,
+      "bump_def": 0.007433105415649905
+    },
+    "succ": {
+      "sigma2": 0.270115941295653,
+      "q_week_off": 1.5347730742731442e-05,
+      "q_week_def": 6.000961035703932e-06,
+      "q_season_off": 0.0003979948638553734,
+      "q_season_def": 0.00017717620507714797,
+      "rho_off_same": 0.5901961601401673,
+      "rho_off_changed": 0.5782645877248369,
+      "rho_def_same": 0.580840492365554,
+      "rho_def_changed": 0.5555083813013507,
+      "hfa": 0.0038349356162374316,
+      "q_week_mean": 1.9010216519402542e-07,
+      "q_season_mean": 0.00019746973521054636,
+      "bump_off": 0.0002575760139004867,
+      "bump_def": 5.638946881267605e-05
+    },
+    "ppd": {
+      "sigma2": 6.9389852433163,
+      "q_week_off": 0.0016850065849503843,
+      "q_week_def": 0.0019497295178408896,
+      "q_season_off": 0.06176354762089968,
+      "q_season_def": 0.004897314559247617,
+      "rho_off_same": 0.6364261615035818,
+      "rho_off_changed": 0.4622805992188486,
+      "rho_def_same": 0.5012598357189257,
+      "rho_def_changed": 0.7836741425645717,
+      "hfa": 0.14129923280900186,
+      "q_week_mean": 0.00033116471981918614,
+      "q_season_mean": 0.012544812486324178,
+      "bump_off": 0.04969722908855006,
+      "bump_def": 0.00012797138800579083
+    },
+    "st": {
+      "sigma2": 21.985209439204844,
+      "q_week": 0.025873688295268205,
+      "q_season": 0.0021366567416282456,
+      "rho": 0.7922951917859591,
+      "hfa": 0.3784222307152004
+    },
+    "rush": {
+      "sigma2": 0.9073796649292212,
+      "q_week_off": 9.475488720975173e-05,
+      "q_week_def": 7.373380650413117e-05,
+      "q_season_off": 0.0007870017679529484,
+      "q_season_def": 0.0005264753500911154,
+      "rho_off_same": 0.5653313728183823,
+      "rho_off_changed": 0.6043548882646373,
+      "rho_def_same": 0.5733688372623803,
+      "rho_def_changed": 0.2635950319977061,
+      "hfa": -0.017053814584788593,
+      "q_week_mean": 1.2164182981601097e-05,
+      "q_season_mean": 1.5688697986214256e-06,
+      "bump_off": 0.001392596678321111,
+      "bump_def": 0.004968948662384002
+    },
+    "game": {
+      "n_pass": 38.59076600209863,
+      "n_rush": 24.88090241343127,
+      "n_drives": 11.1204092339979,
+      "w": {
+        "pass": 0.1867059493031775,
+        "rush": 0.13266412661369573,
+        "succ": 59.437964917041285,
+        "ppd": 0.5477900763401917,
+        "st": 0.845945664071737
+      },
+      "c": 0.24281273823799449
+    },
+    "game_alternatives": {
+      "no success-rate channel": {
+        "n_pass": 38.59076600209863,
+        "n_rush": 24.88090241343127,
+        "n_drives": 11.1204092339979,
+        "w": {
+          "pass": 0.38065766147791374,
+          "rush": 0.4987975218456916,
+          "ppd": 0.6774067148362325,
+          "st": 0.7315129073329705
+        },
+        "c": 0.44130028562141715
+      },
+      "no points-per-drive channel": {
+        "n_pass": 38.59076600209863,
+        "n_rush": 24.88090241343127,
+        "n_drives": 11.1204092339979,
+        "w": {
+          "pass": 0.546257503924145,
+          "rush": 0.5063378872094392,
+          "succ": 71.59794499772977,
+          "st": 1.242219541479699
+        },
+        "c": 1.0039949876354282
+      },
+      "EPA channels only (pass, rush, special teams)": {
+        "n_pass": 38.59076600209863,
+        "n_rush": 24.88090241343127,
+        "n_drives": 11.1204092339979,
+        "w": {
+          "pass": 0.8994677668240219,
+          "rush": 1.081736044760774,
+          "st": 1.2160573996937305
+        },
+        "c": 1.4832452180559204
+      },
+      "no special-teams channel": {
+        "n_pass": 38.59076600209863,
+        "n_rush": 24.88090241343127,
+        "n_drives": 11.1204092339979,
+        "w": {
+          "pass": 0.058587271849903214,
+          "rush": 0.06593162522580606,
+          "succ": 54.015282279656276,
+          "ppd": 0.7479546254805476
+        },
+        "c": 0.2714288507677862
+      },
+      "points per drive + special teams only": {
+        "n_pass": 38.59076600209863,
+        "n_rush": 24.88090241343127,
+        "n_drives": 11.1204092339979,
+        "w": {
+          "ppd": 1.1247864242929126,
+          "st": 0.4393115541086241
+        },
+        "c": -0.2942268441386515
+      }
+    },
+    "meta": {
+      "pass": {
+        "loglik": -554.037424642858,
+        "observations": 3812,
+        "converged": true,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "iterations": 261,
+        "seconds": 237.8
+      },
+      "succ": {
+        "loglik": 4663.654715307928,
+        "observations": 3812,
+        "converged": true,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "iterations": 173,
+        "seconds": 169.8
+      },
+      "ppd": {
+        "loglik": -4770.645757890667,
+        "observations": 3812,
+        "converged": true,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "iterations": 199,
+        "seconds": 179.1
+      },
+      "st": {
+        "loglik": -5698.128735814997,
+        "observations": 1906,
+        "converged": true,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "iterations": 38,
+        "seconds": 3.9
+      },
+      "rush": {
+        "loglik": 537.9265290002301,
+        "observations": 3812,
+        "converged": true,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "iterations": 2,
+        "seconds": 3.1
+      },
+      "game": {
+        "games": 1906,
+        "mae": 10.017616220043832,
+        "rmse": 12.931982623121595,
+        "alternatives": {
+          "no success-rate channel": {
+            "mae": 10.0392948242464,
+            "rmse": 12.966228453712333
+          },
+          "no points-per-drive channel": {
+            "mae": 10.043354102546237,
+            "rmse": 12.961597348495483
+          },
+          "EPA channels only (pass, rush, special teams)": {
+            "mae": 10.077075835902225,
+            "rmse": 13.01366164103128
+          },
+          "no special-teams channel": {
+            "mae": 10.012683053838346,
+            "rmse": 12.95508926883169
+          },
+          "points per drive + special teams only": {
+            "mae": 10.057769691762688,
+            "rmse": 12.990184882296676
+          }
+        },
+        "one EPA coefficient (pass + rush + st)": {
+          "mae": 10.06850225214698,
+          "rmse": 13.018732699179445
+        }
+      }
+    }
+  },
+  "no WP weighting": {
+    "pass": {
+      "sigma2": 2.2488230905993984,
+      "q_week_off": 0.00017657379367356648,
+      "q_week_def": 0.00013481649469361745,
+      "q_season_off": 0.0027103101493598128,
+      "q_season_def": 0.0020249512467113463,
+      "rho_off_same": 0.6990936023736035,
+      "rho_off_changed": 0.5546167537260408,
+      "rho_def_same": 0.40731211690604435,
+      "rho_def_changed": 0.6490910685219198,
+      "hfa": -0.0004105424077670655,
+      "q_week_mean": 2.1295569083910535e-05,
+      "q_season_mean": 3.247238681320076e-05,
+      "bump_off": 0.005090772723875759,
+      "bump_def": 0.012110211321556558
+    },
+    "rush": {
+      "sigma2": 0.8560290302546141,
+      "q_week_off": 9.988983732097378e-05,
+      "q_week_def": 5.460187157034877e-05,
+      "q_season_off": 0.0006765302741649522,
+      "q_season_def": 0.0007251201239779598,
+      "rho_off_same": 0.559849290359932,
+      "rho_off_changed": 0.5721203254510527,
+      "rho_def_same": 0.5773799178131865,
+      "rho_def_changed": 0.34124892203357976,
+      "hfa": -0.018345482689039228,
+      "q_week_mean": 1.3856103689903268e-05,
+      "q_season_mean": 4.08061492584758e-06,
+      "bump_off": 8.465318527861906e-05,
+      "bump_def": 0.006810128994883014
+    },
+    "ppd": {
+      "sigma2": 6.9389852433163,
+      "q_week_off": 0.0016850065849503843,
+      "q_week_def": 0.0019497295178408896,
+      "q_season_off": 0.06176354762089968,
+      "q_season_def": 0.004897314559247617,
+      "rho_off_same": 0.6364261615035818,
+      "rho_off_changed": 0.4622805992188486,
+      "rho_def_same": 0.5012598357189257,
+      "rho_def_changed": 0.7836741425645717,
+      "hfa": 0.14129923280900186,
+      "q_week_mean": 0.00033116471981918614,
+      "q_season_mean": 0.012544812486324178,
+      "bump_off": 0.04969722908855006,
+      "bump_def": 0.00012797138800579083
+    },
+    "st": {
+      "sigma2": 21.9855811529104,
+      "q_week": 0.02592256703157579,
+      "q_season": 0.0009859989688463253,
+      "rho": 0.79244385346913,
+      "hfa": 0.37877410128304934
+    },
+    "succ": {
+      "sigma2": 0.24655655271108917,
+      "q_week_off": 1.8772964499754514e-05,
+      "q_week_def": 4.382309666312147e-06,
+      "q_season_off": 0.0003317160206987842,
+      "q_season_def": 0.00017986105814157504,
+      "rho_off_same": 0.5587810232240056,
+      "rho_off_changed": 0.567856009074146,
+      "rho_def_same": 0.6234164853368077,
+      "rho_def_changed": 0.5308661714453516,
+      "hfa": 0.0012705539293807345,
+      "q_week_mean": 7.066236114241978e-06,
+      "q_season_mean": 0.00015544500653671663,
+      "bump_off": 2.763300805741007e-05,
+      "bump_def": 3.182943795620491e-06
+    },
+    "game": {
+      "n_pass": 38.59076600209863,
+      "n_rush": 24.88090241343127,
+      "n_drives": 11.1204092339979,
+      "w": {
+        "pass": 0.4237346608524338,
+        "rush": 0.45645531037305037,
+        "succ": 50.718583892587304,
+        "ppd": 0.38221161255719177,
+        "st": 1.020651609578914
+      },
+      "c": 0.8047525075932089
+    },
+    "game_alternatives": {
+      "no success-rate channel": {
+        "n_pass": 38.59076600209863,
+        "n_rush": 24.88090241343127,
+        "n_drives": 11.1204092339979,
+        "w": {
+          "pass": 0.5970147489720479,
+          "rush": 0.7828627514545913,
+          "ppd": 0.44615045557004235,
+          "st": 0.9246069121796393
+        },
+        "c": 0.9571633692362792
+      },
+      "no points-per-drive channel": {
+        "n_pass": 38.59076600209863,
+        "n_rush": 24.88090241343127,
+        "n_drives": 11.1204092339979,
+        "w": {
+          "pass": 0.7189584897126077,
+          "rush": 0.7451594386335899,
+          "succ": 54.80367903702721,
+          "st": 1.3215179561489754
+        },
+        "c": 1.4262238510158132
+      },
+      "EPA channels only (pass, rush, special teams)": {
+        "n_pass": 38.59076600209863,
+        "n_rush": 24.88090241343127,
+        "n_drives": 11.1204092339979,
+        "w": {
+          "pass": 0.9628462499040068,
+          "rush": 1.15557336043705,
+          "st": 1.2714474988294255
+        },
+        "c": 1.7070316037990996
+      },
+      "no special-teams channel": {
+        "n_pass": 38.59076600209863,
+        "n_rush": 24.88090241343127,
+        "n_drives": 11.1204092339979,
+        "w": {
+          "pass": 0.21475824785927058,
+          "rush": 0.34215451407195985,
+          "succ": 44.98142674354812,
+          "ppd": 0.6635050260236482
+        },
+        "c": 0.7086979802018731
+      },
+      "points per drive + special teams only": {
+        "n_pass": 38.59076600209863,
+        "n_rush": 24.88090241343127,
+        "n_drives": 11.1204092339979,
+        "w": {
+          "ppd": 1.1247847943608085,
+          "st": 0.4394300193943314
+        },
+        "c": -0.2944248345816673
+      }
+    },
+    "meta": {
+      "pass": {
+        "loglik": -263.74221815718863,
+        "observations": 3812,
+        "converged": true,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "iterations": 287,
+        "seconds": 266.0
+      },
+      "rush": {
+        "loglik": 765.6666720078912,
+        "observations": 3812,
+        "converged": true,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "iterations": 254,
+        "seconds": 235.4
+      },
+      "ppd": {
+        "loglik": -4770.645757890667,
+        "observations": 3812,
+        "converged": true,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "iterations": 199,
+        "seconds": 178.9
+      },
+      "st": {
+        "loglik": -5698.128393009606,
+        "observations": 1906,
+        "converged": true,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "iterations": 39,
+        "seconds": 4.8
+      },
+      "succ": {
+        "loglik": 4948.309430343293,
+        "observations": 3812,
+        "converged": true,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "iterations": 34,
+        "seconds": 33.6
+      },
+      "game": {
+        "games": 1906,
+        "mae": 10.028854783788399,
+        "rmse": 12.917026285695915,
+        "alternatives": {
+          "no success-rate channel": {
+            "mae": 10.043062168170083,
+            "rmse": 12.94338560744208
+          },
+          "no points-per-drive channel": {
+            "mae": 10.048370760793974,
+            "rmse": 12.929724360388919
+          },
+          "EPA channels only (pass, rush, special teams)": {
+            "mae": 10.068953696932494,
+            "rmse": 12.960884833724082
+          },
+          "no special-teams channel": {
+            "mae": 10.017513059953869,
+            "rmse": 12.948705810101178
+          },
+          "points per drive + special teams only": {
+            "mae": 10.05777486684366,
+            "rmse": 12.990181431254543
+          }
+        },
+        "one EPA coefficient (pass + rush + st)": {
+          "mae": 10.06134864643738,
+          "rmse": 12.966116295001957
+        }
+      }
+    }
+  },
+  "raw EPA": {
+    "pass": {
+      "sigma2": 2.69294238468927,
+      "q_week_off": 0.00015605282666885764,
+      "q_week_def": 8.06240292593545e-05,
+      "q_season_off": 0.0036743070416867312,
+      "q_season_def": 0.002646210899135437,
+      "rho_off_same": 0.7040980510911949,
+      "rho_off_changed": 0.5556603305688245,
+      "rho_def_same": 0.42737288283089236,
+      "rho_def_changed": 0.7479979110113897,
+      "hfa": -0.0064490552905600105,
+      "q_week_mean": 3.0005657316478914e-05,
+      "q_season_mean": 6.171398363151083e-06,
+      "bump_off": 0.002548735566236437,
+      "bump_def": 0.013804854350802887
+    },
+    "ppd": {
+      "sigma2": 6.9389852433163,
+      "q_week_off": 0.0016850065849503843,
+      "q_week_def": 0.0019497295178408896,
+      "q_season_off": 0.06176354762089968,
+      "q_season_def": 0.004897314559247617,
+      "rho_off_same": 0.6364261615035818,
+      "rho_off_changed": 0.4622805992188486,
+      "rho_def_same": 0.5012598357189257,
+      "rho_def_changed": 0.7836741425645717,
+      "hfa": 0.14129923280900186,
+      "q_week_mean": 0.00033116471981918614,
+      "q_season_mean": 0.012544812486324178,
+      "bump_off": 0.04969722908855006,
+      "bump_def": 0.00012797138800579083
+    },
+    "st": {
+      "sigma2": 21.98471866812364,
+      "q_week": 0.02575463673516537,
+      "q_season": 0.0043814992227985084,
+      "rho": 0.7918994895836247,
+      "hfa": 0.3786343938941923
+    },
+    "rush": {
+      "sigma2": 0.9564117183781115,
+      "q_week_off": 0.00012723637205385458,
+      "q_week_def": 4.2443192493149574e-05,
+      "q_season_off": 0.0006355274362499314,
+      "q_season_def": 0.0007996634338796633,
+      "rho_off_same": 0.5096150183942162,
+      "rho_off_changed": 0.5537530315481392,
+      "rho_def_same": 0.5999322588336258,
+      "rho_def_changed": 0.4058333233685297,
+      "hfa": -0.020618179100705722,
+      "q_week_mean": 1.878894414491436e-05,
+      "q_season_mean": 1.8374476241274795e-06,
+      "bump_off": 0.00043039547629388327,
+      "bump_def": 0.0031445326667792124
+    },
+    "succ": {
+      "sigma2": 0.24655655271108917,
+      "q_week_off": 1.8772964499754514e-05,
+      "q_week_def": 4.382309666312147e-06,
+      "q_season_off": 0.0003317160206987842,
+      "q_season_def": 0.00017986105814157504,
+      "rho_off_same": 0.5587810232240056,
+      "rho_off_changed": 0.567856009074146,
+      "rho_def_same": 0.6234164853368077,
+      "rho_def_changed": 0.5308661714453516,
+      "hfa": 0.0012705539293807345,
+      "q_week_mean": 7.066236114241978e-06,
+      "q_season_mean": 0.00015544500653671663,
+      "bump_off": 2.763300805741007e-05,
+      "bump_def": 3.182943795620491e-06
+    },
+    "game": {
+      "n_pass": 38.59076600209863,
+      "n_rush": 24.88090241343127,
+      "n_drives": 11.1204092339979,
+      "w": {
+        "pass": 0.432193052939061,
+        "rush": 0.3341745983646001,
+        "succ": 56.877432263629494,
+        "ppd": 0.32137834951257727,
+        "st": 1.0414124051156408
+      },
+      "c": 0.9460604430896982
+    },
+    "game_alternatives": {
+      "no success-rate channel": {
+        "n_pass": 38.59076600209863,
+        "n_rush": 24.88090241343127,
+        "n_drives": 11.1204092339979,
+        "w": {
+          "pass": 0.5810701198099077,
+          "rush": 0.65650769753117,
+          "ppd": 0.42855715997842325,
+          "st": 0.8922624324459457
+        },
+        "c": 1.1080070836200893
+      },
+      "no points-per-drive channel": {
+        "n_pass": 38.59076600209863,
+        "n_rush": 24.88090241343127,
+        "n_drives": 11.1204092339979,
+        "w": {
+          "pass": 0.6651615205774498,
+          "rush": 0.5625401408129811,
+          "succ": 60.68599939761799,
+          "st": 1.268534252420507
+        },
+        "c": 1.537053473010258
+      },
+      "EPA channels only (pass, rush, special teams)": {
+        "n_pass": 38.59076600209863,
+        "n_rush": 24.88090241343127,
+        "n_drives": 11.1204092339979,
+        "w": {
+          "pass": 0.9124261191347399,
+          "rush": 0.997427561691522,
+          "st": 1.1884245490115473
+        },
+        "c": 1.9288865747520372
+      },
+      "no special-teams channel": {
+        "n_pass": 38.59076600209863,
+        "n_rush": 24.88090241343127,
+        "n_drives": 11.1204092339979,
+        "w": {
+          "pass": 0.21488569018308595,
+          "rush": 0.20097768927140083,
+          "succ": 49.35185899924891,
+          "ppd": 0.6438730922500908
+        },
+        "c": 0.7285070235971283
+      },
+      "points per drive + special teams only": {
+        "n_pass": 38.59076600209863,
+        "n_rush": 24.88090241343127,
+        "n_drives": 11.1204092339979,
+        "w": {
+          "ppd": 1.1247860163617218,
+          "st": 0.4393772031187688
+        },
+        "c": -0.2943516420247359
+      }
+    },
+    "meta": {
+      "pass": {
+        "loglik": -590.9217588744366,
+        "observations": 3812,
+        "converged": true,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "iterations": 230,
+        "seconds": 211.5
+      },
+      "ppd": {
+        "loglik": -4770.645757890667,
+        "observations": 3812,
+        "converged": true,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "iterations": 199,
+        "seconds": 177.8
+      },
+      "st": {
+        "loglik": -5698.129442406066,
+        "observations": 1906,
+        "converged": true,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "iterations": 34,
+        "seconds": 4.3
+      },
+      "rush": {
+        "loglik": 560.6909192796414,
+        "observations": 3812,
+        "converged": true,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "iterations": 29,
+        "seconds": 27.2
+      },
+      "succ": {
+        "loglik": 4948.309430343293,
+        "observations": 3812,
+        "converged": true,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "iterations": 34,
+        "seconds": 34.3
+      },
+      "game": {
+        "games": 1906,
+        "mae": 10.026386419787631,
+        "rmse": 12.917113724728388,
+        "alternatives": {
+          "no success-rate channel": {
+            "mae": 10.042519231281906,
+            "rmse": 12.952641027377721
+          },
+          "no points-per-drive channel": {
+            "mae": 10.037801855424913,
+            "rmse": 12.924254877977704
+          },
+          "EPA channels only (pass, rush, special teams)": {
+            "mae": 10.05788341698802,
+            "rmse": 12.965591065750365
+          },
+          "no special-teams channel": {
+            "mae": 10.014957349743879,
+            "rmse": 12.94993887898678
+          },
+          "points per drive + special teams only": {
+            "mae": 10.05776042491348,
+            "rmse": 12.990190033178761
+          }
+        },
+        "one EPA coefficient (pass + rush + st)": {
+          "mae": 10.055726759586062,
+          "rmse": 12.968713813640601
+        }
+      }
+    }
+  },
+  "no play-caller continuity": {
+    "pass": {
+      "sigma2": 2.36515713025102,
+      "q_week_off": 0.00023198499028634822,
+      "q_week_def": 0.00011150236928995352,
+      "q_season_off": 0.00250822479938839,
+      "q_season_def": 0.0019579219653077435,
+      "rho_off_same": 0.6476582398768344,
+      "rho_off_changed": 0.5,
+      "rho_def_same": 0.5205539942064368,
+      "rho_def_changed": 0.4,
+      "hfa": 0.0074358570877643484,
+      "q_week_mean": 1.927443149805e-05,
+      "q_season_mean": 0.0001681546174391273,
+      "bump_off": 0.0010000000000000002,
+      "bump_def": 0.0010000000000000002
+    },
+    "succ": {
+      "sigma2": 0.27050032801098756,
+      "q_week_off": 1.8207203570241285e-05,
+      "q_week_def": 2.615677704526998e-06,
+      "q_season_off": 0.00037698836610612505,
+      "q_season_def": 0.00021184722897867901,
+      "rho_off_same": 0.5838391910172875,
+      "rho_off_changed": 0.5,
+      "rho_def_same": 0.5772522472193883,
+      "rho_def_changed": 0.4,
+      "hfa": 0.0038376460710007683,
+      "q_week_mean": 1.277164448057261e-07,
+      "q_season_mean": 0.0001820086981447581,
+      "bump_off": 0.00019999999999999985,
+      "bump_def": 0.00019999999999999985
+    },
+    "ppd": {
+      "sigma2": 6.936088513758345,
+      "q_week_off": 0.0023389525773295223,
+      "q_week_def": 0.0019322347758508821,
+      "q_season_off": 0.0603547784822597,
+      "q_season_def": 0.006188414645401067,
+      "rho_off_same": 0.5612666768456378,
+      "rho_off_changed": 0.5,
+      "rho_def_same": 0.5956668219790027,
+      "rho_def_changed": 0.4,
+      "hfa": 0.14138691173457077,
+      "q_week_mean": 1.4161895162716153e-05,
+      "q_season_mean": 0.016704582726970778,
+      "bump_off": 0.010000000000000005,
+      "bump_def": 0.010000000000000005
+    },
+    "st": {
+      "sigma2": 21.98631484002281,
+      "q_week": 0.025962869637252257,
+      "q_season": 0.00025502526793317606,
+      "rho": 0.7928662960969939,
+      "hfa": 0.3787757960997301
+    },
+    "rush": {
+      "sigma2": 0.8730831003091368,
+      "q_week_off": 8.853251016061262e-05,
+      "q_week_def": 8.63212275791101e-05,
+      "q_season_off": 0.0009244981675225537,
+      "q_season_def": 0.00033842145909095806,
+      "rho_off_same": 0.5820779555249953,
+      "rho_off_changed": 0.5,
+      "rho_def_same": 0.5305249233915674,
+      "rho_def_changed": 0.4,
+      "hfa": -0.01645168661755827,
+      "q_week_mean": 1.1420125878799025e-05,
+      "q_season_mean": 2.482958412262768e-07,
+      "bump_off": 0.0010000000000000002,
+      "bump_def": 0.0010000000000000002
+    },
+    "game": {
+      "n_pass": 38.59076600209863,
+      "n_rush": 24.88090241343127,
+      "n_drives": 11.1204092339979,
+      "w": {
+        "pass": 0.1875519271918842,
+        "rush": 0.18669361398773643,
+        "succ": 60.64227666899415,
+        "ppd": 0.5383239914330658,
+        "st": 0.8236144565342011
+      },
+      "c": 0.2658101018787934
+    },
+    "game_alternatives": {
+      "no success-rate channel": {
+        "n_pass": 38.59076600209863,
+        "n_rush": 24.88090241343127,
+        "n_drives": 11.1204092339979,
+        "w": {
+          "pass": 0.4093263995622425,
+          "rush": 0.5866110114136248,
+          "ppd": 0.6491820887526455,
+          "st": 0.7132720690466704
+        },
+        "c": 0.47546370463507787
+      },
+      "no points-per-drive channel": {
+        "n_pass": 38.59076600209863,
+        "n_rush": 24.88090241343127,
+        "n_drives": 11.1204092339979,
+        "w": {
+          "pass": 0.5530323107508719,
+          "rush": 0.5648612076698437,
+          "succ": 70.78290168885789,
+          "st": 1.2345112764440995
+        },
+        "c": 0.9631812139852328
+      },
+      "EPA channels only (pass, rush, special teams)": {
+        "n_pass": 38.59076600209863,
+        "n_rush": 24.88090241343127,
+        "n_drives": 11.1204092339979,
+        "w": {
+          "pass": 0.9121068622642713,
+          "rush": 1.1424418927548705,
+          "st": 1.2034129123833686
+        },
+        "c": 1.3902245042453123
+      },
+      "no special-teams channel": {
+        "n_pass": 38.59076600209863,
+        "n_rush": 24.88090241343127,
+        "n_drives": 11.1204092339979,
+        "w": {
+          "pass": 0.04815752538436936,
+          "rush": 0.10130354221369371,
+          "succ": 55.40082945527553,
+          "ppd": 0.7516993759154578
+        },
+        "c": 0.2773244022369915
+      },
+      "points per drive + special teams only": {
+        "n_pass": 38.59076600209863,
+        "n_rush": 24.88090241343127,
+        "n_drives": 11.1204092339979,
+        "w": {
+          "ppd": 1.1401431395830934,
+          "st": 0.37722039095190474
+        },
+        "c": -0.28521184627750895
+      }
+    },
+    "meta": {
+      "pass": {
+        "loglik": -465.53807234537436,
+        "observations": 3812,
+        "converged": true,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "iterations": 201,
+        "seconds": 177.8
+      },
+      "succ": {
+        "loglik": 4663.316286743103,
+        "observations": 3812,
+        "converged": true,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "iterations": 74,
+        "seconds": 69.5
+      },
+      "ppd": {
+        "loglik": -4773.038755236848,
+        "observations": 3812,
+        "converged": true,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "iterations": 61,
+        "seconds": 54.6
+      },
+      "st": {
+        "loglik": -5698.128219252083,
+        "observations": 1906,
+        "converged": true,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "iterations": 40,
+        "seconds": 4.5
+      },
+      "rush": {
+        "loglik": 608.5476335364491,
+        "observations": 3812,
+        "converged": true,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "iterations": 24,
+        "seconds": 23.5
+      },
+      "game": {
+        "games": 1906,
+        "mae": 10.023479739470641,
+        "rmse": 12.936897531883607,
+        "alternatives": {
+          "no success-rate channel": {
+            "mae": 10.04667292941048,
+            "rmse": 12.96981380958655
+          },
+          "no points-per-drive channel": {
+            "mae": 10.05267910618464,
+            "rmse": 12.96363251370191
+          },
+          "EPA channels only (pass, rush, special teams)": {
+            "mae": 10.084401472509963,
+            "rmse": 13.00995754206757
+          },
+          "no special-teams channel": {
+            "mae": 10.016925503055075,
+            "rmse": 12.95814287327237
+          },
+          "points per drive + special teams only": {
+            "mae": 10.062580984614424,
+            "rmse": 12.996808252414308
+          }
+        },
+        "one EPA coefficient (pass + rush + st)": {
+          "mae": 10.08030320541172,
+          "rmse": 13.015383260289637
+        }
+      }
+    }
+  }
+}

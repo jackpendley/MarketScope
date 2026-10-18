@@ -1,10 +1,10 @@
 # Project Status
 
-_Rewrite this file at the end of every session. Last updated: 2026-10-18 (session 1, continued; MS-029)._
+_Rewrite this file at the end of every session. Last updated: 2026-10-18 (session 1, continued; MS-030)._
 
 ## Current milestone
 
-**Phase 9 (MarketScope Ratings) has started: MS-029 (evaluation harness + benchmarks) is done. Next: MS-030 (Kalman unit ratings in the KenPom contract).**
+**Phase 9 (MarketScope Ratings): MS-029 (harness) and MS-030 (Kalman engine) are done. Next: MS-030b (KenPom contract outputs + `rating_snapshots`).**
 
 - **Scope extended 2026-10-17 (ADR-028):** football context and MarketScope Ratings, "KenPom for the NFL". The design is frozen in `docs/RATINGS.md`.
 - **Site:** deployed privately at https://marketscope-delta.vercel.app (user `marketscope`; the password is `VERCEL_SITE_PASSWORD` in `apps/web/.env.local`).
@@ -46,15 +46,23 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-18 (sessio
   - **Venues:** a 49-venue catalog, with overrides for nflverse's mislabelled 2025 international games (ADR-032).
   - Week-18 incentives move to MS-034.
   - Footer now credits Open-Meteo and the injury/snap sources.
-- **MS-029 (this PR):** evaluation harness in `apps/football/src/marketscope_football/eval/` (ADR-033).
+- **MS-029** (#28): evaluation harness in `apps/football/src/marketscope_football/eval/` (ADR-033).
   - Walk-forward runner: results removed before `predict`; the runner refuses 2025 unless MS-032's one-time run asks.
   - Pre-registered `eval/design.py`; paired game-bootstrap scoring; ablation runner.
   - 2023–24 margin MAE: close 9.84, Elo 10.33, SRS 10.37, market-implied 10.37, naive 11.16. Elo/SRS trail the close by ≈ 0.5 (paired CI ±0.25).
   - Report: `apps/football/reports/benchmarks.md`; summary in RATINGS.md Results.
 
+- **MS-030 (this PR):** Kalman unit ratings in `apps/football/src/marketscope_football/ratings/` (ADR-034).
+  - One filter per channel: pass, rush, success rate, points per drive (offense/defense + league mean); special teams.
+  - ML fit on 2016–22, frozen in `ratings/params.json`; burn-in from 2012 (play-by-play 2012–15 now cached).
+  - **2023–24: ties Elo/SRS** (MAE 10.33; paired CIs ±0.2). Better in weeks 1–4 (−0.31 vs SRS). The bar (beat Elo/SRS) is not met by unit ratings alone.
+  - Ablations: none of luck/cap/WP weighting/channels/play-caller continuity is distinguishable; the filter beats a half-life ridge (+0.17).
+  - Report: `apps/football/reports/kalman-ratings.md`, including current ratings through 2026 week 6.
+  - New dependency: scipy 1.16.3.
+
 ## Tests
 
-- **Football pytest:** 55 (unit tests, plus integration against the migrated test DB; includes validation of the committed coaching CSV).
+- **Football pytest:** 63 (unit tests, plus integration against the migrated test DB; includes validation of the committed coaching CSV).
 - **Research pytest:** 25.
 - **TS:** db 36, shared 192, collector 51, web 83, e2e 18.
 
@@ -89,11 +97,12 @@ Nothing blocking.
 
 ## Next task
 
-**Phase 9, MS-030: Kalman unit ratings in the KenPom contract** (`apps/football/src/marketscope_football/ratings/`).
+**MS-030b: KenPom contract outputs** (`ratings/`):
 
-1. **Measurement → state:** per team-game observations from `nfl_team_game_stats` (model-channel EPA/play, success rate, early-down EPA; pass/rush split; special teams). Fit a Kalman filter over 32 offense + 32 defense (+ special teams) strengths: week AR(1), season-boundary reversion conditioned on play-caller/QB continuity, process-noise bump on mid-season play-caller changes. Maximum-likelihood parameters on 2016–22.
-2. **KenPom outputs:** AdjO/AdjD (points per drive), AdjPace, AdjST, AdjEM (points per game) with SEs. Luck (expected wins, Pythagorean), SOS, Five Factors. `kenpom_classic.py` with rank correlation.
-3. **Evaluate in the MS-029 harness:** a `predict`/`update` wrapper. Beat Elo/SRS on 2023–24 with a paired CI excluding 0. Ablations: Kalman vs ridge half-life, luck adjustment, WP weighting, EPA cap, each channel.
-4. **`rating_snapshots`** table (filtered weekly states, 2016–26) and an immutability test.
+1. **AdjO/AdjD in points per drive** (from the channel units through the game layer), AdjST, AdjPace (opponent-adjusted drives per game and neutral seconds per play, which needs a pace filter), and AdjEM with SEs and ranks.
+2. **Luck:** expected wins (logistic on 2016–22), Pythagorean wins (exponent refit), and the decomposition (one-score games, fumble/INT/FG luck, return TDs).
+3. **SOS:** played, remaining, non-division; Opp AdjO/AdjD. **Five Factors** tables.
+4. **`kenpom_classic.py`** with rank correlation against the Kalman engine.
+5. **`rating_snapshots` table** (migration 0012, RLS): filtered weekly states 2016–26, backfilled locally and in production. Immutability test. Weekly refresh in `football-data.yml`.
 
-**Then:** MS-031, QB and availability.
+**Then:** MS-031, QB and availability, the expected source of lift (the close's edge is news in the week of the game).
