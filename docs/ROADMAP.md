@@ -185,7 +185,7 @@ Status legend: `[x]` done · `[~]` in progress · `[ ]` not started
 
 Market-only first, so Phase 10 can measure what football features add. Lives in `research/src/marketscope_research/ml/`.
 
-- [ ] **MS-024** Targets, gate, feature table.
+- [x] **MS-024** Targets, gate, feature table. **Gate passed 2026-10-18**: 79 games, 292 positives; test week 5 has 15 games and 79 positives. Leakage audit clean (`research/reports/market-ml-gate-v1.md`).
   - **Primary target:** |consensus(t+24h) − consensus(t)| ≥ 0.5, using the nearest snapshot within ±3 h. If none exists, the label is missing. Board books only, at least 3.
   - **Secondary target:** direction, given a move.
   - **Gate,** pre-registered before results: ≥ 60 games, ≥ 150 positives, ≥ 15 test games. Otherwise exploratory only.
