@@ -31,14 +31,16 @@ def md_table(df: pd.DataFrame, formats: dict[str, str] | None = None, index: boo
     frame = df.reset_index() if index else df
     cols = list(frame.columns)
     out = ["| " + " | ".join(str(c) for c in cols) + " |", "|" + "---|" * len(cols)]
-    for _, row in frame.iterrows():
+    for i in range(len(frame)):
         cells = []
         for c in cols:
-            v = row[c]
+            v = frame[c].iloc[i]
             if formats.get(c) == "pct":
                 cells.append(pct(float(v)))
-            elif isinstance(v, float):
+            elif isinstance(v, (float,)) and not float(v).is_integer():
                 cells.append(f"{v:.2f}")
+            elif isinstance(v, float):
+                cells.append(str(int(v)))
             else:
                 cells.append(str(v))
         out.append("| " + " | ".join(cells) + " |")
@@ -140,7 +142,7 @@ transfer between sources.
 
 ## Feature missingness (labelled rows)
 
-{md_table(missingness(df), {"missing_overall": "pct", "missing_imported": "pct", "missing_live": "pct"})}
+{md_table(missingness(df).rename_axis("feature"), {"missing_overall": "pct", "missing_imported": "pct", "missing_live": "pct"})}
 
 `move_6h`/`move_24h` are missing when no snapshot lies within ±3 h of the lag; `pinnacle_dev` is structurally missing on
 live data (Pinnacle is imported only), so it can only be evaluated on weeks 1–5.
