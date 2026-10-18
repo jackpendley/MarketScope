@@ -153,6 +153,7 @@ describe("Data API lock-down (ADR-018)", () => {
       "ingestion_payloads",
       "ingestion_runs",
       "market_signals",
+      "nfl_coaching_staff",
       "nfl_games",
       "nfl_ingest_runs",
       "nfl_injury_reports",

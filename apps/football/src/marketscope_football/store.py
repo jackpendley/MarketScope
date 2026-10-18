@@ -161,3 +161,25 @@ def apply_injury_plan(conn: psycopg.Connection, plan, game_ids: dict[tuple, str]
             cur.executemany(f"UPDATE nfl_injury_reports SET {sets} WHERE id = %(id)s",
                             [with_game(r) for r in plan.backfill_updates])
     return len(plan.inserts) + len(plan.touch) + len(plan.backfill_updates)
+
+
+COACHING_COLUMNS = ["season", "team", "role", "coach_id", "coach_name", "from_week", "to_week", "offense_playcaller",
+                    "defense_playcaller", "source_url", "playcaller_basis", "playcaller_source_url"]
+
+
+def replace_coaching_staff(conn: psycopg.Connection, rows: list[dict]) -> int:
+    """Replace the whole table from the curated CSV (small; the CSV is the source of truth)."""
+    def value(r: dict, c: str):
+        v = r[c]
+        if c in ("season", "from_week", "to_week"):
+            return int(v)
+        if c in ("offense_playcaller", "defense_playcaller"):
+            return v in (True, "True", "true")
+        return v or None
+
+    with conn.cursor() as cur:
+        cur.execute("DELETE FROM nfl_coaching_staff")
+        with cur.copy(f"COPY nfl_coaching_staff ({', '.join(COACHING_COLUMNS)}) FROM STDIN") as copy:
+            for r in rows:
+                copy.write_row([value(r, c) for c in COACHING_COLUMNS])
+    return len(rows)

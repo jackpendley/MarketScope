@@ -206,10 +206,10 @@ New Python app `apps/football/` (nflreadpy, polars, psycopg). The schema stays i
   - Linker from odds `events` to games.
   - Seasons 2016–2026.
   - Data-quality check: the nflverse close vs our last-pregame consensus, which also confirms the sign convention.
-- [ ] **MS-027** Data tables:
+- [x] **MS-027** Data tables:
   - [x] Team-game efficiency channels: raw, neutral and luck-adjusted variants (`nfl_team_game_stats`, 5,682 team-games 2016–2026, ADR-029). Counts match nflverse team stats 100%; EPA r = 0.996 when aligned.
   - [x] Snaps (`nfl_player_game_snaps`) and injuries (`nfl_injury_reports`, live history twice daily from 2026-10-18, ADR-030); depth charts stay in nflverse (read directly by MS-031).
-  - Curated `nfl_coaching_staff` with play-callers and sources.
+  - [x] Curated `nfl_coaching_staff` with play-callers and sources: 1,473 spans 2016–2026, validated per team-week; nflverse head coaches found stale for 2024+ interims (ADR-031).
   - [x] P(plays | status, position): Out 0%, Doubtful 0.9%, Questionable 68% (2016–22); the practice-status gradient weakened in 2023–25 (`reports/plays-given-status.md`).
   - [x] `football-data.yml`, using the existing secret (daily: schedules/results/links + team stats).
 - [ ] **MS-028** Weather and context:

@@ -486,3 +486,37 @@ export const nflInjuryReports = pgTable(
       .where(sql`${t.firstSeenAt} IS NULL`),
   ],
 ).enableRLS();
+
+/** Coaching staff and play-callers by team-week span (ADR-031), loaded from the curated
+ *  `apps/football/data/coaching_staff.csv`. Exactly one head coach, one offensive and one
+ *  defensive play-caller cover every week of every team-season (validated before load).
+ *  role: HC, OC, DC, STC, or PC (called plays without one of those titles). */
+export const nflCoachingStaff = pgTable(
+  "nfl_coaching_staff",
+  {
+    id: bigint({ mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+    season: integer().notNull(),
+    team: text()
+      .notNull()
+      .references(() => nflTeams.abbr),
+    role: text().notNull(),
+    /** Stable across teams: the Wikipedia article title when one exists, else `name:<slug>`. */
+    coachId: text().notNull(),
+    coachName: text().notNull(),
+    fromWeek: integer().notNull(),
+    toWeek: integer().notNull(),
+    offensePlaycaller: boolean().notNull(),
+    defensePlaycaller: boolean().notNull(),
+    /** Where the title comes from (nflverse schedules, a Wikipedia revision, or a news source). */
+    sourceUrl: text(),
+    /** list | direct | bracketed | stint | rule (see DATA_DICTIONARY); NULL when not a play-caller. */
+    playcallerBasis: text(),
+    playcallerSourceUrl: text(),
+  },
+  (t) => [
+    unique("nfl_coaching_staff_span_key").on(t.season, t.team, t.role, t.coachId, t.fromWeek),
+    index("nfl_coaching_staff_coach_idx").on(t.coachId),
+    check("nfl_coaching_staff_weeks", sql`${t.fromWeek} <= ${t.toWeek}`),
+    check("nfl_coaching_staff_role", sql`${t.role} IN ('HC', 'OC', 'DC', 'STC', 'PC')`),
+  ],
+).enableRLS();

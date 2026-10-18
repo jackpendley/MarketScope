@@ -22,7 +22,7 @@ def conn():
         c = psycopg.connect(URL, connect_timeout=5)
     except psycopg.OperationalError:
         pytest.skip("test database unavailable")
-    c.execute("TRUNCATE nfl_injury_reports, nfl_player_game_snaps, nfl_team_game_stats, nfl_games, nfl_teams, nfl_ingest_runs, events RESTART IDENTITY CASCADE")
+    c.execute("TRUNCATE nfl_coaching_staff, nfl_injury_reports, nfl_player_game_snaps, nfl_team_game_stats, nfl_games, nfl_teams, nfl_ingest_runs, events RESTART IDENTITY CASCADE")
     c.commit()
     yield c
     c.rollback()
@@ -153,3 +153,17 @@ def test_snaps_replace_a_season_and_skip_unknown_games(conn):
     assert replace_snaps(conn, 2026, snaps) == 1
     assert replace_snaps(conn, 2026, snaps) == 1
     assert conn.execute("SELECT count(*) FROM nfl_player_game_snaps").fetchone()[0] == 1
+
+
+def test_coaching_staff_replaces_the_table(conn):
+    from marketscope_football.store import replace_coaching_staff
+
+    upsert_teams(conn, TEAMS)
+    base = {"season": "2026", "team": "LA", "role": "HC", "coach_id": "Sean_McVay", "coach_name": "Sean McVay",
+            "from_week": "1", "to_week": "18", "offense_playcaller": "True", "defense_playcaller": "False",
+            "source_url": "nflverse", "playcaller_basis": "list", "playcaller_source_url": "https://example.org"}
+    assert replace_coaching_staff(conn, [base]) == 1
+    assert replace_coaching_staff(conn, [base, {**base, "role": "OC", "coach_id": "X", "coach_name": "X",
+                                                "offense_playcaller": "False", "playcaller_basis": ""}]) == 2
+    got = conn.execute("SELECT role, offense_playcaller, playcaller_basis FROM nfl_coaching_staff ORDER BY role").fetchall()
+    assert got == [("HC", True, "list"), ("OC", False, None)]
