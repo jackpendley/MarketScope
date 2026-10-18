@@ -1,10 +1,10 @@
 # Project Status
 
-_Rewrite this file at the end of every session. Last updated: 2026-10-18 (session 1, continued)._
+_Rewrite this file at the end of every session. Last updated: 2026-10-18 (session 1, continued; MS-026)._
 
 ## Current milestone
 
-**Phase 7 (market ML baseline) is complete. Next: Phase 8, MS-026 (football data foundation).**
+**Phase 7 is complete; Phase 8 is underway. MS-026 (football data foundation) is done. Next: MS-027 (play-by-play → team-game stats, snaps, injuries, depth charts, coaching staff, daily workflow).**
 
 - **Scope extended 2026-10-17 (ADR-028):** football context and MarketScope Ratings, "KenPom for the NFL". The design is frozen in `docs/RATINGS.md`.
 - **Site:** deployed privately at https://marketscope-delta.vercel.app (user `marketscope`; the password is `VERCEL_SITE_PASSWORD` in `apps/web/.env.local`).
@@ -35,11 +35,18 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-18 (sessio
   - **v1 result:** logistic regression _ranks_ moves (test AUC 0.72, CI 0.57–0.86), but its Brier and log-loss gains are not yet distinguishable from the constant baseline (the CIs include 0).
   - Direction: no skill.
   - Live forward check: pending at 13 of 15 games.
+- **MS-026** (PR #21):
+  - Migration 0007: `nfl_teams`, `nfl_games`, `nfl_ingest_runs`, with RLS.
+  - New Python app `apps/football`: nflreadpy schedule ingest, idempotent runs, and a linker.
+  - Production holds 3,033 games (2016–2026, 2,841 final). **All 104 odds events are linked.**
+  - nflverse close vs our last pregame consensus: correlation 0.996, 98.7% within 1 point. The sign convention (store `−spread_line`) is confirmed (`research/reports/close-vs-consensus.md`).
+  - `/data` gains a football panel; the footer credits nflverse.
+  - CI gains a `football` job (Drizzle migrate, then pytest).
 
 ## Tests
 
 - **All green before MS-025:** db 34, shared 192, collector 51, web 83, e2e 18.
-- **Research pytest:** 24 (20 at MS-024; 4 more in MS-025).
+- **Research pytest:** 25. **Football pytest:** 10 (unit, plus integration against the migrated test DB). **db:** 36.
 
 ## Quotas
 
@@ -59,25 +66,23 @@ Nothing blocking. Optional: mark the GitGuardian false-positive incident as reso
 
 ## Known issues / open decisions
 
-- **Phase 8 first-contact checks:**
-  - `nflreadpy.load_injuries` for 2025–26 (a 2025 issue reported it broken).
-  - The sign of nflverse `spread_line`, checked against our consensus.
-  - Python ↔ Drizzle schema ownership in CI (migrate the test DB before football pytest).
-- **Coaching staff:** coordinators and play-callers have no free dataset, so this becomes a curated, sourced CSV (MS-027).
-- **Market model v2:** re-run when the forward check has ≥ 15 live games. Consider rolling-origin evaluation once there are more weeks.
-- **Generated reports:** run `pnpm exec prettier --write research/reports` after regenerating (CI checks formatting).
-- `docs/PERFORMANCE.md` thresholds. GitHub disables crons after 60 days without repo activity. TS 7 is still waiting on typescript-eslint (ADR-004).
+- **Football schedules are not yet scheduled.** For now, run the ingest by hand after each game day. The daily workflow (`football-data.yml`, existing `DATABASE_URL` secret) is part of MS-027.
+- **`nflreadpy.load_injuries` for 2025–26:** still to verify (a 2025 issue reported it broken).
+- **Coaching staff** (coordinators, play-callers): no free dataset exists, so this becomes a curated, sourced CSV (MS-027).
+- **Market model v2:** re-run once the live forward check has ≥ 15 games.
+- **Generated reports:** run `pnpm exec prettier --write research/reports` after regenerating; CI checks formatting.
+- `docs/PERFORMANCE.md` thresholds still apply. GitHub disables crons after 60 days without repo activity. TS 7 is still waiting on typescript-eslint (ADR-004).
 
 ## Next task
 
-**Phase 8, MS-026: schema, schedules/results, linking** (new Python app `apps/football/`).
+**Phase 8, MS-027: play-by-play → team-game channels, snaps, injuries, depth charts, coaching staff.**
 
-1. Scaffold `apps/football`: pyproject, pinned requirements (nflreadpy, polars, pyarrow, psycopg, numpy, scipy, scikit-learn, httpx, pytest), gitignored Parquet cache, CI job.
-2. Migration 0007 (Drizzle, RLS):
-   - `nfl_teams` (name mapping, stadium lat/lon, roof, surface, altitude, time zone)
-   - `nfl_games` (results, venue, observed weather, referee, coaches, home-oriented nflverse close, `event_id` FK)
-   - `nfl_ingest_runs` (job-key claims)
-3. Ingest 2016–2026 schedules. Link odds `events` to games (teams + kickoff ±36 h); show unmatched rows on `/data`.
-4. Data-quality report: nflverse close vs our last-pregame consensus. Confirm the sign; record the result in PROVIDER_COVERAGE.
+1. Cache play-by-play for 2016–2026 locally as Parquet (gitignored), recording the version and hash.
+2. Compute `nfl_team_game_stats` with pure, unit-tested aggregations:
+   - EPA per play, per dropback and per rush; success rate; early-down EPA; explosive rate; PROE; CPOE; sack rate; turnovers; red-zone TD rate; neutral pace; special-teams EPA.
+   - Raw, neutral and luck-adjusted variants.
+   - Cross-check against `load_team_stats`.
+3. Add `nfl_player_game_snaps` (current and previous season), `nfl_injury_reports` (daily live snapshots with `fetched_at`), `nfl_depth_charts`, and the curated `nfl_coaching_staff` CSV with a source on every row. Derive P(plays | status, position).
+4. Add `football-data.yml`: daily schedules, results and injuries; a Tuesday play-by-play job.
 
-**Then:** MS-027 (play-by-play → team-game channels, snaps, injuries, depth charts, coaching staff, `football-data.yml`), MS-028 (weather and context).
+**Then:** MS-028 (Open-Meteo forecasts, stadium coordinates, rest, travel and time-zone context), then Phase 9 (ratings).

@@ -201,7 +201,7 @@ Market-only first, so Phase 10 can measure what football features add. Lives in 
 
 New Python app `apps/football/` (nflreadpy, polars, psycopg). The schema stays in Drizzle. Raw play-by-play stays in a gitignored Parquet cache; only aggregates go to Postgres.
 
-- [ ] **MS-026** Migration 0007:
+- [x] **MS-026** (2026-10-18; 3,033 games for 2016–2026 in production; 104 of 104 odds events linked; nflverse close vs our consensus: correlation 0.996, 98.7% within 1 point) Migration 0007:
   - Tables: `nfl_teams`, `nfl_games` (results, venue, observed weather, referee, coaches, home-oriented nflverse close), `nfl_ingest_runs`.
   - Linker from odds `events` to games.
   - Seasons 2016–2026.
