@@ -34,6 +34,8 @@ Fixed in `src/marketscope_research/ml/design.py` before any label, class balance
 - **Model protocol (MS-025, fixed before any model was fit):** C chosen on validation log loss; every model refit on train + validation and scored once on the test week; a model beats a baseline only when both the Brier and the log-loss difference CIs (game-clustered bootstrap) lie below zero.
 - **Leakage audit:** every feature must be unchanged when all observations after t are perturbed (`ml/audit.py`). A planted leaky feature fails it (`tests/test_ml_dataset.py`).
 
+After regenerating a report, format it (CI checks Markdown formatting): `pnpm exec prettier --write research/reports`.
+
 ## Principles
 
 - **Pre-registered designs:** the event definition, outcome, baseline, and minimum sample are fixed in code and in the report _before_ results are read. Below the minimum, the verdict is **inconclusive**.
