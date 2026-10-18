@@ -8,6 +8,7 @@ const optionalString = z.preprocess(
 
 const envSchema = z.object({
   ODDS_API_KEY: optionalString,
+  ODDSPAPI_API_KEY: optionalString,
   ODDS_API_BASE_URL: z
     .preprocess((v) => (v === "" ? undefined : v), z.url().optional())
     .default("https://api.the-odds-api.com"),
@@ -58,4 +59,11 @@ export function requireDatabaseUrl(config: CollectorConfig): string {
     );
   }
   return config.DATABASE_URL;
+}
+
+export function requireOddsPapiKey(config: CollectorConfig): string {
+  if (!config.ODDSPAPI_API_KEY) {
+    throw new ConfigError("ODDSPAPI_API_KEY is not set. Add it to apps/collector/.env.local.");
+  }
+  return config.ODDSPAPI_API_KEY;
 }

@@ -247,3 +247,25 @@ AWS Lambda + EventBridge remains an optional later upgrade (Phase 3).
 - Pytest runs in CI.
 
 **Consequences:** The first study (outlier → convergence) is honestly inconclusive on 2 days of data, and the report is the reproducible baseline to re-run. Phase 7 (ML) will follow the same rules.
+
+## ADR-026 — Historical backfill from OddsPapi as derived snapshots (2026-10-17)
+
+**Context:** The study and ML need more games than live collection, which began 2026-10-16, can provide. OddsPapi's `/v4/historical-odds` is free and returns per-line-move history since January 2026. Validation against our own observations matched 100% for FanDuel, 92% for DraftKings, 85% for Hard Rock, and 44% for BetMGM (PROVIDER_COVERAGE.md).
+**Decision:**
+
+- Import completed NFL games that **kicked off before live collection began** (default `--to 2026-10-16T00:00Z`). The importer also refuses any game already present from another source, so **each game has exactly one source** and snapshots never mix providers.
+- **Derive snapshots** from the change log on the live cadence: every 6 hours at 00/06/12/18 UTC within the 30 days before kickoff, plus a **near-close snapshot 5 minutes before kickoff**.
+  - At each snapshot, a book's quote is its latest _active_ entry, following OddsPapi's change-log semantics: no heartbeats, a price holds until replaced or deactivated.
+  - The main line is the market whose sides are both active and priced closest to even (matched 30/32 in validation).
+  - `bookmaker_updated_at` is the provider's change time; `observed_at` is the snapshot time.
+- **Books:** DraftKings, FanDuel, Caesars → `williamhill_us`, Hard Rock → `hardrockbet` (the provider's generic feed), and Pinnacle as a **reference book** (`REFERENCE_BOOKMAKERS`; never on the board or in consensus). **BetMGM is excluded.**
+- One idempotent run per fixture (`oddspapi:<fixtureId>:v1`, `request_type = historical`) and one transaction per game. Failures are recorded and retried cleanly.
+- **Raw payloads are not stored** (about 90 MB per game; Supabase free tier is 500 MB).
+- The per-run unique constraint gains `observed_at` (migration 0005), because a historical run holds many snapshot times. Live runs are unaffected since they have one `observed_at`.
+
+**Consequences:**
+
+- About 3,500 rows per game; 79 games from Weeks 1–6 is roughly 280K rows.
+- Replay, signals, and the study work unchanged on imported games. The replay page labels the source.
+- Carry-forward depends on OddsPapi capturing every change, which is why BetMGM is excluded. Treat imported timing as approximate within a snapshot.
+- Uses about 1 billable request per run (fixtures). History calls are free.

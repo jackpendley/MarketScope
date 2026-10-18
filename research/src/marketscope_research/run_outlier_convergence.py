@@ -1,7 +1,7 @@
 """Run the outlier-convergence study and write a Markdown report.
 
     STUDY_DATABASE_URL=... .venv/bin/python -m marketscope_research.run_outlier_convergence \
-        --out reports/outlier-convergence-v1.md [--source synthetic]
+        --out reports/outlier-convergence-v1.md [--sources synthetic]
 """
 
 from __future__ import annotations
@@ -33,15 +33,23 @@ def pct(x: float) -> str:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--out", required=True)
-    parser.add_argument("--source", default="the-odds-api", choices=["the-odds-api", "synthetic"])
+    parser.add_argument(
+        "--sources",
+        default="the-odds-api,oddspapi",
+        help="comma-separated: the-odds-api, oddspapi (real) or synthetic (validation only)",
+    )
     args = parser.parse_args()
 
     dsn = os.environ.get("STUDY_DATABASE_URL")
     if not dsn:
         raise SystemExit("Set STUDY_DATABASE_URL (read-only use).")
 
+    sources = [s.strip() for s in args.sources.split(",") if s.strip()]
+    synthetic = "synthetic" in sources
+    if synthetic and len(sources) > 1:
+        raise SystemExit("Never mix synthetic and real data.")
     with connect(dsn) as conn:
-        spreads = load_home_spreads(conn, args.source)
+        spreads = load_home_spreads(conn, sources)
         event_ids = sorted(spreads["event_id"].unique().tolist())
         events = load_divergence_events(conn, event_ids)
         kickoffs = load_kickoffs(conn)
@@ -65,7 +73,7 @@ def main() -> None:
         commit = "unknown"
     first, last = spreads["observed_at"].min(), spreads["observed_at"].max()
     snapshots = spreads["observed_at"].nunique()
-    synthetic = args.source == "synthetic"
+    games_by_source = spreads.groupby("source")["event_id"].nunique().to_dict()
 
     if not r.conclusive:
         verdict = (
@@ -94,7 +102,7 @@ def main() -> None:
     report = f"""# Study: does an outlier book predict consensus convergence? (v1)
 
 {"> **SYNTHETIC DATA: pipeline validation only. Not a finding about real markets.**" + chr(10) if synthetic else ""}
-_Generated {datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")} · commit `{commit}` · source `{args.source}` ·
+_Generated {datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")} · commit `{commit}` · sources `{", ".join(sources)}` ·
 reproduce with `research/src/marketscope_research/run_outlier_convergence.py`._
 
 ## Question
@@ -120,7 +128,7 @@ When a sportsbook's home spread diverges from the same-snapshot consensus, does 
 |---|---|
 | Observations (home spreads, pregame) | {len(spreads):,} |
 | Snapshots | {snapshots} |
-| Games | {len(event_ids)} |
+| Games | {len(event_ids)} ({", ".join(f"{k}: {v}" for k, v in sorted(games_by_source.items()))}) |
 | Observed range | {first:%Y-%m-%d %H:%M} – {last:%Y-%m-%d %H:%M} UTC |
 | Divergence events | {r.events_total} |
 | Events with an eligible horizon | {r.events_scored} (from {r.games_scored} games) |
@@ -144,7 +152,9 @@ When a sportsbook's home spread diverges from the same-snapshot consensus, does 
 - **Polling resolution:** about 4 snapshots/day, so the horizon snapshot can be up to {TOLERANCE_HOURS} h from t + {HORIZON_HOURS} h.
 - **Coverage:** only the target books. Caesars is absent on the free data plan, and BetMGM posts only the
   current week, so many snapshots have the 3-book minimum and little else.
-- **Selection:** every game in the database with collected data is included; history begins 2026-10-16.
+- **Sources:** live Odds API snapshots (from 2026-10-16) and OddsPapi line-move history imported for
+  earlier games as derived 6-hourly snapshots (ADR-026). Each game uses exactly one source. OddsPapi
+  excludes BetMGM and carries quotes forward between recorded changes (its change-log semantics).
 - **Cause:** a consensus moving toward a book does not mean the book "knew" anything. Shared news (injuries,
   weather) moves all books, and the diverging book may simply have updated first.
 - **The chance baseline assumes symmetric direction.** That's reasonable for a first pass, but it's an

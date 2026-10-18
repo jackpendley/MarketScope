@@ -1,0 +1,2 @@
+ALTER TABLE "odds_observations" DROP CONSTRAINT "odds_observations_run_selection_uq";--> statement-breakpoint
+ALTER TABLE "odds_observations" ADD CONSTRAINT "odds_observations_run_selection_time_uq" UNIQUE("ingestion_run_id","event_id","bookmaker_key","market_type","selection","observed_at");

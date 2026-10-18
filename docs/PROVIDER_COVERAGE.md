@@ -144,3 +144,7 @@ Sign convention test: home line = `handicap` matched 53/64 spread observations; 
 - **Usable** for DraftKings, FanDuel, Hard Rock, and likely Caesars and Pinnacle (not validated; we have no Odds API data for them). Treat BetMGM from OddsPapi as unreliable.
 - Volume is huge: about 90 MB of JSON per game for six books. Never store raw payloads (the Supabase free tier is 500 MB). Keep only derived, pregame, full-game main-line changes.
 - Keep it a **separate `source`**. Never mix it with Odds API observations inside one snapshot.
+
+## Import (2026-10-17)
+
+`pnpm --filter @marketscope/collector import:oddspapi` (ADR-026) backfills completed games that kicked off before live collection began, as derived 6-hourly plus near-close snapshots with `source = 'oddspapi'`. Books: DraftKings, FanDuel, Caesars, Hard Rock, and Pinnacle (reference). BetMGM is excluded.

@@ -138,14 +138,17 @@ export const oddsObservations = pgTable(
     source: text().notNull().default("the-odds-api"),
   },
   (t) => [
-    // One observation per selection per run (featured markets have one line each).
-    // Leading with ingestion_run_id also makes this the index for "rows of run X".
-    unique("odds_observations_run_selection_uq").on(
+    // One observation per selection per run per observed_at (featured markets have one
+    // line each). Live runs have a single observed_at; historical imports derive many
+    // snapshot times within one run. Leading with ingestion_run_id also makes this the
+    // index for "rows of run X".
+    unique("odds_observations_run_selection_time_uq").on(
       t.ingestionRunId,
       t.eventId,
       t.bookmakerKey,
       t.marketType,
       t.selection,
+      t.observedAt,
     ),
     // Serves "history of one selection at one book, newest first" and latest-quote lookups.
     index("odds_observations_history_idx").on(

@@ -152,14 +152,14 @@ Status legend: `[x]` done · `[~]` in progress · `[ ]` not started
   - **v1 result (2026-10-17): inconclusive.** 9 scored events from 5 games, below the pre-registered 30/15 minimum. Cross-check 13/13.
   - Re-run as history accumulates (`research/reports/outlier-convergence-v1.md`).
 
-## Phase 6 — Historical import (decision gate: $30 plan?)
+## Phase 6 — Historical data expansion
 
-- [ ] Present the cost math for approval first.
-- [ ] Importer:
-  - `job_key = hist:nfl:<ts>`, which gives caching and resumability.
-  - Store `requested_snapshot_at` and `provider_snapshot_at`; `observed_at` = snapshot time.
-  - Hard credit cap.
-- [ ] Coverage dashboard, `EXPLAIN ANALYZE` review, index and storage review.
+- [x] **Paid-data decision gate:** replaced by **OddsPapi**: free line-move history since Jan 2026, evaluated and validated 2026-10-17 (PROVIDER_COVERAGE.md).
+- [x] **MS-022 Historical import** (`import:oddspapi`, ADR-026):
+  - Completed pre-live games, stored as derived 6-hourly plus near-close snapshots.
+  - One idempotent run per fixture; refuses games collected live (no mixed sources).
+  - BetMGM excluded; Pinnacle stored as a reference book; no raw payloads.
+- [ ] **MS-023** Coverage dashboard, `EXPLAIN ANALYZE` review on the larger dataset, storage review.
 
 ## Phase 7 — ML baseline (MS-024–025)
 

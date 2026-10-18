@@ -78,6 +78,8 @@ export const FEED_COLORS: Readonly<Record<string, string>> = {
   williamhill_us: "#c98500",
   hardrockbet_az: "#d55181",
   hardrockbet: "#008300",
+  // Reference book (not on the board): categorical slot 7, validated adjacent to slot 6.
+  pinnacle: "#9085e9",
 };
 
 /**
