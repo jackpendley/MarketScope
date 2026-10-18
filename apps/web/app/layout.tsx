@@ -55,11 +55,16 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             affiliated with or endorsed by any sportsbook.
           </p>
           <p>
-            Football data: schedules, results and play-by-play from{" "}
+            Football data: schedules, results, play-by-play, injury reports and snap counts (Pro
+            Football Reference) via{" "}
             <a href="https://github.com/nflverse" className="underline hover:text-muted">
               nflverse
             </a>{" "}
-            (CC-BY 4.0).
+            (CC-BY 4.0). Weather forecasts by{" "}
+            <a href="https://open-meteo.com/" className="underline hover:text-muted">
+              Open-Meteo
+            </a>{" "}
+            (CC-BY 4.0). Coaching staff from Wikipedia and cited news reports.
           </p>
           <p>
             Gamble responsibly. 21+ where legal. If you or someone you know has a gambling problem,

@@ -183,3 +183,50 @@ def replace_coaching_staff(conn: psycopg.Connection, rows: list[dict]) -> int:
             for r in rows:
                 copy.write_row([value(r, c) for c in COACHING_COLUMNS])
     return len(rows)
+
+
+def load_games_frame(conn: psycopg.Connection, seasons: list[int] | None = None) -> pd.DataFrame:
+    where = "WHERE season = ANY(%s)" if seasons else ""
+    with conn.cursor() as cur:
+        cur.execute(f"""SELECT game_id, season, week, kickoff_utc, home_team, away_team, neutral_site, division_game,
+                               home_rest_days, away_rest_days, stadium, home_score
+                        FROM nfl_games {where} ORDER BY kickoff_utc""", (seasons,) if seasons else None)
+        return pd.DataFrame(cur.fetchall(), columns=[c.name for c in cur.description])
+
+
+CONTEXT_COLUMNS = [
+    "game_id", "team", "opponent", "season", "week", "is_home", "neutral_site", "division_game", "venue_key",
+    "roof_type", "rest_days", "rest_diff", "bye_before", "short_week", "home_venue_key", "travel_km",
+    "tz_shift_hours", "body_clock_kickoff_hour", "venue_local_kickoff_hour", "altitude_m", "altitude_change_m",
+    "road_streak", "hc_coach", "off_playcaller", "def_playcaller", "hc_tenure_games", "off_playcaller_tenure_games",
+    "def_playcaller_tenure_games", "new_off_playcaller", "new_def_playcaller",
+]
+
+
+def replace_game_context(conn: psycopg.Connection, frame: pd.DataFrame) -> int:
+    def clean(v):
+        if v is None or v is pd.NA or (isinstance(v, float) and v != v):
+            return None
+        return v.item() if hasattr(v, "item") else v
+
+    with conn.cursor() as cur:
+        cur.execute("DELETE FROM nfl_game_context")
+        with cur.copy(f"COPY nfl_game_context ({', '.join(CONTEXT_COLUMNS)}) FROM STDIN") as copy:
+            for r in frame[CONTEXT_COLUMNS].itertuples(index=False):
+                copy.write_row([clean(v) for v in r])
+    return len(frame)
+
+
+def upsert_weather(conn: psycopg.Connection, rows: list[dict]) -> int:
+    with conn.cursor() as cur:
+        cur.executemany(
+            """INSERT INTO nfl_weather_forecasts (game_id, lead_days, forecast_hour_utc, temperature_f, wind_mph,
+                 gust_mph, precip_in, source)
+               VALUES (%(game_id)s, %(lead_days)s, %(forecast_hour_utc)s, %(temperature_f)s, %(wind_mph)s,
+                 %(gust_mph)s, %(precip_in)s, %(source)s)
+               ON CONFLICT (game_id, lead_days) DO UPDATE SET forecast_hour_utc = EXCLUDED.forecast_hour_utc,
+                 temperature_f = EXCLUDED.temperature_f, wind_mph = EXCLUDED.wind_mph, gust_mph = EXCLUDED.gust_mph,
+                 precip_in = EXCLUDED.precip_in, source = EXCLUDED.source, fetched_at = now()""",
+            rows,
+        )
+    return len(rows)

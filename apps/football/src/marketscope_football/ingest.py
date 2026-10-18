@@ -5,6 +5,8 @@
     DATABASE_URL=... .venv/bin/python -m marketscope_football.ingest snaps      --seasons 2025-2026 [--dry-run]
     DATABASE_URL=... .venv/bin/python -m marketscope_football.ingest injuries   --seasons 2025-2026 [--dry-run]
     DATABASE_URL=... .venv/bin/python -m marketscope_football.ingest coaching   [--dry-run]   (data/coaching_staff.csv)
+    DATABASE_URL=... .venv/bin/python -m marketscope_football.ingest context    [--dry-run]   (all seasons in nfl_games)
+    DATABASE_URL=... .venv/bin/python -m marketscope_football.ingest weather    --seasons 2024-2026 [--recent] [--dry-run]
 
 `--seasons` accepts `2016-2026`, `2025,2026` or `current`. Every run claims a job key first
 (see db.py), so a repeated or overlapping run is harmless.
@@ -19,6 +21,7 @@ from collections.abc import Callable
 from datetime import datetime, timezone
 
 import nflreadpy as nfl
+import pandas as pd
 import psycopg
 
 from . import pbp
@@ -28,9 +31,9 @@ from .db import claim_run, connect, fail_run, finish_run
 from .design import STATS_VERSION
 from .linker import match_events
 from .schedules import game_rows, team_rows
-from .store import (apply_injury_plan, apply_links, final_game_ids, latest_injury_rows, load_link_inputs,
-                    replace_coaching_staff, replace_snaps, replace_team_game_stats, team_kickoffs, upsert_games,
-                    upsert_teams)
+from .store import (apply_injury_plan, apply_links, final_game_ids, latest_injury_rows, load_games_frame,
+                    load_link_inputs, replace_coaching_staff, replace_game_context, replace_snaps,
+                    replace_team_game_stats, team_kickoffs, upsert_games, upsert_teams, upsert_weather)
 from .team_stats import team_game_stats
 
 
@@ -188,16 +191,79 @@ def ingest_coaching(dry_run: bool, job_key: str | None) -> None:
     run_job(job_key or f"coaching:{digest}", "coaching", f"coaching_staff.csv sha256:{digest}", work)
 
 
+def _games_with_venues(conn: psycopg.Connection, seasons: list[int] | None = None):
+    from . import venues
+
+    games = load_games_frame(conn, seasons)
+    alias = venues.aliases()
+    unknown = sorted(set(games["stadium"].dropna()) - set(alias))
+    if unknown or games["stadium"].isna().any():
+        raise SystemExit(f"stadiums missing from data/venue_aliases.csv: {unknown or 'NULL stadium'}")
+    venue_key = games["stadium"].map(alias)
+    fixed = games["game_id"].map(venues.overrides())
+    return games.assign(venue_key=fixed.fillna(venue_key)), venues.venues()
+
+
+def ingest_context(dry_run: bool, job_key: str | None) -> None:
+    """Rebuild nfl_game_context for every game in nfl_games (schedule + venues + coaching)."""
+    import csv
+    from pathlib import Path
+
+    from .context import team_game_context
+
+    staff_path = Path(__file__).resolve().parents[2] / "data" / "coaching_staff.csv"
+    staff = list(csv.DictReader(staff_path.read_text().splitlines()))
+    prior = nfl.load_schedules(list(range(1999, 2016))).to_pandas()
+    prior_hc = pd.concat([
+        prior[["gameday", "home_team", "home_coach"]].set_axis(["kickoff_utc", "team", "coach"], axis=1),
+        prior[["gameday", "away_team", "away_coach"]].set_axis(["kickoff_utc", "team", "coach"], axis=1),
+    ])
+    prior_hc["kickoff_utc"] = pd.to_datetime(prior_hc["kickoff_utc"], utc=True)
+    with connect() as conn:
+        games, venue_map = _games_with_venues(conn)
+    frame = team_game_context(games, venue_map, staff, prior_hc)
+    print(f"context: {len(frame)} team-games")
+    if dry_run:
+        return
+    digest = hashlib.sha256(pd.util.hash_pandas_object(frame.astype(str), index=False).values.tobytes()).hexdigest()[:12]
+    run_job(job_key or f"context:{_today()}:{digest}", "context", f"context sha:{digest}",
+            lambda conn: (replace_game_context(conn, frame), f"wrote {len(frame)} team-games"))
+
+
+def ingest_weather(seasons: list[int], recent: bool, dry_run: bool, job_key: str | None) -> None:
+    """Point-in-time forecasts (Open-Meteo Previous Runs, 2024+) for outdoor/retractable venues.
+    `recent` limits to games from 10 days ago to 8 days ahead (the daily job)."""
+    from datetime import timedelta
+
+    from .weather import fetch_for_games
+
+    now = datetime.now(timezone.utc)
+    with connect() as conn:
+        games, venue_map = _games_with_venues(conn, seasons)
+    games = games[pd.to_datetime(games["kickoff_utc"], utc=True) >= pd.Timestamp("2024-01-01", tz="UTC")]
+    if recent:
+        k = pd.to_datetime(games["kickoff_utc"], utc=True)
+        games = games[(k >= now - timedelta(days=10)) & (k <= now + timedelta(days=8))]
+    rows = fetch_for_games(games[["game_id", "kickoff_utc", "venue_key"]], venue_map, now)
+    print(f"weather: {len(rows)} game-lead forecasts for {len(set(r['game_id'] for r in rows))} games")
+    if dry_run or not rows:
+        return
+    run_job(job_key or f"weather:{_span(seasons)}:{now:%Y-%m-%dT%H}{':recent' if recent else ''}", "weather",
+            "open-meteo previous-runs api", lambda conn: (upsert_weather(conn, rows), f"upserted {len(rows)} forecasts"))
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     sub = parser.add_subparsers(dest="dataset", required=True)
-    for name in ("schedules", "team-stats", "snaps", "injuries", "coaching"):
+    for name in ("schedules", "team-stats", "snaps", "injuries", "coaching", "context", "weather"):
         p = sub.add_parser(name)
         p.add_argument("--seasons", default="current")
         p.add_argument("--dry-run", action="store_true")
         p.add_argument("--job-key")
         if name == "team-stats":
             p.add_argument("--refresh", action="store_true", help="re-download play-by-play before aggregating")
+        if name == "weather":
+            p.add_argument("--recent", action="store_true", help="only games from 10 days ago to 8 days ahead")
     args = parser.parse_args()
     seasons = parse_seasons(args.seasons)
     if args.dataset == "schedules":
@@ -208,6 +274,10 @@ def main() -> None:
         ingest_snaps(seasons, args.dry_run, args.job_key)
     elif args.dataset == "coaching":
         ingest_coaching(args.dry_run, args.job_key)
+    elif args.dataset == "context":
+        ingest_context(args.dry_run, args.job_key)
+    elif args.dataset == "weather":
+        ingest_weather(seasons, args.recent, args.dry_run, args.job_key)
     else:
         ingest_injuries(seasons, args.dry_run, args.job_key)
 

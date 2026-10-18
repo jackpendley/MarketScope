@@ -212,9 +212,10 @@ New Python app `apps/football/` (nflreadpy, polars, psycopg). The schema stays i
   - [x] Curated `nfl_coaching_staff` with play-callers and sources: 1,473 spans 2016–2026, validated per team-week; nflverse head coaches found stale for 2024+ interims (ADR-031).
   - [x] P(plays | status, position): Out 0%, Doubtful 0.9%, Questionable 68% (2016–22); the practice-status gradient weakened in 2023–25 (`reports/plays-given-status.md`).
   - [x] `football-data.yml`, using the existing secret (daily: schedules/results/links + team stats).
-- [ ] **MS-028** Weather and context:
-  - Open-Meteo point-in-time forecasts.
-  - Rest, travel, time zones, altitude, coaching tenure, Week-18 state.
+- [x] **MS-028** Weather and context:
+  - [x] Open-Meteo point-in-time forecasts (`nfl_weather_forecasts`, 2024+, leads 0/1/3/7 days). Wind skill fades by 7 days (r 0.74 → 0.34), so wind uses short leads only (ADR-032).
+  - [x] Rest, travel, time zones, body clock, altitude, road streaks, coaching tenure (`nfl_game_context`), from a 49-venue catalog with overrides for nflverse's mislabelled 2025 international games.
+  - Week-18 clinch/elimination state moved to MS-034 (needs tiebreakers).
 
 ## Phase 9 — MarketScope Ratings (MS-029–034)
 

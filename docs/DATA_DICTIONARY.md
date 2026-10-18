@@ -249,6 +249,36 @@ Coverage by basis, plus play-caller turnover by season: `apps/football/reports/c
 
 The table is replaced whole on each load (job key = CSV hash). A daily drift check compares the CSV with each team's current Wikipedia staff template and prints warnings. Unique `(season, team, role, coach_id, from_week)`; index `coach_id`.
 
+### `nfl_weather_forecasts`: point-in-time forecasts per game (MS-028)
+
+From Open-Meteo's Previous Runs API (CC-BY 4.0), for outdoor and retractable-roof venues from 2024 (ADR-032). PK `(game_id, lead_days)`.
+
+- `lead_days` N ∈ {1, 3, 7} means the value was predicted at least N × 24 h before the hour, so it can feed a prediction made N days out. Lead 0 is the latest run before kickoff: a near-kickoff estimate, not an observation.
+- `forecast_hour_utc`: the kickoff hour.
+- Over the game window (kickoff hour + 3): `temperature_f` and `wind_mph` are means, `gust_mph` the maximum, `precip_in` the sum.
+- Also `source` and `fetched_at`.
+- A lead is stored only once it has elapsed.
+
+Skill against observed game weather: `apps/football/reports/weather-forecast-skill.md`.
+
+### `nfl_game_context`: pre-game context per team per game (MS-028)
+
+Computed from `nfl_games`, the venue catalog (`apps/football/data/venues.csv`, `venue_aliases.csv`, `venue_overrides.csv`) and `coaching_staff.csv`. Everything is known before kickoff. PK `(game_id, team)`.
+
+| Column                                                                      | Definition                                                                                                                                                                                   |
+| --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `is_home`, `neutral_site`, `division_game`                                  | `is_home` is false for both teams at a neutral site                                                                                                                                          |
+| `venue_key`, `roof_type`                                                    | Venue from the alias table, corrected by `venue_overrides.csv` where nflverse is wrong (2025 international games carry the home team's own stadium). `roof_type`: outdoor, dome, retractable |
+| `rest_days`, `rest_diff`, `bye_before` (rest ≥ 13), `short_week` (rest ≤ 5) | From nflverse rest days                                                                                                                                                                      |
+| `home_venue_key`, `travel_km`                                               | Great-circle distance from the team's main home venue that season                                                                                                                            |
+| `tz_shift_hours`, `body_clock_kickoff_hour`, `venue_local_kickoff_hour`     | Offsets at kickoff (daylight saving respected); body clock = kickoff in the team's home time zone                                                                                            |
+| `altitude_m`, `altitude_change_m`                                           | Venue elevation (Open-Meteo) and change from home                                                                                                                                            |
+| `road_streak`                                                               | Consecutive games away from home (neutral counts), this one included                                                                                                                         |
+| `hc_coach`, `off_playcaller`, `def_playcaller` and their `*_tenure_games`   | Consecutive prior games with the franchise. Head-coach tenure is seeded with 1999–2015 nflverse games; play-caller tenure is NULL when the run began before 2016 (left-censored)             |
+| `new_off_playcaller`, `new_def_playcaller`                                  | First game with this caller (NULL when censored)                                                                                                                                             |
+
+Week-18 clinch/elimination state moves to MS-034, where the tiebreakers are implemented.
+
 ### `nfl_ingest_runs`
 
-The same claim pattern as `ingestion_runs`. `job_key` is unique (`schedules:<seasons>:<UTC date>`, `team-stats:<seasons>:<UTC date>:<data hash>`, `snaps:<seasons>:<UTC date>:<data hash>`, `injuries:<seasons>:<UTC hour>`, `coaching:<csv hash>`, or a manual key). Also `dataset`, `status`, `attempt` (increments when a failed or stale run is reclaimed), `rows_upserted`, `source_version` (nflreadpy version + dataset SHA-256), and a sanitized `error_message`.
+The same claim pattern as `ingestion_runs`. `job_key` is unique (`schedules:<seasons>:<UTC date>`, `team-stats:<seasons>:<UTC date>:<data hash>`, `snaps:<seasons>:<UTC date>:<data hash>`, `injuries:<seasons>:<UTC hour>`, `coaching:<csv hash>`, `context:<UTC date>:<hash>`, `weather:<seasons>:<UTC hour>[:recent]`, or a manual key). Also `dataset`, `status`, `attempt` (increments when a failed or stale run is reclaimed), `rows_upserted`, `source_version` (nflreadpy version + dataset SHA-256), and a sanitized `error_message`.

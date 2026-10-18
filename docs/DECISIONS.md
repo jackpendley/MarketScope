@@ -395,3 +395,26 @@ AWS Lambda + EventBridge remains an optional later upgrade (Phase 3).
 - Offensive play-callers are sourced for about 69% of team-weeks (51% by full season lists); defensive play-callers for about 10%.
 - Defensive analyses must treat the coordinator-calls default as an assumption. RATINGS.md R7 states this.
 - About 40–55% of teams start each season with a new offensive play-caller, so the continuity factor has plenty of variation.
+
+## ADR-032 — Weather and game context: reproducible point-in-time inputs (2026-10-18)
+
+**Context.** Weather, rest, travel and time zones are standard factors in NFL models (538, ELWAY, nfelo). The factor catalog marks them `test`: they must earn their place on 2023–24 validation. For a forecast to be usable in a backtest, we must know what it said before the game, not after.
+
+**Decision.**
+
+- **Weather forecasts:**
+  - Use Open-Meteo's Previous Runs API. `*_previous_dayN` is the value predicted N × 24 h before the hour, so forecasts at 1, 3 and 7 days are reproducible point-in-time inputs from 2024 (the archive's start). Lead 0, the latest run, is kept as a near-kickoff reference.
+  - Fetch only outdoor and retractable venues. Average over the game window.
+  - The daily job adds leads as they elapse. No API key, no new secret.
+  - Observed game weather (nflverse) stays post-hoc and is used only to measure forecast skill.
+- **A venue catalog instead of nflverse stadium strings:**
+  - 49 venues with curated roof type, Wikipedia coordinates, and Open-Meteo elevation and IANA time zone.
+  - An alias table maps nflverse's 64 stadium names.
+  - A sourced override table fixes the 2025 international games that nflverse labels with the home team's stadium.
+- **Context features are computed, not curated:** rest, bye, short week, travel, time-zone shift, body clock, altitude, road streak, and head-coach and play-caller tenure. Censored tenures are NULL rather than understated.
+- **Week-18 incentives** (clinched or eliminated) need standings and tiebreakers. They move to MS-034 with the season simulation.
+
+**Consequences.**
+
+- Forecast skill is measured (`reports/weather-forecast-skill.md`). Temperature r = 0.98 at 1 day and 0.94 at 7 days; wind r = 0.74 at 1 day but 0.34 at 7 days. So wind enters only from short leads, and the R3 study uses 1 and 3-day leads.
+- Weather exists only for 2024+, so any weather factor is validated on 2024 alone, then tested once in 2025. It must show a large effect to earn a place.

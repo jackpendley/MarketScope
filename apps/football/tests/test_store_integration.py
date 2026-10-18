@@ -22,7 +22,7 @@ def conn():
         c = psycopg.connect(URL, connect_timeout=5)
     except psycopg.OperationalError:
         pytest.skip("test database unavailable")
-    c.execute("TRUNCATE nfl_coaching_staff, nfl_injury_reports, nfl_player_game_snaps, nfl_team_game_stats, nfl_games, nfl_teams, nfl_ingest_runs, events RESTART IDENTITY CASCADE")
+    c.execute("TRUNCATE nfl_game_context, nfl_weather_forecasts, nfl_coaching_staff, nfl_injury_reports, nfl_player_game_snaps, nfl_team_game_stats, nfl_games, nfl_teams, nfl_ingest_runs, events RESTART IDENTITY CASCADE")
     c.commit()
     yield c
     c.rollback()
@@ -167,3 +167,15 @@ def test_coaching_staff_replaces_the_table(conn):
                                                 "offense_playcaller": "False", "playcaller_basis": ""}]) == 2
     got = conn.execute("SELECT role, offense_playcaller, playcaller_basis FROM nfl_coaching_staff ORDER BY role").fetchall()
     assert got == [("HC", True, "list"), ("OC", False, None)]
+
+
+def test_weather_upsert_is_idempotent(conn):
+    from marketscope_football.store import upsert_weather
+
+    upsert_teams(conn, TEAMS)
+    upsert_games(conn, [game()])
+    row = {"game_id": "2026_01_SF_LA", "lead_days": 1, "forecast_hour_utc": datetime(2026, 9, 11, 0, tzinfo=timezone.utc),
+           "temperature_f": 70.0, "wind_mph": 5.0, "gust_mph": 9.0, "precip_in": 0.0, "source": "test"}
+    upsert_weather(conn, [row])
+    upsert_weather(conn, [{**row, "wind_mph": 6.5}])
+    assert conn.execute("SELECT count(*), max(wind_mph) FROM nfl_weather_forecasts").fetchone() == (1, 6.5)
