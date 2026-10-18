@@ -683,4 +683,23 @@ The test is only honest if the model is fixed before it runs and cannot be re-ru
 
 - **Speed:** every ratings query runs in under 10 ms on production (PERFORMANCE.md).
 - **Mobile:** tables scroll inside their cards, with no page-level horizontal scroll (an e2e check at Pixel 7 width).
-- **Still to come:** `/matchups`, the `/model` scorecard and the game-page matchup panel (MS-033b). The forward test needs a few weeks of results before its scorecard means anything.
+- **Followed by** `/matchups`, the `/model` scorecard and the game-page panel (ADR-041).
+
+## ADR-041 — Matchups, scorecard and game panel: stored estimates only, scored in the open (2026-10-18)
+
+**Context.** MS-033b shows the model's game estimates (a KenPom FanMatch analog), a live scorecard, and the estimate on each game page. Three risks: showing an estimate that wasn't made before kickoff, comparing against the wrong market number, and a scorecard that overstates a handful of games.
+
+**Decision.**
+
+- **Only stored estimates.** Every page reads `model_predictions` and uses each game's newest row created before kickoff. Nothing is recomputed in the web app, so what the scorecard grades is exactly what was shown before the game. Games before the forward test (it began 2026-10-18, week 6) say there is no stored estimate and point to the 2023–25 evaluation.
+- **Which market number.** Upcoming games show the board's current consensus (median home spread, at least 3 books, the same rule as the odds board; "n/a" with the book count otherwise). Final games show the nflverse close, labeled. The scorecard grades against the close: margin MAE, Brier with the close's no-vig moneyline probability, and total MAE.
+- **Scorecard statistics.** Differences are paired on the same games, with a 95% bootstrap interval that resamples games (2,000 draws, fixed seed, so the page is reproducible). The interval appears from 30 scored games and calibration bins from 50; before that the page shows the point values and says why. The one-time 2025 test record is read from `model_runs` and shown with its intervals, the params hash and the code SHA.
+- **Contributions.** Shown as a diverging waterfall that sums to the expected margin: team ratings, home field, quarterbacks, other absences. Expected QBs are named, with their probability of playing when it is below 1.
+- **Quality and excitement** are descriptive only. Quality (0–100) is the average league percentile of the two teams' AdjEM ranks going in. Excitement scales it by expected closeness, 1 − |2p − 1|.
+- **Labels.** Each page calls the numbers model estimates, gives the 2025-test error next to the close's (10.1 vs 9.7), and says "not betting advice". No pick language anywhere, including "the model's favorite won" rather than a record of picks.
+
+**Consequences.**
+
+- **Speed:** all new queries run in under 3 ms on production (PERFORMANCE.md).
+- **Small samples:** the scorecard starts with zero scored games and will be noisy for weeks. The intervals and minimums make that visible rather than hiding it.
+- **e2e:** the synthetic seed links week-4 games to the synthetic odds events, adds estimates for played weeks, closes, QB names and a synthetic test record, so every page and the game panel are covered with a synthetic banner.

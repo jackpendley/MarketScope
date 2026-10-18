@@ -68,7 +68,7 @@ try {
   await recomputeSignals(db, ids, jsonLogger);
 
   // Synthetic MarketScope Ratings (model_version "synthetic-demo"): replaced on every run.
-  await sql`TRUNCATE model_predictions, rating_snapshots, nfl_coaching_staff, nfl_games RESTART IDENTITY CASCADE`;
+  await sql`TRUNCATE model_predictions, model_runs, rating_snapshots, nfl_player_game_snaps, nfl_coaching_staff, nfl_games RESTART IDENTITY CASCADE`;
   const ratings = await seedSyntheticRatings(db, new Date());
   jsonLogger.info("seed.ratings", { snapshots: ratings });
 } finally {

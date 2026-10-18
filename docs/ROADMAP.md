@@ -247,7 +247,8 @@ New Python app `apps/football/` (nflreadpy, polars, psycopg). The schema stays i
 - [x] **MS-033a** Ratings UI (ADR-040):
   - `/ratings` (KenPom table, week time machine, sortable ranks, conference filter), `/teams/[abbr]` (ratings, trend, Five Factors, luck, schedule with model estimates, staff), `/api/ratings`.
   - Synthetic ratings seed for e2e; EXPLAIN review.
-- [ ] **MS-033b** `/matchups`, `/model` scorecard, game-page matchup panel.
+- [x] **MS-033b** Matchups, scorecard and game panel (ADR-041):
+  - `/matchups` (FanMatch analog: model scores, win probability, contribution waterfall, expected QBs, consensus or close, quality and excitement), `/model` (live forward test vs results and the close, 2025 test record), the game-page model panel, `/api/matchups`, `/api/model`.
 - [ ] **MS-034** (stretch) Season simulation: playoff, division and #1-seed odds.
 
 ## Phase 10 — Research studies + ML with football features (MS-035–036)

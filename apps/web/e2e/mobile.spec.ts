@@ -34,3 +34,16 @@ test("ratings and team pages fit a phone screen (tables scroll inside their card
   await expect(page.getByRole("heading", { name: /Kansas City Chiefs/ })).toBeVisible();
   await expectNoHorizontalScroll(page);
 });
+
+test("matchups, the model scorecard and the game panel fit a phone screen", async ({ page }) => {
+  await page.goto("/matchups");
+  await expect(page.getByRole("heading", { name: "Matchups" })).toBeVisible();
+  await expectNoHorizontalScroll(page);
+  await page.goto("/model");
+  await expect(page.getByRole("heading", { name: "Model scorecard" })).toBeVisible();
+  await expectNoHorizontalScroll(page);
+  await page.goto("/nfl");
+  await page.locator("section[aria-labelledby^='evt-']").first().getByRole("link").first().click();
+  await expect(page.getByRole("heading", { name: "Model estimate" })).toBeVisible();
+  await expectNoHorizontalScroll(page);
+});

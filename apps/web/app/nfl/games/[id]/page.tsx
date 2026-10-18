@@ -11,7 +11,14 @@ import { isConnectionError } from "@/lib/server/api";
 import { DatabaseNotConfiguredError, getDb, quoteFreshnessMinutes } from "@/lib/server/db";
 import { hasSyntheticData, loadGameDetail, type GameDetail } from "@/lib/server/games";
 import { describeSignal, signalTitle } from "@/lib/signal-format";
-import { listSignals, type SignalRow } from "@marketscope/db";
+import {
+  listSignals,
+  matchupForEvent,
+  ratingVersion,
+  type Matchup,
+  type SignalRow,
+} from "@marketscope/db";
+import { ModelPanel } from "@/components/model-panel";
 import { formatKickoff, formatTimestamp } from "@/lib/time";
 
 export const metadata: Metadata = { title: "Game odds" };
@@ -23,9 +30,18 @@ export default async function GamePage(props: PageProps<"/nfl/games/[id]">) {
 
   let detail: GameDetail | null;
   let signals: SignalRow[] = [];
+  let matchup: Matchup | null = null;
+  let modelVersion: string | null = null;
   try {
-    detail = await loadGameDetail(getDb(), id);
-    if (detail) signals = await listSignals(getDb(), { eventId: id, limit: 8 });
+    const db = getDb();
+    detail = await loadGameDetail(db, id);
+    if (detail) {
+      [signals, modelVersion] = await Promise.all([
+        listSignals(db, { eventId: id, limit: 8 }),
+        ratingVersion(db),
+      ]);
+      if (modelVersion) matchup = await matchupForEvent(db, { version: modelVersion, eventId: id });
+    }
   } catch (err) {
     if (err instanceof DatabaseNotConfiguredError || isConnectionError(err))
       return <DataUnavailable />;
@@ -73,6 +89,10 @@ export default async function GamePage(props: PageProps<"/nfl/games/[id]">) {
         <p className="text-sm text-muted">No odds have been collected for this game.</p>
       ) : (
         <EventOddsTable board={board} />
+      )}
+
+      {matchup && modelVersion && (
+        <ModelPanel matchup={matchup} consensus={board.consensus} version={modelVersion} />
       )}
 
       <section className="space-y-2">
