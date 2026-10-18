@@ -192,7 +192,7 @@ Market-only first, so Phase 10 can measure what football features add. Lives in 
   - **Features:** dispersion, movement, volatility, quote age, key-number proximity, active divergence, Pinnacle − board (with a missingness flag), totals movement.
   - **Leakage audit:** a planted leaky feature must fail it.
   - **Split:** chronological and grouped by game.
-- [ ] **MS-025** Baselines and model card.
+- [x] **MS-025** Baselines and model card. **v1 result (2026-10-18):** logistic regression ranks moves (test AUC 0.72, CI 0.57–0.86) but its Brier and log-loss gains over the constant baseline are not yet distinguishable (the CIs include 0). Direction shows no skill. See `docs/MODEL_CARD.md` and `research/reports/market-baseline-v1.md`; re-run as v2 once the live forward check reaches 15 games.
   - Models: majority, empirical rate, volatility heuristic, logistic regression, and an outlier-direction rule.
   - Metrics: Brier, log loss, reliability, precision/recall, each with a game-clustered CI, broken out by time-to-kickoff window.
   - `docs/MODEL_CARD.md`.

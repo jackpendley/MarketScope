@@ -31,7 +31,10 @@ Fixed in `src/marketscope_research/ml/design.py` before any label, class balance
 - **Target:** at snapshot t, 168 h to 24 h before kickoff: does the board consensus home spread move ≥ 0.5 pts by t + 24 h? The future value is the pregame consensus snapshot nearest t + 24 h within ±3 h; otherwise the label is missing. Secondary target: direction (toward home or away), given a move.
 - **Split, chronological and grouped by game:** train weeks 1–3, validation week 4, test week 5 (all imported history). Weeks ≥ 6 (live collection, a different book mix) are a separate forward check, reported when ≥ 15 games are labelled.
 - **Gate:** ≥ 60 games, ≥ 150 positives, ≥ 15 test games, ≥ 30 test positives. If any check fails, the result is exploratory only.
+- **Model protocol (MS-025, fixed before any model was fit):** C chosen on validation log loss; every model refit on train + validation and scored once on the test week; a model beats a baseline only when both the Brier and the log-loss difference CIs (game-clustered bootstrap) lie below zero.
 - **Leakage audit:** every feature must be unchanged when all observations after t are perturbed (`ml/audit.py`). A planted leaky feature fails it (`tests/test_ml_dataset.py`).
+
+After regenerating a report, format it (CI checks Markdown formatting): `pnpm exec prettier --write research/reports`.
 
 ## Principles
 
