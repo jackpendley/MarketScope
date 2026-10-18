@@ -101,7 +101,7 @@ describe("odds_observations constraints", () => {
       await constraintViolated(
         db.insert(oddsObservations).values(observation({ americanPrice: -115 })),
       ),
-    ).toBe("odds_observations_run_selection_uq");
+    ).toBe("odds_observations_run_selection_time_uq");
   });
 
   it("rejects an unknown bookmaker", async () => {
@@ -110,6 +110,12 @@ describe("odds_observations constraints", () => {
         db.insert(oddsObservations).values(observation({ bookmakerKey: "bovada" })),
       ),
     ).toBe("odds_observations_bookmaker_key_bookmakers_key_fk");
+  });
+
+  it("allows one historical run to hold the same selection at different snapshot times", async () => {
+    await db.insert(oddsObservations).values(observation());
+    await db.insert(oddsObservations).values(observation({ observedAt: "2026-10-16T07:21:46Z" }));
+    expect(await db.$count(oddsObservations)).toBe(2);
   });
 
   it("allows the same selection in a different run (that's history)", async () => {

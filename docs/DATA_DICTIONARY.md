@@ -43,6 +43,16 @@
 - The first observation is "first observed", not the opening line. The last pregame observation is "last observed pregame", not the closing line.
 - Never stamp historical data with the import time.
 
+### Imported history (`source = 'oddspapi'`, ADR-026)
+
+| Field                  | Meaning for imported rows                                                           |
+| ---------------------- | ----------------------------------------------------------------------------------- |
+| `observed_at`          | a **derived snapshot time** (00/06/12/18 UTC, or kickoff − 5 min), not a poll time  |
+| `bookmaker_updated_at` | the provider's recorded **change time** for that price                              |
+| `ingestion_run`        | one `historical` run per fixture (`oddspapi:<fixtureId>:v1`); no raw payload stored |
+
+A quote is the book's latest active entry at the snapshot time. Prices hold between recorded changes, following the provider's change-log semantics.
+
 ## Normalization issues
 
 Codes are defined in `NORMALIZATION_ISSUE_CODES`:

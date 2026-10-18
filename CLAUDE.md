@@ -63,6 +63,7 @@ The developer (Jack) is building it to move into a backend/full-stack software e
 | `pnpm --filter @marketscope/db db:generate --name <x>`                                                                | new migration from `schema.ts` changes (commit it; CI checks drift)                                        |
 | `pnpm collect:nfl [--scheduled \| --job-key K]`                                                                       | collect odds into Postgres (3 credits; budget-guarded, idempotent per job key)                             |
 | `DATABASE_URL=postgres://localhost:5432/marketscope_demo pnpm --filter @marketscope/collector seed:synthetic --reset` | synthetic multi-day history for UI work (guarded: demo/e2e DBs only; ADR-021)                              |
+| `pnpm --filter @marketscope/collector import:oddspapi [--limit N] [--dry-run]`                                        | backfill completed pre-live games from OddsPapi (free history; ~1 billable request; ADR-026)               |
 | `pnpm --filter @marketscope/<pkg> <script>`                                                                           | run one package's script                                                                                   |
 
 ## Repo map

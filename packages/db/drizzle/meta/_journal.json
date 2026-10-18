@@ -36,6 +36,13 @@
       "when": 1792280834158,
       "tag": "0004_market_signals",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792283088986,
+      "tag": "0005_unique_per_snapshot",
+      "breakpoints": true
     }
   ]
 }

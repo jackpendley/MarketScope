@@ -101,6 +101,15 @@ export default async function MarketReplayPage(props: PageProps<"/nfl/games/[id]
         </p>
       </div>
 
+      {sources.includes("oddspapi") && (
+        <Notice title="Historical data from OddsPapi line-move history.">
+          Shown as derived snapshots every 6 hours (00/06/12/18 UTC) over the 30 days before
+          kickoff, plus a near-close snapshot 5 minutes before kickoff. Each book&apos;s main line
+          is the one priced closest to even. BetMGM is excluded (its history failed validation);
+          Pinnacle is a reference book outside the consensus.
+        </Notice>
+      )}
+
       {sources.includes("synthetic") && (
         <Notice tone="warn" title="Synthetic data: not real odds.">
           This database contains generated demo history for development and testing.

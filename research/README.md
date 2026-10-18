@@ -16,11 +16,11 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 | -------------------------------------------------------------------------- | ------------------------------------------------- | ----------------------------------- |
 | Does an outlier book predict consensus convergence within 24 h? (spec §15) | `src/marketscope_research/outlier_convergence.py` | `reports/outlier-convergence-v1.md` |
 
-Run against a database (production via Jack's local `SUPABASE_DATABASE_URL`, or a local demo/e2e DB with `--source synthetic`):
+Run against a database (production via Jack's local `SUPABASE_DATABASE_URL`, or a local demo/e2e DB with `--sources synthetic`):
 
 ```bash
 PYTHONPATH=src STUDY_DATABASE_URL=postgres://localhost:5432/marketscope_demo \
-  .venv/bin/python -m marketscope_research.run_outlier_convergence --source synthetic --out /tmp/synthetic.md
+  .venv/bin/python -m marketscope_research.run_outlier_convergence --sources synthetic --out /tmp/synthetic.md
 ```
 
 ## Principles

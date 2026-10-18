@@ -40,6 +40,20 @@ export const COLLECTED_BOOKMAKERS: readonly BookmakerInfo[] = [
 
 export const COLLECTED_BOOKMAKER_KEYS: readonly string[] = COLLECTED_BOOKMAKERS.map((b) => b.key);
 
+/**
+ * Reference books: stored for research (e.g. a sharp market for comparison) but never part
+ * of the five-book board, its consensus, or contemporaneous signals (spec 2.6, 4.1).
+ * Currently sourced from OddsPapi historical imports only.
+ */
+export const REFERENCE_BOOKMAKERS: readonly BookmakerInfo[] = [
+  {
+    key: "pinnacle",
+    displayName: "Pinnacle (reference)",
+    regionHint: "oddspapi",
+    paidPlanOnly: false,
+  },
+];
+
 export interface BoardBook {
   id: string;
   displayName: string;
@@ -57,5 +71,8 @@ export const BOARD_BOOKS: readonly BoardBook[] = [
 ];
 
 export function getBookmakerInfo(key: string): BookmakerInfo | undefined {
-  return COLLECTED_BOOKMAKERS.find((b) => b.key === key);
+  return (
+    COLLECTED_BOOKMAKERS.find((b) => b.key === key) ??
+    REFERENCE_BOOKMAKERS.find((b) => b.key === key)
+  );
 }
