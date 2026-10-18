@@ -12,10 +12,13 @@ import subprocess
 from datetime import datetime, timezone
 
 import numpy as np
+import pandas as pd
 
 from .consensus import consensus_series
 from .data import connect, load_divergence_events, load_home_spreads, load_kickoffs
 from .outlier_convergence import (
+    breakdown,
+    toward_share_among_moved,
     HORIZON_HOURS,
     MIN_EVENTS,
     MIN_GAMES,
@@ -28,6 +31,20 @@ from .outlier_convergence import (
 
 def pct(x: float) -> str:
     return "n/a" if x != x else f"{100 * x:.1f}%"
+
+
+def breakdown_md(t: pd.DataFrame, label: str) -> str:
+    lines = [
+        f"| {label} | Events | Games | Toward | Away | None | Toward rate | Toward share of moves |",
+        "|---|---|---|---|---|---|---|---|",
+    ]
+    for key, row in t.iterrows():
+        share = "n/a" if pd.isna(row["toward_share_of_moves"]) else pct(row["toward_share_of_moves"])
+        lines.append(
+            f"| {key} | {int(row['events'])} | {int(row['games'])} | {int(row['toward'])} | {int(row['away'])} | "
+            f"{int(row['none'])} | {pct(row['toward_rate'])} | {share} |"
+        )
+    return "\n".join(lines)
 
 
 def main() -> None:
@@ -66,6 +83,12 @@ def main() -> None:
     labelled = label_outcomes(events, consensus, kickoffs)
     any_move, eligible = unconditional_move_rate(consensus, kickoffs)
     r = summarize(labelled, any_move, eligible)
+
+    # Exploratory (not pre-registered): direction among moves, per source and per book.
+    labelled["source"] = labelled["event_id"].map(spreads.groupby("event_id")["source"].first())
+    share, (share_lo, share_hi), n_moved = toward_share_among_moved(labelled)
+    by_source = breakdown_md(breakdown(labelled, "source"), "Source")
+    by_book = breakdown_md(breakdown(labelled, "bookmaker_key"), "Diverging book")
 
     try:
         commit = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], text=True).strip()
@@ -147,11 +170,30 @@ When a sportsbook's home spread diverges from the same-snapshot consensus, does 
 
 **Verdict:** {verdict}
 
+## Exploratory robustness checks (added after seeing v1 results; not pre-registered)
+
+The chance baseline is unconditional, but divergences tend to occur while a market is already moving, so
+the baseline may understate how often the consensus moves after one. A check that doesn't depend on it:
+**among events where the consensus moved, what share moved toward the book?** If divergence carried no
+directional information, that share would be about 50%.
+
+- Toward share of moves: **{pct(share)}** of {n_moved} (95% game-clustered CI {pct(share_lo)}–{pct(share_hi)})
+
+{by_source}
+
+{by_book}
+
+Treat these as descriptive. They were chosen after the primary result was known, and per-group cells are small.
+
 ## Limitations
 
 - **Polling resolution:** about 4 snapshots/day, so the horizon snapshot can be up to {TOLERANCE_HOURS} h from t + {HORIZON_HOURS} h.
-- **Coverage:** only the target books. Caesars is absent on the free data plan, and BetMGM posts only the
-  current week, so many snapshots have the 3-book minimum and little else.
+- **Coverage:** only board books count toward consensus (Pinnacle is stored but excluded). Live snapshots lack
+  Caesars (paid plan) and imported history lacks BetMGM (failed validation), so most snapshots have 4 books.
+- **Derived snapshots:** imported games are resampled from change logs. If the provider missed a book's update,
+  that book looks stale-but-divergent until its next recorded change, and the consensus can appear to move
+  "toward" it when the other books revert. Validation agreement was 85–100% for the books used, not 100%.
+- **Source imbalance:** almost all scored events come from imported history (see the per-source table).
 - **Sources:** live Odds API snapshots (from 2026-10-16) and OddsPapi line-move history imported for
   earlier games as derived 6-hourly snapshots (ADR-026). Each game uses exactly one source. OddsPapi
   excludes BetMGM and carries quotes forward between recorded changes (its change-log semantics).

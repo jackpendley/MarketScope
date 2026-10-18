@@ -151,6 +151,7 @@ Status legend: `[x]` done · `[~]` in progress · `[ ]` not started
   - Chance baseline; game-clustered bootstrap CI; Python consensus cross-checked against stored signals.
   - **v1 result (2026-10-17): inconclusive.** 9 scored events from 5 games, below the pre-registered 30/15 minimum. Cross-check 13/13.
   - Re-run as history accumulates (`research/reports/outlier-convergence-v1.md`).
+  - 2026-10-17 re-run with OddsPapi history: **conclusive**. 476 events from 83 games; toward-rate 29.0% vs a 10.3% chance baseline. Exploratory check: 63% of consensus moves went toward the book (CI 58.5–68.6%).
 
 ## Phase 6 — Historical data expansion
 

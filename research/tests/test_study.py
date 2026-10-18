@@ -100,3 +100,33 @@ def test_game_clustered_ci_bounds():
     lo, hi = game_clustered_ci(labelled)
     assert 0.0 <= lo <= 0.5 <= hi <= 1.0
     assert game_clustered_ci(labelled) == (lo, hi)
+
+
+from marketscope_research.outlier_convergence import breakdown, toward_share_among_moved
+
+
+def test_toward_share_among_moved_ignores_no_change_and_clusters_by_game():
+    rows = []
+    for g in range(20):
+        rows += [{"event_id": f"g{g}", "outcome": "toward", "src": "a"}, {"event_id": f"g{g}", "outcome": "none", "src": "a"}]
+        if g % 4 == 0:
+            rows.append({"event_id": f"g{g}", "outcome": "away", "src": "b"})
+    labelled = pd.DataFrame(rows)
+    share, (lo, hi), n = toward_share_among_moved(labelled)
+    assert n == 25 and share == pytest.approx(20 / 25)
+    assert lo <= share <= hi <= 1.0
+
+
+def test_breakdown_counts_per_group():
+    labelled = pd.DataFrame(
+        [
+            {"event_id": "g1", "outcome": "toward", "src": "a"},
+            {"event_id": "g1", "outcome": "away", "src": "a"},
+            {"event_id": "g2", "outcome": "none", "src": "b"},
+            {"event_id": "g3", "outcome": "no_horizon", "src": "b"},
+        ]
+    )
+    t = breakdown(labelled, "src")
+    assert t.loc["a", ["events", "games", "toward", "away"]].tolist() == [2, 1, 1, 1]
+    assert t.loc["a", "toward_share_of_moves"] == 0.5
+    assert t.loc["b", "events"] == 1 and pd.isna(t.loc["b", "toward_share_of_moves"])
