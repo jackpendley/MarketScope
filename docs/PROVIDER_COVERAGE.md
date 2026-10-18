@@ -103,3 +103,44 @@ Normalization issues: MARKET_MISSING × 1, BOOKMAKER_MISSING × 61
 | Los Angeles Rams @ Las Vegas Raiders        | 2026-10-25T20:25:00.000Z | MST        | MST     | —      | —       | —                  |
 
 </details>
+
+---
+
+# OddsPapi evaluation (2026-10-17)
+
+Candidate free source for **historical** data (`https://api.oddspapi.io`, free plan: 250 billable requests/month). Docs and terms were read on 2026-10-17.
+
+## Documented facts
+
+- `/v4/historical-odds` is **free and never counts against the quota**. It has a 5-second cooldown, takes max 3 bookmakers per call, and returns one fixture per call. History is available "since January 2026".
+- Billable endpoints include `/v4/fixtures` (2 s cooldown; `tournamentId=31` is NFL), `/v4/markets`, `/v4/bookmakers`, and `/v4/sports`. `/v4/account` is free and reports `request_limit`/`request_count`.
+- **Terms:** "You may not resell, repackage, or redistribute our data as a standalone product." API keys are personal. The terms say nothing about storage, retention, or display.
+
+## Probe findings (about 7 billable requests used)
+
+- **Book slugs:** `draftkings`, `fanduel`, `betmgm`, `caesars`, `hardrockbet` (one feed, not AZ-specific), `pinnacle`, `circasports`.
+- **Granularity:** a full price history per line move, with `createdAt`, decimal `price`, `limit`, and `active`. One game (GB–CHI, Oct 11) held 524K DraftKings entries back to **2026-07-28** (around the opener), covering every alternate line, quarters, halves, team totals, props, and in-play.
+- **Encoding:**
+  - Full game is `period = "result"`.
+  - Spreads are "Handicap (incl. overtime)", **one market per line**, and the market `handicap` is the **home team's line**.
+  - Moneyline is market 141.
+  - Totals are "Total (incl. overtime)" with Over/Under outcomes.
+  - `participant1` is the home team.
+- **No main-line flag.** Inferring the main line as the one priced closest to even matched our collector's line in **30 of 32** cases.
+
+## Validation against our own observations (CHI @ ATL, 192 observations, ±2¢)
+
+| Book       | Agreement                                        |
+| ---------- | ------------------------------------------------ |
+| FanDuel    | 48/48 (100%)                                     |
+| DraftKings | 44/48 (92%)                                      |
+| Hard Rock  | 41/48 (85%); different state feeds               |
+| BetMGM     | 21/48 (44%); OddsPapi misses many BetMGM updates |
+
+Sign convention test: home line = `handicap` matched 53/64 spread observations; the opposite matched 0/64.
+
+## Implications
+
+- **Usable** for DraftKings, FanDuel, Hard Rock, and likely Caesars and Pinnacle (not validated; we have no Odds API data for them). Treat BetMGM from OddsPapi as unreliable.
+- Volume is huge: about 90 MB of JSON per game for six books. Never store raw payloads (the Supabase free tier is 500 MB). Keep only derived, pregame, full-game main-line changes.
+- Keep it a **separate `source`**. Never mix it with Odds API observations inside one snapshot.

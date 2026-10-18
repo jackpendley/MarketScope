@@ -72,9 +72,6 @@ Nothing blocking. Optional: mark the GitGuardian false-positive incident as reso
 
 ## Next task
 
-**Phase 6 decision gate:** is the paid historical plan worth it?
+**Phase 6 via OddsPapi (free).** It was evaluated 2026-10-17 (see PROVIDER_COVERAGE.md → "OddsPapi evaluation"): free per-line-move history since Jan 2026, validated against our data at 92–100% for DK, FD, and Hard Rock, but unreliable for BetMGM. The key is in `apps/collector/.env.local` as `ODDSPAPI_API_KEY`.
 
-- Real history began 2026-10-16 (about 4 snapshots/day). Both the study and Phase 7 ML need far more games.
-- Option A, keep accumulating for free: the study reaches its 15-game minimum in roughly 1–2 weeks of NFL slates.
-- Option B, buy the $30/20K plan (ask Jack first): a historical import at 6-hour resolution for past weeks costs about 30 credits per snapshot.
-- Otherwise, polish and accessibility (Phase 8 items), or re-run the study weekly.
+Proposed importer (awaiting Jack's go-ahead): a bounded, resumable import of completed 2026 NFL games, stored as `source = 'oddspapi'` derived observations (pregame, full-game main lines only; no raw payloads). Uses about 10 billable requests for fixtures; history calls are free.
