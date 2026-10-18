@@ -112,11 +112,26 @@ def main() -> None:
     except Exception:
         commit = "unknown"
 
+    def summary_line(r: ExperimentResult, label: str) -> str:
+        row = r.test_scores.set_index("model").loc["logistic"]
+        return (
+            f"- **{label}:** logistic regression test AUC {row['auc']:.2f} (95% CI {row['auc_lo']:.2f}–{row['auc_hi']:.2f}); "
+            f"Δ log loss vs constant {row['d_log_loss']:+.3f} ({row['d_ll_lo']:+.3f} to {row['d_ll_hi']:+.3f}); "
+            f"Δ Brier {row['d_brier']:+.4f} ({row['d_brier_lo']:+.4f} to {row['d_brier_hi']:+.4f}): "
+            f"**{beats(r.test_scores, 'logistic')}** under the pre-registered rule."
+        )
+
+    summary = "\n".join([summary_line(move, "Will it move"), summary_line(direction, "Direction")])
+
     report = f"""# Market-movement model: baselines (MS-025, v1)
 
 {"> **SYNTHETIC DATA: pipeline validation only.**" + chr(10) if "synthetic" in sources else ""}
 _Generated {datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")} · commit `{commit}` · sources `{", ".join(sources)}` ·
 reproduce with `research/src/marketscope_research/run_market_baseline.py`. Data gate and features: `market-ml-gate-v1.md`._
+
+## Summary
+
+{summary}
 
 ## Protocol (pre-registered in `ml/design.py` before any model was fit)
 
