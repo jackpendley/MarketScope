@@ -254,6 +254,19 @@ Walk-forward on 2023–24 (570 games), parameters fitted on 2016–22 only (ADR-
 - **Not distinguishable from zero on validation:** the luck, cap and WP-weighting adjustments, each extra channel, and play-caller continuity (likelihood-ratio p = 0.66 in-sample).
 - **Stability:** offense carries over more than defense (pass ρ 0.72 vs 0.40), consistent with FPI's offense/defense asymmetry. Within a season, weekly drift is about ⅙ of the spread between teams.
 
+### KenPom contract (MS-030b)
+
+Report: `apps/football/reports/ratings-contract.md` (ADR-035). Stored weekly in `rating_snapshots` from 2016.
+
+- **Luck (2016–22 fits):**
+  - Expected wins: logit = 0.60 × home + 0.29 × net adjusted EPA per game.
+  - Pythagorean exponent 2.79.
+  - League luck sums to 0 in every snapshot.
+  - Home teams outscore their scrimmage efficiency by about 1.4 points; that is kept as a home term, not luck.
+- **Classic KenPom vs Kalman (Spearman):** about 0.6 at week 4, 0.79–0.90 at week 9, 0.85–0.94 at the end of the regular season.
+- **Totals (2023–24):** MAE 10.22: −0.36 vs naive (CI −0.64 to −0.10), +0.26 vs the close (CI +0.04 to +0.48).
+- **Model home advantage:** 1.6 points.
+
 ## Changelog
 
 - 2026-10-17: design frozen (ADR-028).
@@ -264,3 +277,4 @@ Walk-forward on 2023–24 (570 games), parameters fitted on 2016–22 only (ADR-
   - game-layer weights by OLS rather than inside the likelihood
   - QB continuity deferred to MS-031
   - filter burn-in from 2012
+- 2026-10-18: KenPom contract outputs (MS-030b, ADR-035). Additions to the design: a pace filter (32 units + mean) for AdjPace and totals; expected wins from per-game net adjusted EPA with a home term.

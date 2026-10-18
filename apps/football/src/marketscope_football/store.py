@@ -230,3 +230,31 @@ def upsert_weather(conn: psycopg.Connection, rows: list[dict]) -> int:
             rows,
         )
     return len(rows)
+
+
+RATING_COLUMNS = [
+    "model_version", "season", "week", "team", "adj_em", "adj_em_se", "adj_em_rank", "adj_o", "adj_o_se", "adj_o_rank",
+    "adj_d", "adj_d_se", "adj_d_rank", "adj_st", "adj_st_se", "adj_st_rank", "adj_pace", "adj_pace_se",
+    "adj_pace_rank", "prior_weight", "pass_off", "pass_def", "rush_off", "rush_def", "succ_off", "succ_def",
+    "ppd_off", "ppd_def", "games", "wins", "losses", "ties", "points_for", "points_against", "expected_wins",
+    "pythag_wins", "luck", "luck_rank", "one_score_luck", "fumble_luck", "int_luck", "fg_luck", "return_td_diff",
+    "sos", "sos_rank", "opp_adj_o", "opp_adj_d", "nondiv_sos", "remaining_sos", "remaining_games",
+    "off_success_rate", "def_success_rate", "off_explosiveness", "def_explosiveness", "off_start_yardline",
+    "def_start_yardline", "off_points_per_opp", "def_points_per_opp", "off_turnovers", "def_turnovers",
+]
+
+
+def replace_rating_snapshots(conn: psycopg.Connection, frame: pd.DataFrame, model_version: str) -> int:
+    """Replace every snapshot of one model version. Filtered snapshots are deterministic given the
+    data, so a rebuild rewrites identical history and adds the new weeks."""
+    def clean(v):
+        if v is None or v is pd.NA or (isinstance(v, float) and v != v):
+            return None
+        return v.item() if hasattr(v, "item") else v
+
+    with conn.cursor() as cur:
+        cur.execute("DELETE FROM rating_snapshots WHERE model_version = %s", (model_version,))
+        with cur.copy(f"COPY rating_snapshots ({', '.join(RATING_COLUMNS)}) FROM STDIN") as copy:
+            for r in frame[RATING_COLUMNS].itertuples(index=False):
+                copy.write_row([clean(v) for v in r])
+    return len(frame)

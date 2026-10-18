@@ -163,6 +163,7 @@ describe("Data API lock-down (ADR-018)", () => {
       "nfl_teams",
       "nfl_weather_forecasts",
       "odds_observations",
+      "rating_snapshots",
     ]);
     expect(rows.every((r) => r.relrowsecurity)).toBe(true);
   });

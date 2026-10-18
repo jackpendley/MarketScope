@@ -161,3 +161,62 @@ class STFilter:
 
     def ratings(self) -> dict[str, np.ndarray]:
         return {"st": self.x - self.x.mean(), "st_se": np.sqrt(np.diag(self.P))}
+
+
+@dataclass
+class PaceParams:
+    sigma2: float  # per-game observation variance (drives per team)^2
+    q_week: float
+    q_season: float
+    rho: float
+    q_week_mean: float
+    q_season_mean: float
+
+
+class PaceFilter:
+    """Pace: one unit per team plus a league mean. A game's drives per team observe
+    mean + pace[H] + pace[A] (both teams share the game's possessions, as in KenPom's tempo)."""
+
+    def __init__(self, params: PaceParams, teams: list[str], mean0: float = 11.0):
+        self.p, self.teams = params, list(teams)
+        n = len(teams)
+        self.ix = {t: i for i, t in enumerate(teams)}
+        self.n = n
+        self.x = np.zeros(n + 1)
+        self.x[n] = mean0
+        self.P = np.diag([INITIAL_VAR_ST / 4] * n + [1.0])
+        self.season: int | None = None
+        self.week: int | None = None
+
+    def advance(self, season: int, week: int, *_ignored) -> None:
+        n, p = self.n, self.p
+        if self.season is None:
+            pass
+        elif season > self.season:
+            rho = np.array([p.rho] * n + [1.0])
+            self.x *= rho
+            self.P = self.P * np.outer(rho, rho)
+            self.P[np.diag_indices(n)] += p.q_season
+            self.P[n, n] += p.q_season_mean
+        elif week != self.week:
+            self.P[np.diag_indices(n)] += p.q_week
+            self.P[n, n] += p.q_week_mean
+        self.season, self.week = season, week
+
+    def expected(self, home: str, away: str) -> float:
+        return float(self.x[self.n] + self.x[self.ix[home]] + self.x[self.ix[away]])
+
+    def observe(self, home: str, away: str, y: float) -> float:
+        idx = (self.ix[home], self.ix[away], self.n)
+        Ph = self.P[:, idx[0]] + self.P[:, idx[1]] + self.P[:, idx[2]]
+        F = Ph[list(idx)].sum() + self.p.sigma2
+        v = y - self.expected(home, away)
+        K = Ph / F
+        self.x += K * v
+        self.P -= np.outer(K, Ph)
+        return -0.5 * (LOG_2PI + math.log(F) + v * v / F)
+
+    def ratings(self) -> dict[str, np.ndarray]:
+        """Drives per team-game against an average opponent, with standard errors."""
+        u = self.x[:self.n]
+        return {"pace": self.x[self.n] + u.mean() + (u - u.mean()), "pace_se": np.sqrt(np.diag(self.P)[:self.n])}

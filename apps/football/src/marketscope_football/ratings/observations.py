@@ -18,6 +18,10 @@ from ..pbp import load_season
 from ..schedules import FRANCHISE
 from ..team_stats import fumble_luck, interception_luck, scrimmage, team_game_stats, wp_weight
 
+# Team-game columns carried along for luck decomposition and the Five Factors (outputs.py).
+EXTRA_COLUMNS = ["plays", "fumble_luck_epa", "int_luck_epa", "fg_made", "fg_expected", "return_tds", "defensive_tds",
+                 "success_rate", "epa_per_success", "avg_start_yardline", "scoring_opps", "scoring_opp_points",
+                 "interceptions", "fumbles_lost"]
 CACHE_DIR = Path(__file__).resolve().parents[3] / ".cache" / "ratings"
 STAFF_CSV = Path(__file__).resolve().parents[3] / "data" / "coaching_staff.csv"
 
@@ -61,7 +65,7 @@ def load_observations(seasons: list[int], variant: str = "model", refresh: bool 
         pbp = load_season(s)
         ch = channel_frame(pbp, **VARIANTS[variant])
         st = team_game_stats(pbp).select(
-            "game_id", "team", "st_epa", "drives",
+            "game_id", "team", "st_epa", "drives", *EXTRA_COLUMNS,
             pl.when(pl.col("drives") > 0).then(pl.col("drive_points") / pl.col("drives")).alias("ppd_epa"),
             pl.col("drives").cast(pl.Float64).alias("ppd_n"))
         frames.append(st.join(ch, on=["game_id", "team"], how="left").to_pandas())

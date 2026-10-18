@@ -226,11 +226,12 @@ New Python app `apps/football/` (nflreadpy, polars, psycopg). The schema stays i
 - [x] **MS-030** Kalman unit ratings (engine and evaluation):
   - Channel filters (pass, rush, success rate, points per drive, special teams), ML fit on 2016–22, game layer, ablations.
   - 2023–24: ties Elo/SRS (10.33); better in weeks 1–4; bar not met by unit ratings alone (ADR-034).
-- [ ] **MS-030b** KenPom contract outputs:
+- [x] **MS-030b** KenPom contract outputs (ADR-035):
   - AdjO, AdjD, AdjST, AdjPace, AdjEM, each with a standard error.
   - Luck and its decomposition, SOS, Five Factors.
   - `kenpom_classic` benchmark.
   - Point-in-time `rating_snapshots` for 2016–26.
+  - Totals from pace × points per drive (2023–24: −0.36 vs naive, +0.26 vs the close).
 - [ ] **MS-031** QB and availability:
   - QB state, expected starter, P(plays | status), positional absence values.
   - Oracle vs expected-starter leakage lesson.

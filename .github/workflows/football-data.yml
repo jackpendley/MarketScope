@@ -3,7 +3,8 @@ name: Football data
 # nflverse refresh for the current season (ADR-028/029/030).
 # 13:00 UTC: schedules and results (and event links), team-game stats from the latest
 #   play-by-play, snap counts, injury reports, the curated coaching staff (+ drift check), game
-#   context, and point-in-time weather forecasts. nflverse rebuilds overnight, so this picks up
+#   context, point-in-time weather forecasts, and MarketScope Ratings snapshots (the full filter is
+#   replayed from 2012 with frozen parameters; play-by-play is kept in the Actions cache). nflverse rebuilds overnight, so this picks up
 #   Sunday, Monday and Thursday games the next morning.
 # 23:00 UTC: injury reports only, a second daily snapshot after teams publish their reports
 #   (≈ 4 pm ET), so status changes get a tighter first-seen time.
@@ -28,7 +29,7 @@ concurrency:
 jobs:
   refresh:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       SEASONS: ${{ inputs.seasons || 'current' }}
@@ -50,6 +51,15 @@ jobs:
           cache: pip
           cache-dependency-path: apps/football/requirements.txt
       - run: pip install -r requirements.txt
+      # Past seasons' play-by-play rarely changes: restore the newest cache, save a fresh one per run
+      # (the current season is re-downloaded by team-stats --refresh). First run downloads 2012+.
+      - name: Restore play-by-play cache
+        if: github.event.schedule != '0 23 * * *'
+        uses: actions/cache@v6
+        with:
+          path: apps/football/.cache/pbp
+          key: pbp-v1-${{ github.run_id }}
+          restore-keys: pbp-v1-
       - name: Schedules and results
         if: github.event.schedule != '0 23 * * *'
         run: PYTHONPATH=src python -m marketscope_football.ingest schedules --seasons "$SEASONS"
@@ -69,6 +79,9 @@ jobs:
       - name: Game context (rest, travel, time zones, coaching tenure)
         if: github.event.schedule != '0 23 * * *'
         run: PYTHONPATH=src python -m marketscope_football.ingest context --seasons "$SEASONS"
+      - name: MarketScope Ratings snapshots
+        if: github.event.schedule != '0 23 * * *'
+        run: PYTHONPATH=src python -m marketscope_football.ingest ratings
       - name: Weather forecasts (Open-Meteo, games from 10 days ago to 8 days ahead)
         if: github.event.schedule != '0 23 * * *'
         run: PYTHONPATH=src python -m marketscope_football.ingest weather --seasons "$SEASONS" --recent

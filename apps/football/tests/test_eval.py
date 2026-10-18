@@ -132,7 +132,7 @@ def test_games_frame_unifies_franchises_and_orients_the_close():
     s = pd.DataFrame([{"game_id": "2019_01_SD_OAK", "season": 2019, "game_type": "REG", "week": 1,
                        "gameday": "2019-09-09", "gametime": "22:20", "home_team": "OAK", "away_team": "SD",
                        "location": "Home", "home_score": 24, "away_score": 24, "result": 0, "total": 48,
-                       "spread_line": -3.0, "total_line": 47.0, "home_moneyline": 130, "away_moneyline": -150}])
+                       "spread_line": -3.0, "total_line": 47.0, "home_moneyline": 130, "away_moneyline": -150, "div_game": 1}])
     g = games_frame(s).iloc[0]
-    assert (g["home"], g["away"], g["home_win"], g["margin"]) == ("LV", "LAC", 0.5, 0.0)
+    assert (g["home"], g["away"], g["home_win"], g["margin"], g["division"]) == ("LV", "LAC", 0.5, 0.0, True)
     assert g["close_margin"] == -3.0 and g["close_p_home"] < 0.5

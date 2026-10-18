@@ -32,7 +32,7 @@ from .design import STATS_VERSION
 from .linker import match_events
 from .schedules import game_rows, team_rows
 from .store import (apply_injury_plan, apply_links, final_game_ids, latest_injury_rows, load_games_frame,
-                    load_link_inputs, replace_coaching_staff, replace_game_context, replace_snaps,
+                    load_link_inputs, replace_coaching_staff, replace_game_context, replace_rating_snapshots, replace_snaps,
                     replace_team_game_stats, team_kickoffs, upsert_games, upsert_teams, upsert_weather)
 from .team_stats import team_game_stats
 
@@ -252,10 +252,38 @@ def ingest_weather(seasons: list[int], recent: bool, dry_run: bool, job_key: str
             "open-meteo previous-runs api", lambda conn: (upsert_weather(conn, rows), f"upserted {len(rows)} forecasts"))
 
 
+def ingest_ratings(dry_run: bool, job_key: str | None) -> None:
+    """Rebuild rating_snapshots (MarketScope Ratings, the KenPom contract) for 2016 onward from the
+    cached play-by-play (2012+ for burn-in) with the frozen parameters in ratings/params.json."""
+    import json
+
+    from .eval.data import games_frame, load_schedules
+    from .ratings.design import BURN_IN_FROM, LIKELIHOOD_SEASONS
+    from .ratings.engine import PARAMS_PATH, Engine, continuity, load_params
+    from .ratings.observations import load_observations, playcallers
+    from .ratings.outputs import MODEL_VERSION, snapshots
+
+    last = current_season()
+    games = games_frame(load_schedules(last, refresh=True))
+    obs = load_observations(list(range(BURN_IN_FROM, last + 1)), "model", refresh=True)
+    teams = sorted(set(games.loc[games["season"] >= BURN_IN_FROM, "home"]))
+    sf, wf = continuity(games[games["season"] >= BURN_IN_FROM], playcallers())
+    units, st, layer = load_params("model")
+    luck = json.loads(PARAMS_PATH.read_text())["luck"]
+    frame = snapshots(games, obs, Engine(teams, units, st, obs, sf, wf), layer, luck, min(LIKELIHOOD_SEASONS), BURN_IN_FROM)
+    latest = frame[["season", "week"]].drop_duplicates().iloc[-1]
+    print(f"ratings: {len(frame)} snapshots, latest {latest['season']} week {latest['week']}")
+    if dry_run:
+        return
+    digest = hashlib.sha256(pd.util.hash_pandas_object(frame.round(9).astype(str), index=False).values.tobytes()).hexdigest()[:12]
+    run_job(job_key or f"ratings:{_today()}:{digest}", "ratings", f"{MODEL_VERSION} sha:{digest}",
+            lambda conn: (replace_rating_snapshots(conn, frame, MODEL_VERSION), f"wrote {len(frame)} snapshots"))
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     sub = parser.add_subparsers(dest="dataset", required=True)
-    for name in ("schedules", "team-stats", "snaps", "injuries", "coaching", "context", "weather"):
+    for name in ("schedules", "team-stats", "snaps", "injuries", "coaching", "context", "weather", "ratings"):
         p = sub.add_parser(name)
         p.add_argument("--seasons", default="current")
         p.add_argument("--dry-run", action="store_true")
@@ -276,6 +304,8 @@ def main() -> None:
         ingest_coaching(args.dry_run, args.job_key)
     elif args.dataset == "context":
         ingest_context(args.dry_run, args.job_key)
+    elif args.dataset == "ratings":
+        ingest_ratings(args.dry_run, args.job_key)
     elif args.dataset == "weather":
         ingest_weather(seasons, args.recent, args.dry_run, args.job_key)
     else:

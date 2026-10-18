@@ -14,7 +14,7 @@ import pandas as pd
 
 from ..eval.metrics import win_probability
 from .design import BURN_IN_FROM
-from .kalman import STFilter, STParams, UnitFilter, UnitParams
+from .kalman import PaceFilter, PaceParams, STFilter, STParams, UnitFilter, UnitParams
 
 PARAMS_PATH = Path(__file__).with_name("params.json")
 
@@ -34,6 +34,12 @@ class GameLayer:
     n_drives: float
     w: dict
     c: float
+    # Total = total_a + total_b * expected drives * (expected points per drive, both offenses).
+    total_a: float | None = None
+    total_b: float | None = None
+
+    def total(self, raw: float) -> float | None:
+        return None if self.total_b is None else self.total_a + self.total_b * raw
 
     def margin(self, f: dict[str, float], neutral: bool) -> float:
         return sum(self.w[k] * f[k] for k in self.w) + (0.0 if neutral else self.c)
@@ -63,16 +69,22 @@ def continuity(games: pd.DataFrame, callers: dict) -> tuple[dict, dict]:
 
 
 def load_params(variant: str = "model", path: Path = PARAMS_PATH) -> tuple[dict, STParams, GameLayer]:
+    """(unit params by channel, special teams, game layer). Pace params, when fitted, ride along in
+    the units dict under "pace" (Engine routes them to a PaceFilter)."""
     p = json.loads(path.read_text())[variant]
     units = {ch: UnitParams(**p[ch]) for ch in UNIT_CHANNELS if ch in p}
+    if "pace" in p:
+        units["pace"] = PaceParams(**p["pace"])
     return units, STParams(**p["st"]), GameLayer(**p["game"])
 
 
 class Engine:
     def __init__(self, teams: list[str], unit_params: dict[str, UnitParams], st_p: STParams,
                  obs: pd.DataFrame, season_flags: dict, week_flags: dict, use_st: bool = True):
-        self.filters = {ch: UnitFilter(p, teams) for ch, p in unit_params.items()}
+        self.filters = {ch: UnitFilter(p, teams) for ch, p in unit_params.items() if ch != "pace"}
         self.filters["st"] = STFilter(st_p, teams)
+        if "pace" in unit_params:
+            self.filters["pace"] = PaceFilter(unit_params["pace"], teams)
         self.obs = obs_lookup(obs)
         self.season_flags, self.week_flags, self.use_st = season_flags, week_flags, use_st
         self.slot: tuple[int, int] | None = None
@@ -92,7 +104,7 @@ class Engine:
         s = 0.0 if neutral else 1.0
         out = {}
         for ch in self.filters:
-            if ch != "st":
+            if ch in UNIT_CHANNELS:
                 out[f"{ch}_home"] = self.filters[ch].expected(home, away, s)
                 out[f"{ch}_away"] = self.filters[ch].expected(away, home, -s)
         out["st"] = self.filters["st"].expected(home, away, neutral) if self.use_st else 0.0
@@ -109,6 +121,14 @@ class Engine:
                 f[ch] = scale * (c[f"{ch}_home"] - c[f"{ch}_away"])
         return f
 
+    def raw_total(self, home: str, away: str, neutral: bool) -> float | None:
+        """Expected drives per team times both offenses' expected points per drive."""
+        if "pace" not in self.filters or "ppd" not in self.filters:
+            return None
+        s = 0.0 if neutral else 1.0
+        ppd = self.filters["ppd"].expected(home, away, s) + self.filters["ppd"].expected(away, home, -s)
+        return self.filters["pace"].expected(home, away) * ppd
+
     def observe(self, game) -> dict[str, float]:
         """Update all filters with one completed game; returns log predictive density per channel."""
         ll = dict.fromkeys(self.filters, 0.0)
@@ -120,7 +140,7 @@ class Engine:
 
 
 def obs_lookup(obs: pd.DataFrame) -> dict[tuple[str, str], tuple]:
-    cols = ["st_epa"] + [f"{ch}_{k}" for ch in UNIT_CHANNELS for k in ("epa", "n")]
+    cols = ["st_epa", "drives"] + [f"{ch}_{k}" for ch in UNIT_CHANNELS for k in ("epa", "n")]
     return {(g, t): tuple(v) for g, t, *v in obs[["game_id", "team", *cols]].itertuples(index=False)}
 
 
@@ -133,12 +153,15 @@ def game_observations(game, lookup: dict) -> list[tuple]:
         if o is None:
             continue
         for k, ch in enumerate(UNIT_CHANNELS):
-            y, n = o[1 + 2 * k], o[2 + 2 * k]
+            y, n = o[2 + 2 * k], o[3 + 2 * k]
             if pd.notna(y) and pd.notna(n) and n >= 1:
                 out.append((ch, off, dfn, sign, float(y), float(n)))
     o = lookup.get((game.game_id, game.home))
     if o is not None and pd.notna(o[0]):
         out.append(("st", game.home, game.away, bool(game.neutral), float(o[0])))
+    a = lookup.get((game.game_id, game.away))
+    if o is not None and a is not None and pd.notna(o[1]) and pd.notna(a[1]) and o[1] + a[1] > 0:
+        out.append(("pace", game.home, game.away, (float(o[1]) + float(a[1])) / 2))
     return out
 
 
@@ -173,7 +196,11 @@ class KalmanRatings:
         self.engine.begin(int(games["season"].iloc[0]), int(games["week"].iloc[0]))
         margin = np.array([self.layer.margin(self.engine.features(g.home, g.away, bool(g.neutral), self.layer),
                                              bool(g.neutral)) for g in games.itertuples(index=False)])
-        return pd.DataFrame({"margin": margin, "p_home": win_probability(margin, self.sigma)}, index=games.index)
+        out = pd.DataFrame({"margin": margin, "p_home": win_probability(margin, self.sigma)}, index=games.index)
+        if self.layer.total_b is not None and "pace" in self.engine.filters:
+            out["total"] = [self.layer.total(self.engine.raw_total(g.home, g.away, bool(g.neutral)))
+                            for g in games.itertuples(index=False)]
+        return out
 
     def update(self, results: pd.DataFrame) -> None:
         season = int(results["season"].iloc[0])

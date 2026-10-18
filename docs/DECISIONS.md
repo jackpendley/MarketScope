@@ -468,3 +468,38 @@ AWS Lambda + EventBridge remains an optional later upgrade (Phase 3).
 - Offense carries over between seasons more than defense (pass ρ 0.72 vs 0.40; rush 0.58 vs 0.58). Offensive team spread is wider than defensive in every channel.
 - The validation seasons have now been looked at once for this model. Further changes are decided on 2016–22, and 2025 remains the clean test.
 - The expected source of further lift is MS-031 (QB and availability). That is consistent with MS-029's finding that the close's edge comes from news in the week of the game.
+
+## ADR-035 — The KenPom contract: weekly point-in-time snapshots in Postgres (2026-10-18)
+
+**Context.** The Kalman engine (ADR-034) estimates unit strengths. The product promise is KenPom-style output: AdjO, AdjD, AdjEM, pace, luck, SOS and the Five Factors, with uncertainty, for any past week. MS-033's pages need it in Postgres.
+
+**Decision.**
+
+- **One table, `rating_snapshots`.**
+  - One row per model version, season, week and team. Week 0 is the preseason prior; week w is after all of week w's games.
+  - Everything is computed from games played by then (plus the published schedule for remaining SOS), so every row is point-in-time.
+- **AdjO/AdjD are in points per drive, derived through the game layer:** AdjO = league points per drive + (weighted offensive channel units ÷ league drives).
+  - AdjEM = (AdjO − AdjD) × drives + AdjST therefore holds exactly, and AdjEM is the expected margin against an average team.
+  - SEs come from the filters' covariances. The channels are independent filters, so variances add.
+- **Pace and totals:**
+  - A pace filter with 32 units and a league mean observes each game's drives per team as mean + pace[H] + pace[A], as in KenPom's tempo.
+  - The game total = expected drives × both offenses' expected points per drive, calibrated linearly on 2016–22.
+  - Each team's predicted score = (total ± margin) ÷ 2, so the scores sum to the total and differ by the margin.
+- **Luck:**
+  - Expected wins come from a logistic of each game's net adjusted EPA with a home term, fitted on 2016–22.
+  - Pythagorean exponent fitted on 2016–22.
+  - The decomposition: one-score games, fumble, INT and FG luck, and return TDs.
+- **Classic KenPom** (iterative multiplicative adjustment on raw points per drive) is implemented as a benchmark. It is reported by rank correlation, not stored.
+- **A week is published only when complete:** a week whose final games lack play-by-play is held back.
+- **Daily refresh:**
+  - `ingest ratings` rebuilds every snapshot for the version: about 7.4k rows, 20 s. Filtered snapshots are deterministic, so history is rewritten identically.
+  - Play-by-play for 2012+ is kept in the Actions cache.
+  - The model version stays `kalman-v0` until `ratings-v1` is frozen in MS-032.
+
+**Consequences.**
+
+- **Home term:** home teams outscore their scrimmage efficiency by about 1.4 points (2016–22). The expected-wins model keeps that as a home term rather than counting it as luck. Penalties, whose plays the channel excludes, are a plausible cause.
+- **Pythagorean exponent:** 2.79 (classic 2.37).
+- **Agreement with classic KenPom:** about 0.6 rank correlation at week 4 and about 0.92 at the end of the regular season. They agree on who is good once data accumulates; early on the Kalman engine leans on its prior.
+- **Totals on 2023–24:** MAE 10.22, better than naive (−0.36, CI −0.64 to −0.10) and 0.26 behind the close (CI +0.04 to +0.48). That is a smaller gap than on margins (0.49).
+- **Not yet built:** remaining-schedule projections (projected record) need the season simulation (MS-034).
