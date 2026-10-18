@@ -142,3 +142,45 @@ def summarize(labelled: pd.DataFrame, any_move_rate: float, baseline_eligible: i
         chance_toward_rate=any_move_rate / 2 if any_move_rate == any_move_rate else float("nan"),
         conclusive=len(scored) >= MIN_EVENTS and games >= MIN_GAMES,
     )
+
+
+# ---- Exploratory robustness checks (added after v1 results; NOT pre-registered) ---------------
+
+
+def toward_share_among_moved(labelled: pd.DataFrame, seed: int = 2026) -> tuple[float, tuple[float, float], int]:
+    """Among events where the consensus moved, the share that moved toward the book, with a
+    game-clustered 95% bootstrap CI. Under "divergence carries no directional information"
+    the share is 50%. This conditions away the confound that divergences occur while
+    markets are already moving, which inflates the unconditional chance baseline."""
+    moved = labelled[labelled["outcome"].isin(["toward", "away"])].reset_index(drop=True)
+    if moved.empty:
+        return float("nan"), (float("nan"), float("nan")), 0
+    share = float((moved["outcome"] == "toward").mean())
+    games = moved["event_id"].unique()
+    if len(games) < 2:
+        return share, (float("nan"), float("nan")), len(moved)
+    rng = np.random.default_rng(seed)
+    idx = {g: np.flatnonzero(moved["event_id"].to_numpy() == g) for g in games}
+    shares = []
+    for _ in range(BOOTSTRAP_RESAMPLES):
+        rows = np.concatenate([idx[g] for g in rng.choice(games, size=len(games), replace=True)])
+        shares.append(float((moved.iloc[rows]["outcome"] == "toward").mean()))
+    lo, hi = np.percentile(shares, [2.5, 97.5])
+    return share, (float(lo), float(hi)), len(moved)
+
+
+def breakdown(labelled: pd.DataFrame, by: str) -> pd.DataFrame:
+    """Outcome counts and rates per group (e.g. source or bookmaker), scored events only."""
+    scored = labelled[labelled["outcome"] != "no_horizon"]
+    table = scored.pivot_table(index=by, columns="outcome", values="event_id", aggfunc="count", fill_value=0)
+    for col in ("toward", "away", "none"):
+        if col not in table:
+            table[col] = 0
+    table["events"] = table[["toward", "away", "none"]].sum(axis=1)
+    table["games"] = scored.groupby(by)["event_id"].nunique()
+    table["toward_rate"] = table["toward"] / table["events"]
+    moved = table["toward"] + table["away"]
+    table["toward_share_of_moves"] = (table["toward"] / moved).where(moved > 0)
+    return table[["events", "games", "toward", "away", "none", "toward_rate", "toward_share_of_moves"]].sort_values(
+        "events", ascending=False
+    )
