@@ -197,3 +197,36 @@ def test_rating_snapshots_replace_one_model_version(conn):
     assert replace_rating_snapshots(conn, frame.iloc[[0]], "kalman-v0") == 1
     rows = conn.execute("SELECT team, adj_em, sos FROM rating_snapshots ORDER BY team").fetchall()
     assert rows == [("LA", 3.5, None)]
+
+
+def test_predictions_are_append_only_and_must_precede_kickoff(conn):
+    from marketscope_football.store import insert_predictions
+
+    upsert_teams(conn, TEAMS)
+    upsert_games(conn, [game(home_score=None, away_score=None)])
+    kick = datetime(2026, 9, 11, 0, 35, tzinfo=timezone.utc)
+    row = {"game_id": "2026_01_SF_LA", "kickoff_utc": kick, "home_team": "LA", "away_team": "SF", "expected_margin": 2.5,
+           "expected_total": 45.0, "home_score": 23.75, "away_score": 21.25, "p_home": 0.58, "home_qb": "00-1",
+           "away_qb": "00-2", "home_qb_p": 1.0, "away_qb_p": 0.637, "contributions": {"ratings": 2.2, "home": 0.3}}
+    t1, t2 = datetime(2026, 9, 9, 13, tzinfo=timezone.utc), datetime(2026, 9, 10, 13, tzinfo=timezone.utc)
+    insert_predictions(conn, [row], "ratings-v1", t1)
+    insert_predictions(conn, [{**row, "expected_margin": 1.0}], "ratings-v1", t2)
+    insert_predictions(conn, [{**row, "expected_margin": 9.9}], "ratings-v1", t1)  # same key: ignored, never updated
+    rows = conn.execute("SELECT predicted_at, expected_margin, contributions->>'home' FROM model_predictions ORDER BY 1").fetchall()
+    assert [(r[1], r[2]) for r in rows] == [(2.5, "0.3"), (1.0, "0.3")]
+    with pytest.raises(psycopg.errors.CheckViolation):
+        insert_predictions(conn, [row], "ratings-v1", kick)  # at or after kickoff
+    conn.rollback()
+
+
+def test_model_runs_allow_one_test_per_version(conn):
+    from marketscope_football.store import upsert_model_run
+
+    run = {"model_version": "ratings-v1", "run_kind": "test", "seasons": "2025", "games": 285,
+           "metrics": {"ratings-v1": {"margin_mae": 10.06, "total_mae": None}}, "params_sha256": "abc", "code_sha": "def",
+           "notes": None, "ran_at": "2026-10-18T18:30:06+00:00"}
+    assert upsert_model_run(conn, run) == 1
+    assert upsert_model_run(conn, run) == 0  # the same record again: no-op
+    with pytest.raises(psycopg.errors.UniqueViolation):
+        upsert_model_run(conn, {**run, "ran_at": "2026-10-19T00:00:00+00:00"})  # a second test of the same version
+    conn.rollback()

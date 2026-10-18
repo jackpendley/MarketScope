@@ -286,10 +286,10 @@ def upsert_model_run(conn: psycopg.Connection, run: dict) -> int:
     with conn.cursor() as cur:
         cur.execute(
             """INSERT INTO model_runs (model_version, run_kind, seasons, games, metrics, params_sha256, code_sha, notes, ran_at)
-               SELECT %(model_version)s, %(run_kind)s, %(seasons)s, %(games)s, %(metrics)s, %(params_sha256)s,
-                 %(code_sha)s, %(notes)s, %(ran_at)s
-               WHERE NOT EXISTS (SELECT 1 FROM model_runs WHERE model_version = %(model_version)s
-                 AND run_kind = %(run_kind)s AND seasons = %(seasons)s AND ran_at = %(ran_at)s)""",
+               SELECT %(model_version)s::text, %(run_kind)s::text, %(seasons)s::text, %(games)s::int, %(metrics)s::jsonb,
+                 %(params_sha256)s::text, %(code_sha)s::text, %(notes)s::text, %(ran_at)s::timestamptz
+               WHERE NOT EXISTS (SELECT 1 FROM model_runs WHERE model_version = %(model_version)s::text
+                 AND run_kind = %(run_kind)s::text AND seasons = %(seasons)s::text AND ran_at = %(ran_at)s::timestamptz)""",
             {**run, "metrics": _json.dumps(run["metrics"])},
         )
         return cur.rowcount

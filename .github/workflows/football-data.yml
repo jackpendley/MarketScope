@@ -3,8 +3,10 @@ name: Football data
 # nflverse refresh for the current season (ADR-028/029/030).
 # 13:00 UTC: schedules and results (and event links), team-game stats from the latest
 #   play-by-play, snap counts, injury reports, the curated coaching staff (+ drift check), game
-#   context, point-in-time weather forecasts, and MarketScope Ratings snapshots (the full filter is
-#   replayed from 2012 with frozen parameters; play-by-play is kept in the Actions cache). nflverse rebuilds overnight, so this picks up
+#   context, point-in-time weather forecasts, MarketScope Ratings snapshots (the full filter is
+#   replayed from 2012 with the frozen ratings-v1 parameters), the committed model-run records, and
+#   the live forward test: append-only ratings-v1 estimates for games in the next 8 days. Play-by-play
+#   and the per-season depth/injury/snap/roster files are kept in the Actions cache. nflverse rebuilds overnight, so this picks up
 #   Sunday, Monday and Thursday games the next morning.
 # 23:00 UTC: injury reports only, a second daily snapshot after teams publish their reports
 #   (≈ 4 pm ET), so status changes get a tighter first-seen time.
@@ -53,13 +55,15 @@ jobs:
       - run: pip install -r requirements.txt
       # Past seasons' play-by-play rarely changes: restore the newest cache, save a fresh one per run
       # (the current season is re-downloaded by team-stats --refresh). First run downloads 2012+.
-      - name: Restore play-by-play cache
+      - name: Restore play-by-play and ratings caches
         if: github.event.schedule != '0 23 * * *'
         uses: actions/cache@v6
         with:
-          path: apps/football/.cache/pbp
-          key: pbp-v2-${{ github.run_id }}
-          restore-keys: pbp-v2-
+          path: |
+            apps/football/.cache/pbp
+            apps/football/.cache/ratings
+          key: football-v3-${{ github.run_id }}
+          restore-keys: football-v3-
       - name: Schedules and results
         if: github.event.schedule != '0 23 * * *'
         run: PYTHONPATH=src python -m marketscope_football.ingest schedules --seasons "$SEASONS"
@@ -82,6 +86,12 @@ jobs:
       - name: MarketScope Ratings snapshots
         if: github.event.schedule != '0 23 * * *'
         run: PYTHONPATH=src python -m marketscope_football.ingest ratings
+      - name: Model run records (committed evaluations, e.g. the 2025 test)
+        if: github.event.schedule != '0 23 * * *'
+        run: PYTHONPATH=src python -m marketscope_football.ingest model-runs
+      - name: Live forward test (ratings-v1 estimates, next 8 days)
+        if: github.event.schedule != '0 23 * * *'
+        run: PYTHONPATH=src python -m marketscope_football.ingest predictions
       - name: Weather forecasts (Open-Meteo, games from 10 days ago to 8 days ahead)
         if: github.event.schedule != '0 23 * * *'
         run: PYTHONPATH=src python -m marketscope_football.ingest weather --seasons "$SEASONS" --recent

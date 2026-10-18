@@ -715,7 +715,9 @@ export const modelRuns = pgTable(
   },
   (t) => [
     check("model_runs_kind", sql`${t.runKind} IN ('validation', 'test', 'forward')`),
-    uniqueIndex("model_runs_one_test_per_version").on(t.modelVersion).where(sql`${t.runKind} = 'test'`),
+    uniqueIndex("model_runs_one_test_per_version")
+      .on(t.modelVersion)
+      .where(sql`${t.runKind} = 'test'`),
   ],
 ).enableRLS();
 

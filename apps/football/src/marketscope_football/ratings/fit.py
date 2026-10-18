@@ -140,10 +140,12 @@ def fit_game_layer(games, obs, teams, units, st_p, season_flags, week_flags) -> 
     return chosen, {k: asdict(v[0]) for k, v in alternatives.items()}, meta
 
 
-def load_inputs(variant: str, continuity_on: bool = True):
+def load_inputs(variant: str, continuity_on: bool = True, refresh: bool = False):
+    """Games, filter observations, teams and play-caller continuity. `refresh` re-reads the
+    schedule and rebuilds the observations from the (already refreshed) play-by-play cache."""
     last = date.today().year if date.today().month >= 3 else date.today().year - 1
-    games = games_frame(load_schedules(last))
-    obs = load_observations(list(range(BURN_IN_FROM, last + 1)), variant)
+    games = games_frame(load_schedules(last, refresh))
+    obs = load_observations(list(range(BURN_IN_FROM, last + 1)), variant, refresh)
     teams = sorted(set(games.loc[games["season"] >= BURN_IN_FROM, "home"]))
     season_flags, week_flags = continuity(games[games["season"] >= BURN_IN_FROM], playcallers())
     if not continuity_on:  # ablation: every unit reverts alike and no mid-season bumps

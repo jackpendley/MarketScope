@@ -33,6 +33,7 @@ from .linker import match_events
 from .schedules import game_rows, team_rows
 from .store import (apply_injury_plan, apply_links, final_game_ids, latest_injury_rows, load_games_frame,
                     load_link_inputs, replace_coaching_staff, replace_game_context, replace_rating_snapshots, replace_snaps,
+                    insert_predictions, upsert_model_run,
                     replace_team_game_stats, team_kickoffs, upsert_games, upsert_teams, upsert_weather)
 from .team_stats import team_game_stats
 
@@ -280,10 +281,48 @@ def ingest_ratings(dry_run: bool, job_key: str | None) -> None:
             lambda conn: (replace_rating_snapshots(conn, frame, MODEL_VERSION), f"wrote {len(frame)} snapshots"))
 
 
+def ingest_predictions(dry_run: bool, job_key: str | None, horizon_days: int = 8) -> None:
+    """Live forward test: append ratings-v1 estimates for games kicking off in the next `horizon_days`
+    (append-only; the scorecard uses each game's last estimate before kickoff)."""
+    from .eval.run_benchmarks import prepare
+    from .ratings.live import build_model, estimates, replay
+    from .ratings.version import MODEL_VERSION
+
+    now = datetime.now(timezone.utc)
+    last = current_season()
+    games, sigma, _ = prepare(refresh=True)
+    model, starters, obs = build_model(games, sigma, refresh={last})
+    through = replay(model, games, obs)
+    k = games["kickoff_utc"]
+    upcoming = games[games["margin"].isna() & (k > now) & (k <= now + pd.Timedelta(days=horizon_days))]
+    rows = estimates(model, upcoming, starters).to_dict("records") if len(upcoming) else []
+    print(f"predictions: {len(rows)} upcoming games (state through {through[0]} week {through[1]})")
+    if dry_run or not rows:
+        return
+    run_job(job_key or f"predictions:{now:%Y-%m-%dT%H}", "predictions", MODEL_VERSION,
+            lambda conn: (insert_predictions(conn, rows, MODEL_VERSION, now), f"appended {len(rows)} estimates"))
+
+
+def ingest_model_runs(dry_run: bool, job_key: str | None) -> None:
+    """Load the committed evaluation records (reports/model_runs/*.json) into model_runs (idempotent)."""
+    import json
+    from pathlib import Path
+
+    paths = sorted((Path(__file__).resolve().parents[2] / "reports" / "model_runs").glob("*.json"))
+    runs = [json.loads(p.read_text()) for p in paths]
+    print(f"model runs: {len(runs)} committed records")
+    if dry_run or not runs:
+        return
+    digest = hashlib.sha256("".join(p.read_text() for p in paths).encode()).hexdigest()[:12]
+    run_job(job_key or f"model-runs:{digest}", "model-runs", f"records sha:{digest}",
+            lambda conn: (sum(upsert_model_run(conn, r) for r in runs), f"{len(runs)} records"))
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     sub = parser.add_subparsers(dest="dataset", required=True)
-    for name in ("schedules", "team-stats", "snaps", "injuries", "coaching", "context", "weather", "ratings"):
+    for name in ("schedules", "team-stats", "snaps", "injuries", "coaching", "context", "weather", "ratings",
+                 "predictions", "model-runs"):
         p = sub.add_parser(name)
         p.add_argument("--seasons", default="current")
         p.add_argument("--dry-run", action="store_true")
@@ -306,6 +345,10 @@ def main() -> None:
         ingest_context(args.dry_run, args.job_key)
     elif args.dataset == "ratings":
         ingest_ratings(args.dry_run, args.job_key)
+    elif args.dataset == "predictions":
+        ingest_predictions(args.dry_run, args.job_key)
+    elif args.dataset == "model-runs":
+        ingest_model_runs(args.dry_run, args.job_key)
     elif args.dataset == "weather":
         ingest_weather(seasons, args.recent, args.dry_run, args.job_key)
     else:
