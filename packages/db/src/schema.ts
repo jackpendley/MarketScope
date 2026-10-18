@@ -23,6 +23,7 @@ import {
   numeric,
   pgEnum,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   unique,
@@ -310,5 +311,107 @@ export const nflGames = pgTable(
     index("nfl_games_kickoff_idx").on(t.kickoffUtc),
     check("nfl_games_teams_differ", sql`${t.homeTeam} <> ${t.awayTeam}`),
     check("nfl_games_scores_together", sql`(${t.homeScore} IS NULL) = (${t.awayScore} IS NULL)`),
+  ],
+).enableRLS();
+
+/** One team's offense (and own special teams) in one final game, aggregated from nflverse
+ *  play-by-play (`apps/football/.../team_stats.py`). A team's defense is its opponent's row.
+ *  Rates are NULL when they have no denominator. Rebuilt whole per season, so a definition
+ *  change is a new `stats_version`, never a silent mix. */
+export const nflTeamGameStats = pgTable(
+  "nfl_team_game_stats",
+  {
+    gameId: text()
+      .notNull()
+      .references(() => nflGames.gameId, { onDelete: "cascade" }),
+    team: text()
+      .notNull()
+      .references(() => nflTeams.abbr),
+    opponent: text()
+      .notNull()
+      .references(() => nflTeams.abbr),
+    season: integer().notNull(),
+    /** REG or POST. */
+    seasonType: text().notNull(),
+    week: integer().notNull(),
+    isHome: boolean().notNull(),
+    /** Scrimmage plays with EPA: passes (incl. sacks, scrambles) and runs, incl. penalty-nullified ones. */
+    plays: integer().notNull(),
+    dropbacks: integer().notNull(),
+    rushes: integer().notNull(),
+    earlyDownPlays: integer().notNull(),
+    /** Win probability 20-80%, quarters 1-4, not the last 2 minutes of a half. */
+    neutralPlays: integer().notNull(),
+    /** Raw EPA per play. */
+    epaPerPlay: doublePrecision(),
+    epaPerDropback: doublePrecision(),
+    epaPerRush: doublePrecision(),
+    earlyDownEpaPerPlay: doublePrecision(),
+    /** Model channel: luck-adjusted, capped (±4.5), WP-weighted EPA per play (design.py). */
+    adjEpaPerPlay: doublePrecision(),
+    adjEpaPerDropback: doublePrecision(),
+    adjEpaPerRush: doublePrecision(),
+    /** Sum of WP weights (effective plays) behind adj_epa_per_play. */
+    adjWeight: doublePrecision().notNull(),
+    successRate: doublePrecision(),
+    dropbackSuccessRate: doublePrecision(),
+    rushSuccessRate: doublePrecision(),
+    /** Passes of 20+ and runs of 10+ yards, per play. */
+    explosiveRate: doublePrecision(),
+    /** Explosiveness: mean EPA on successful plays. */
+    epaPerSuccess: doublePrecision(),
+    /** Completion % over expected, in percentage points. */
+    cpoe: doublePrecision(),
+    sacks: integer().notNull(),
+    sackRate: doublePrecision(),
+    neutralPassRate: doublePrecision(),
+    /** Pass rate over expected (pass - xpass) on neutral plays, as a fraction. */
+    proe: doublePrecision(),
+    /** Pace: seconds between consecutive neutral snaps of one drive (gaps over 60 s excluded). */
+    neutralSecondsPerPlay: doublePrecision(),
+    shotgunRate: doublePrecision(),
+    noHuddleRate: doublePrecision(),
+    interceptions: integer().notNull(),
+    /** Passes defensed by the opponent, interceptions included. */
+    passesDefensed: integer().notNull(),
+    /** Own fumbles on scrimmage plays. */
+    fumbles: integer().notNull(),
+    fumblesLost: integer().notNull(),
+    /** Actual minus expected EPA from fumble recoveries (positive = lucky). */
+    fumbleLuckEpa: doublePrecision().notNull(),
+    /** Actual minus expected EPA from interceptions given passes defensed (positive = lucky). */
+    intLuckEpa: doublePrecision().notNull(),
+    fourthDownAttempts: integer().notNull(),
+    fourthDownConversions: integer().notNull(),
+    drives: integer().notNull(),
+    /** Points scored by the offense on its drives (TDs incl. tries, FGs). */
+    drivePoints: integer().notNull(),
+    /** Average drive start, own yard line (1-99). */
+    avgStartYardline: doublePrecision(),
+    /** Drives that reached the opponent 40. */
+    scoringOpps: integer().notNull(),
+    scoringOppPoints: integer().notNull(),
+    stPlays: integer().notNull(),
+    /** Net special-teams EPA from this team's perspective (both teams sum to 0). */
+    stEpa: doublePrecision().notNull(),
+    fgAttempts: integer().notNull(),
+    fgMade: integer().notNull(),
+    /** Expected FGs made from a distance-only make model (2016-22 fit). */
+    fgExpected: doublePrecision().notNull(),
+    xpAttempts: integer().notNull(),
+    xpMade: integer().notNull(),
+    /** Kick and punt return TDs scored. */
+    returnTds: integer().notNull(),
+    /** Interception and fumble return TDs scored by this team on defense. */
+    defensiveTds: integer().notNull(),
+    /** Flags against the team (incl. declined/offsetting, as nflverse counts). */
+    penalties: integer().notNull(),
+    penaltyYards: integer().notNull(),
+    statsVersion: text().notNull(),
+    updatedAt: tstz().notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.gameId, t.team] }),
+    index("nfl_team_game_stats_team_season_idx").on(t.team, t.season, t.week),
   ],
 ).enableRLS();

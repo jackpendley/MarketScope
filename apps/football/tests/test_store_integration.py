@@ -86,3 +86,23 @@ def test_apply_links_moves_and_clears(conn):
     assert got == {"2026_09_LA_SF": e1, "2026_01_SF_LA": e2}
     apply_links(conn, LinkResult(links=[]))
     assert conn.execute("SELECT count(event_id) FROM nfl_games").fetchone()[0] == 0
+
+
+def test_team_game_stats_replace_a_season_and_only_final_games_qualify(conn):
+    from test_team_stats import frame, play
+
+    from marketscope_football.store import final_game_ids, replace_team_game_stats
+    from marketscope_football.team_stats import team_game_stats
+
+    upsert_teams(conn, TEAMS)
+    upsert_games(conn, [game(game_id="2025_01_SF_LA", season=2025), game(game_id="2025_02_SF_LA", season=2025, week=2)])
+    conn.execute("UPDATE nfl_games SET home_score = 20, away_score = 17 WHERE game_id = '2025_01_SF_LA'")
+    assert final_game_ids(conn, [2025]) == {"2025_01_SF_LA"}
+
+    rows = team_game_stats(frame([play(1, epa=0.5)])).to_dicts()
+    assert replace_team_game_stats(conn, 2025, rows, "v1") == 2
+    assert replace_team_game_stats(conn, 2025, rows, "v2") == 2  # a rerun replaces, never duplicates
+    got = conn.execute(
+        "SELECT team, plays, epa_per_play, epa_per_dropback, stats_version FROM nfl_team_game_stats ORDER BY team"
+    ).fetchall()
+    assert got == [("LA", 1, 0.5, None, "v2"), ("SF", 0, None, None, "v2")]

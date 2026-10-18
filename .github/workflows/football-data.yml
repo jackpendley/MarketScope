@@ -1,0 +1,51 @@
+name: Football data
+
+# Daily nflverse refresh for the current season (ADR-028): schedules and results (and event
+# links), then team-game stats from the latest play-by-play. nflverse rebuilds its files
+# overnight, so 13:00 UTC picks up Sunday, Monday and Thursday games the next morning.
+# Both steps are idempotent per job key (one run per UTC day and data version), so a delayed
+# or repeated run is harmless.
+on:
+  schedule:
+    - cron: "0 13 * * *"
+  workflow_dispatch:
+    inputs:
+      seasons:
+        description: "Seasons, e.g. current, 2026 or 2016-2026"
+        default: current
+
+permissions:
+  contents: read
+
+concurrency:
+  group: football-data
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      SEASONS: ${{ inputs.seasons || 'current' }}
+    defaults:
+      run:
+        working-directory: apps/football
+    steps:
+      - name: Check secret is configured
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::Repository secret DATABASE_URL is required."
+            exit 1
+          fi
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: apps/football/requirements.txt
+      - run: pip install -r requirements.txt
+      - name: Schedules and results
+        run: PYTHONPATH=src python -m marketscope_football.ingest schedules --seasons "$SEASONS"
+      - name: Team-game stats
+        run: PYTHONPATH=src python -m marketscope_football.ingest team-stats --seasons "$SEASONS" --refresh

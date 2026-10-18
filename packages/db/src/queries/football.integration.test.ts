@@ -71,6 +71,7 @@ describe("footballDataStatus", () => {
     expect(s).toMatchObject({
       games: 1,
       finalGames: 1,
+      statsGames: 0,
       firstSeason: 2026,
       lastSeason: 2026,
       events: 2,

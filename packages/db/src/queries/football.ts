@@ -24,6 +24,8 @@ export interface UnlinkedEvent {
 export interface FootballDataStatus {
   games: number;
   finalGames: number;
+  /** Final games that have team-game stats (both teams' rows) from play-by-play. */
+  statsGames: number;
   firstSeason: number | null;
   lastSeason: number | null;
   latestRun: FootballIngestRun | null;
@@ -43,10 +45,12 @@ export async function footballDataStatus(
   const [totals] = await db.execute<{
     games: number;
     final_games: number;
+    stats_games: number;
     first_season: number | null;
     last_season: number | null;
   }>(sql`
     SELECT count(*)::int AS games, count(home_score)::int AS final_games,
+           (SELECT count(DISTINCT game_id)::int FROM nfl_team_game_stats) AS stats_games,
            min(season) AS first_season, max(season) AS last_season
     FROM nfl_games
   `);
@@ -84,6 +88,7 @@ export async function footballDataStatus(
   return {
     games: totals?.games ?? 0,
     finalGames: totals?.final_games ?? 0,
+    statsGames: totals?.stats_games ?? 0,
     firstSeason: totals?.first_season ?? null,
     lastSeason: totals?.last_season ?? null,
     latestRun: run
