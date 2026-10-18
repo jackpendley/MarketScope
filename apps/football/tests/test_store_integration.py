@@ -230,3 +230,21 @@ def test_model_runs_allow_one_test_per_version(conn):
     with pytest.raises(psycopg.errors.UniqueViolation):
         upsert_model_run(conn, {**run, "ran_at": "2026-10-19T00:00:00+00:00"})  # a second test of the same version
     conn.rollback()
+
+
+def test_season_projections_replace_one_model_version_and_check_probabilities(conn):
+    from marketscope_football.store import replace_season_projections
+    import pandas as pd
+
+    upsert_teams(conn, TEAMS)
+    row = {"season": 2026, "week": 6, "sims": 10000, "games_played": 90, "strength": 2.5, "mean_wins": 10.4,
+           "win_dist": [0.0] * 10 + [0.5, 0.5] + [0.0] * 6, "playoff_p": 0.8, "division_p": 0.5, "seed1_p": 0.2,
+           "conf_p": 0.15, "sb_p": 0.08}
+    frame = pd.DataFrame([{**row, "team": "LA"}, {**row, "team": "SF", "playoff_p": 0.3}])
+    assert replace_season_projections(conn, frame, "ratings-v1") == 2
+    assert replace_season_projections(conn, frame.iloc[[1]], "ratings-v1") == 1
+    rows = conn.execute("SELECT team, playoff_p, win_dist->>10 FROM season_projections").fetchall()
+    assert rows == [("SF", 0.3, "0.5")]
+    with pytest.raises(psycopg.errors.CheckViolation):
+        replace_season_projections(conn, frame.assign(sb_p=1.5), "ratings-v1")
+    conn.rollback()

@@ -249,7 +249,10 @@ New Python app `apps/football/` (nflreadpy, polars, psycopg). The schema stays i
   - Synthetic ratings seed for e2e; EXPLAIN review.
 - [x] **MS-033b** Matchups, scorecard and game panel (ADR-041):
   - `/matchups` (FanMatch analog: model scores, win probability, contribution waterfall, expected QBs, consensus or close, quality and excitement), `/model` (live forward test vs results and the close, 2025 test record), the game-page model panel, `/api/matchups`, `/api/model`.
-- [ ] **MS-034** (stretch) Season simulation: playoff, division and #1-seed odds.
+- [x] **MS-034** Season simulation (ADR-042):
+  - Posterior strength draws + weekly drift, key-number games, NFL tiebreakers through SOS (reproduce every 2016–24 playoff field), bracket.
+  - `season_projections` for every week since 2016; `/projections`, team-page season outlook, `/api/projections`.
+  - Backtest 2016–24: better than coin flips on playoffs/division/#1 seed/wins (CIs exclude 0), calibrated; no Super Bowl skill.
 
 ## Phase 10 — Research studies + ML with football features (MS-035–036)
 

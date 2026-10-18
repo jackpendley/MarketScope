@@ -92,6 +92,9 @@ jobs:
       - name: Live forward test (ratings-v1 estimates, next 8 days)
         if: github.event.schedule != '0 23 * * *'
         run: PYTHONPATH=src python -m marketscope_football.ingest predictions
+      - name: Season projections (simulated playoff odds, every season from 2016)
+        if: github.event.schedule != '0 23 * * *'
+        run: PYTHONPATH=src python -m marketscope_football.ingest projections
       - name: Weather forecasts (Open-Meteo, games from 10 days ago to 8 days ahead)
         if: github.event.schedule != '0 23 * * *'
         run: PYTHONPATH=src python -m marketscope_football.ingest weather --seasons "$SEASONS" --recent

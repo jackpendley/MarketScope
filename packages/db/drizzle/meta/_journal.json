@@ -99,6 +99,13 @@
       "when": 1792347980342,
       "tag": "0013_model_runs_predictions",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1792366955955,
+      "tag": "0014_season_projections",
+      "breakpoints": true
     }
   ]
 }

@@ -13,6 +13,7 @@ const NAV: { label: string; href?: string }[] = [
   { label: "Market Replay", href: "/replay" },
   { label: "Ratings", href: "/ratings" },
   { label: "Matchups", href: "/matchups" },
+  { label: "Projections", href: "/projections" },
   { label: "Signal Lab", href: "/signals" },
   { label: "Data", href: "/data" },
   { label: "Research" },

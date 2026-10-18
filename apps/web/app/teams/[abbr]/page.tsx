@@ -8,11 +8,13 @@ import {
   ratingWeeks,
   teamGames,
   teamRatingHistory,
+  teamProjectionHistory,
   teamStaff,
   type RatingRow,
 } from "@marketscope/db";
 import { DataUnavailable, Notice } from "@/components/data-states";
 import { RatingTrend } from "@/components/rating-trend";
+import { SeasonOutlook } from "@/components/season-outlook";
 import {
   fixed,
   isSyntheticVersion,
@@ -132,13 +134,14 @@ export default async function TeamPage(props: PageProps<"/teams/[abbr]">) {
       const at = resolveWeek(weeks, q);
       if (!at) data = null;
       else {
-        const [league, history, games, staff] = await Promise.all([
+        const [league, history, games, staff, outlook] = await Promise.all([
           ratingsForWeek(db, { version, ...at }),
           teamRatingHistory(db, { version, team, season: at.season }),
           teamGames(db, { version, team, season: at.season }),
           teamStaff(db, { team, season: at.season }),
+          teamProjectionHistory(db, { version, team, season: at.season }),
         ]);
-        data = { version, weeks, at, league, history, games, staff };
+        data = { version, weeks, at, league, history, games, staff, outlook };
       }
     }
   } catch (err) {
@@ -153,7 +156,7 @@ export default async function TeamPage(props: PageProps<"/teams/[abbr]">) {
       </Notice>
     );
 
-  const { version, weeks, at, league, history, games, staff } = data;
+  const { version, weeks, at, league, history, games, staff, outlook } = data;
   const r = league.find((x) => x.team === team);
   if (!r) notFound();
   const n = league.length;
@@ -245,6 +248,8 @@ export default async function TeamPage(props: PageProps<"/teams/[abbr]">) {
           hint="≈ share of the rating still carried by the preseason prior"
         />
       </section>
+
+      <SeasonOutlook team={r.fullName} season={at.season} week={at.week} history={outlook} />
 
       <section aria-labelledby="trend" className="space-y-2">
         <h2 id="trend" className="text-sm font-medium uppercase tracking-wide text-muted">

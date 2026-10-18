@@ -347,6 +347,26 @@ ADR-038; report `apps/football/reports/factor-selection.md`.
 - **No information against the market:** its probability of covering the closing line scores worse than a coin flip on 2025 too (0.714 vs 0.693).
 - **The live 2026 forward test** (`model_predictions`, append-only, before kickoff) began 2026-10-18.
 
+### Season simulation (MS-034)
+
+Rest-of-season odds from simulated seasons (ADR-042; report `apps/football/reports/season-sim.md`). Each simulated season draws the teams' true strengths once from the filter posterior (correlated across a team's games) plus a weekly drift, plays the remaining schedule from the key-number distribution (game noise 12.64 points: the fitted 13.05 with the average rating-error variance, 10.55 pts², taken out), applies the NFL tiebreakers through strength of schedule, and plays the bracket.
+
+- **Tiebreakers:** reproduce every 2016–24 playoff field and Wild Card matchup from the real results.
+- **Backtest 2016–24** (2,000 seasons per projection, weeks 0–17; nothing tuned on it; 2025 untouched):
+
+| Brier (weeks 1+, undecided seasons) | ratings-v1 minus home-field coin flips (95% CI, resampling seasons) |
+| ----------------------------------- | ------------------------------------------------------------------- |
+| Playoffs                            | −0.0077 (−0.0133 to −0.0029)                                        |
+| Division                            | −0.0176 (−0.0233 to −0.0126)                                        |
+| #1 seed                             | −0.0054 (−0.0088 to −0.0014)                                        |
+| Conference                          | −0.0047 (−0.0083 to −0.0008)                                        |
+| Super Bowl                          | −0.0005 (−0.0024 to +0.0010)                                        |
+| Wins MAE                            | −0.22 wins (−0.27 to −0.16)                                         |
+
+- **Calibrated:** teams given 70–80% made the playoffs 69% of the time; 90–100%, 97%.
+- **Rating uncertainty barely matters** for these scores (playoffs −0.0005 vs simulating with point ratings): the season's own randomness dominates. It is kept because it is the model's honest predictive distribution and it widens the win distributions.
+- **Super Bowl odds** are indistinguishable from the coin-flip baseline: single-elimination luck swamps a few points of strength.
+
 ### Parameter comparison (fitted values vs published models)
 
 | Parameter                                | MarketScope (fitted 2016–22)               | Published                                                               |
@@ -382,3 +402,4 @@ ADR-038; report `apps/football/reports/factor-selection.md`.
 - 2026-10-18: factor-selection rule pre-registered (MS-032), committed before any candidate was fitted.
 - 2026-10-18: factor selection run (no candidate kept; RB absence dropped) and the margin distribution adopted (ADR-038).
 - 2026-10-18: ratings-v1 frozen, 2025 test run once, live forward test started (ADR-039).
+- 2026-10-18: season simulation added (MS-034, ADR-042). No change to the frozen rating parameters.
