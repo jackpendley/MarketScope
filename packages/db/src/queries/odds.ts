@@ -167,20 +167,27 @@ const runColumns = {
   issueCounts: ingestionRuns.issueCounts,
 };
 
+/**
+ * The newest completed LIVE collection run. Historical imports (request_type
+ * 'historical') are excluded: they're completed runs too, but they say nothing about
+ * whether scheduled collection is healthy or how fresh the board is.
+ */
 export async function latestCompletedRun(db: Database): Promise<RunSummary | null> {
   const [row] = await db
     .select(runColumns)
     .from(ingestionRuns)
-    .where(eq(ingestionRuns.status, "completed"))
+    .where(and(eq(ingestionRuns.status, "completed"), eq(ingestionRuns.requestType, "live")))
     .orderBy(desc(ingestionRuns.startedAt))
     .limit(1);
   return row ?? null;
 }
 
+/** The newest live collection runs, any status (historical imports excluded). */
 export async function recentRuns(db: Database, limit: number): Promise<RunSummary[]> {
   return db
     .select(runColumns)
     .from(ingestionRuns)
+    .where(eq(ingestionRuns.requestType, "live"))
     .orderBy(desc(ingestionRuns.startedAt))
     .limit(limit);
 }

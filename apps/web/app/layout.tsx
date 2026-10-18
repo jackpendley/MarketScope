@@ -12,6 +12,7 @@ const NAV: { label: string; href?: string }[] = [
   { label: "Odds Board", href: "/nfl" },
   { label: "Market Replay", href: "/replay" },
   { label: "Signal Lab", href: "/signals" },
+  { label: "Data", href: "/data" },
   { label: "Research" },
   { label: "ML Lab" },
 ];
@@ -48,9 +49,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <footer className="mx-auto max-w-7xl space-y-1 px-4 pb-8 pt-4 text-xs text-subtle">
           <p>
             MarketScope is an analytics and education project. It is not betting advice and does not
-            take or place wagers. Odds are periodic snapshots from The Odds API and may be outdated;
-            confirm prices with the sportsbook. Sportsbook names identify data sources only;
-            MarketScope is not affiliated with or endorsed by any sportsbook.
+            take or place wagers. Odds are periodic snapshots from The Odds API (history before
+            2026-10-16 is derived from OddsPapi line-move data) and may be outdated; confirm prices
+            with the sportsbook. Sportsbook names identify data sources only; MarketScope is not
+            affiliated with or endorsed by any sportsbook.
           </p>
           <p>
             Gamble responsibly. 21+ where legal. If you or someone you know has a gambling problem,

@@ -43,6 +43,13 @@
       "when": 1792283088986,
       "tag": "0005_unique_per_snapshot",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792286599722,
+      "tag": "0006_sort_matching_indexes",
+      "breakpoints": true
     }
   ]
 }

@@ -99,7 +99,7 @@ export const ingestionRuns = pgTable(
     /** Sanitized: never contains request URLs or credentials. */
     errorMessage: text(),
   },
-  (t) => [index("ingestion_runs_started_at_idx").on(t.startedAt.desc())],
+  (t) => [index("ingestion_runs_started_at_idx").on(t.startedAt.desc().nullsFirst())],
 ).enableRLS();
 
 /** Raw provider response per run, so normalizer fixes can be re-applied without re-buying data. */
@@ -156,7 +156,8 @@ export const oddsObservations = pgTable(
       t.marketType,
       t.selection,
       t.bookmakerKey,
-      t.observedAt.desc(),
+      // NULLS FIRST matches "ORDER BY observed_at DESC" (see market_signals_recent_idx).
+      t.observedAt.desc().nullsFirst(),
     ),
     check(
       "odds_observations_point_matches_market",
@@ -203,7 +204,11 @@ export const marketSignals = pgTable(
     computedAt: tstz().notNull().defaultNow(),
   },
   (t) => [
-    index("market_signals_detected_at_idx").on(t.detectedAt.desc()),
+    // Matches listSignals' ORDER BY (detected_at DESC, id) so LIMIT stops early instead of
+    // sorting every row in the window (MS-023 EXPLAIN review, docs/PERFORMANCE.md).
+    // NULLS FIRST is what a plain "ORDER BY … DESC" means; the planner won't match an index
+    // with different null ordering, even on a NOT NULL column.
+    index("market_signals_recent_idx").on(t.detectedAt.desc().nullsFirst(), t.id),
     index("market_signals_event_idx").on(t.eventId, t.signalType, t.algorithmVersion),
     check("market_signals_window_order", sql`${t.windowStart} <= ${t.windowEnd}`),
   ],

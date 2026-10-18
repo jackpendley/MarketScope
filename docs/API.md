@@ -105,6 +105,6 @@ Liveness only: `{ "status": "ok" }` without touching the database. Used by the P
 
 Ingestion health, with no credentials or infrastructure details.
 
-- `status`: `ok`, `behind` (no completed run in 12 h), or `no-data`.
+- `status`: `ok`, `behind` (no completed **live** run in 12 h), or `no-data`. Historical imports are excluded (ADR-027).
 - `latestCompletedRun`: `startedAt`, `ageMinutes`, counts, `creditsRemaining`, `issueCounts`.
 - `recentRuns[]`: status, start time, and error code for the last 10 runs.

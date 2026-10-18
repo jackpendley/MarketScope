@@ -160,7 +160,11 @@ Status legend: `[x]` done · `[~]` in progress · `[ ]` not started
   - Completed pre-live games, stored as derived 6-hourly plus near-close snapshots.
   - One idempotent run per fixture; refuses games collected live (no mixed sources).
   - BetMGM excluded; Pinnacle stored as a reference book; no raw payloads.
-- [ ] **MS-023** Coverage dashboard, `EXPLAIN ANALYZE` review on the larger dataset, storage review.
+- [x] **MS-023** Coverage, performance, storage (`docs/PERFORMANCE.md`, ADR-027):
+  - `/data` page: live collection health, history by source, per-game × per-book spread coverage.
+  - `pnpm --filter @marketscope/db explain`: EXPLAIN ANALYZE of the app's own queries, read-only.
+  - Migration 0006: sort-matching `DESC NULLS FIRST` indexes (Signal Lab `LIMIT` stops early).
+  - Fix: run-health queries count live runs only. Storage projection: about 35% of the free tier by the Super Bowl.
 
 ## Phase 7 — ML baseline (MS-024–025)
 

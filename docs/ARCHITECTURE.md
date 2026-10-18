@@ -1,56 +1,35 @@
 # Architecture
 
-## Current state (Phase 2)
+## Current state (after MS-023)
 
 ```
- The Odds API ──HTTPS (key in query, server-only)──▶ apps/collector
-                                                     ├─ config.ts       Zod-validated env
-                                                     ├─ providers/the-odds-api/client.ts
-                                                     │    retries, backoff, quota headers, key redaction
-                                                     ├─ collect.ts      claim job_key → budget guard → fetch
-                                                     │                  → normalize → ONE transaction
-                                                     └─ scripts/        collect-nfl, verify-provider, probe-books
-                                                              │
-                         packages/shared (pure TS)            │ uses normalizer, bookmakers, season
-                         schema · normalize · compare · odds  │
-                                                              ▼
-                         packages/db  (Drizzle + postgres.js) ──▶ PostgreSQL 17
-                         schema.ts · drizzle/*.sql migrations      events · bookmakers · ingestion_runs
-                                                                   ingestion_payloads · odds_observations
-                                                                   (append-only)
+ GitHub Actions cron (4×/day) ─▶ apps/collector  collect:nfl  →  signals:compute
+ The Odds API (key server-only)    claim job_key → budget guard → fetch (no tx) → normalize → ONE transaction
+                                                            │
+ OddsPapi (free history, manual) ─▶ import:oddspapi        │   one idempotent run per fixture; derived
+                                    change log → snapshots  │   6-hourly + near-close snapshots (ADR-026)
+                                                            ▼
+                         packages/db (Drizzle + postgres.js) ──▶ Supabase PostgreSQL 17 (RLS on, ADR-018)
+                         schema.ts · drizzle/*.sql (migrate-on-merge)
+                         queries/{odds,signals,coverage}.ts      events · bookmakers · ingestion_runs
+                         scripts/explain.ts (EXPLAIN ANALYZE)    ingestion_payloads · odds_observations
+                                                                 (append-only) · market_signals
+                                  │
+ Browser ◀── Basic auth (proxy.ts, ADR-022) ── apps/web on Vercel (DATABASE_URL only; transaction pooler)
+   /nfl · /nfl/games/[id] · /nfl/games/[id]/history (replay) · /replay · /signals · /data
+   /api/games · /odds · /history · /movements · /signals · /health/live · /health/data
+   lib/*-view.ts and lib/odds-board.ts: pure view models, unit-tested apart from React
 
- Browser ◀──HTML/JSON── apps/web (Next.js 16 App Router; DATABASE_URL only, never the odds key)
-                        ├─ /nfl, /nfl/games/[id]   server components ─┐
-                        ├─ /api/games, /api/games/:id/odds,           ├─▶ lib/server/games.ts ─▶ @marketscope/db queries
-                        │  /api/health/data        route handlers ───┘     (DISTINCT ON latest quotes)
-                        └─ lib/odds-board.ts       pure view model: exact-line best price, stale books, consensus
+ research/ (Python) ── read-only SQL ──▶ pre-registered studies, cross-checked against stored values
 ```
 
 **Boundaries:**
 
-- **Provider adapter** (client + schema + normalizer) is the only code that knows The Odds API's shape. Everything downstream uses domain types.
-- **Persistence** (`packages/db`) owns the schema and migrations. Database constraints enforce the domain invariants a second time (point ⇔ market, selection ⇔ market, valid price, one row per selection per run).
-- **Pure domain logic** (`packages/shared`) has no I/O, so it's unit-testable and reusable by the web app, the collector, and later the signal engine.
-- **Presentation logic** (`apps/web/lib/odds-board.ts`) is a pure view-model builder, tested separately from React.
-
-## Target state (after Phase 3)
-
-```
- EventBridge / GH Actions cron ─▶ collector (Lambda or Action)
-                                   1. budget guard  2. claim run (job_key)  3. fetch (no tx open)
-                                   4. one transaction: upsert events, insert payload + observations, complete run
-                                                  │
-                                                  ▼
-                                   PostgreSQL (managed) — append-only odds_observations
-                                                  │
-                         packages/db query layer (Drizzle + raw SQL for analytics)
-                                  │                                   │
-             Next.js server components                     Next.js route handlers (/api/*)
-                                  │                                   │
-                                Browser (Vercel, Deployment Protection until terms reviewed)
-```
-
-Later phases add the signal engine (`market_signals`), Python research and ML that read Postgres, and `model_runs` / `model_predictions`.
+- **Provider adapters** (`packages/shared/src/providers/the-odds-api`, `apps/collector/src/providers/oddspapi`) are the only code that knows a provider's shape. Everything downstream uses domain types and the same tables.
+- **Persistence** (`packages/db`) owns the schema, migrations, and every SQL query. Database constraints enforce the domain invariants a second time (point ⇔ market, selection ⇔ market, valid price, one row per selection per run per snapshot).
+- **Pure domain logic** (`packages/shared`): odds math, consensus, history, replay, and signals. It has no I/O, so it's unit-testable and shared by the web app, the collector, and the signal job.
+- **Presentation logic** (`apps/web/lib`) is pure view-model code, tested separately from React.
+- **Health vs history:** run-health queries (`latestCompletedRun`, `recentRuns`) count **live** runs only; historical imports never make collection look healthy (ADR-027).
 
 ## Key technology choices
 
