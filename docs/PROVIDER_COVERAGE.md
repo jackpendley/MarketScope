@@ -148,3 +148,16 @@ Sign convention test: home line = `handicap` matched 53/64 spread observations; 
 ## Import (2026-10-17)
 
 `pnpm --filter @marketscope/collector import:oddspapi` (ADR-026) backfills completed games that kicked off before live collection began, as derived 6-hourly plus near-close snapshots with `source = 'oddspapi'`. Books: DraftKings, FanDuel, Caesars, Hard Rock, and Pinnacle (reference). BetMGM is excluded.
+
+## nflverse closing lines vs our consensus (MS-026, 2026-10-18)
+
+nflverse publishes one closing spread, total and moneyline per game. Its `spread_line` is **positive when the home team is favored**; we store `−spread_line`. Compared against our last observed pregame board consensus for the 79 completed linked games (all imported; snapshots 5 minutes before kickoff), from `research/reports/close-vs-consensus.md`:
+
+| Check                                | Result                |
+| ------------------------------------ | --------------------- |
+| Correlation                          | 0.996                 |
+| Same favorite                        | 98.7%                 |
+| Spread exact / within 0.5 / within 1 | 65.8% / 93.7% / 98.7% |
+| Totals within 1                      | 100%                  |
+
+**Conclusion:** the sign convention is confirmed, and the nflverse close is a sound benchmark for seasons we hold no odds for (2016–2025). Only one game differed by more than 1 point (2026 Week 3 LA @ DEN, 2.75). Live-collected games join this check as they complete.

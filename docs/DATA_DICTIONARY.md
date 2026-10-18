@@ -152,3 +152,35 @@ Indexes:
 | `computed_at`                               | recompute time                                                             |
 
 RLS is enabled. Rows are replaced per (event, type, version) on recompute.
+
+## Football tables (ADR-028)
+
+Written only by `apps/football` (Python). The schema is still owned by Drizzle. Source: [nflverse](https://github.com/nflverse) (CC-BY 4.0).
+
+### `nfl_teams`
+
+`abbr` (PK, nflverse abbreviation). `franchise` is the current franchise: relocated or alias abbreviations map to it (`OAK`→`LV`, `SD`→`LAC`, `STL`→`LA`, `LAR`→`LA`), so ratings follow the franchise. Also `full_name`, `nickname`, `conference` and `division`. `odds_api_name` is the exact `events.home_team`/`away_team` string; it is set only for current franchises.
+
+### `nfl_games`: one game from the nflverse schedule
+
+| Column                                                                                   | Notes                                                                                                                                            |
+| ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `game_id`                                                                                | PK, e.g. `2026_01_NE_SEA`                                                                                                                        |
+| `season`, `game_type`, `week`                                                            | `game_type`: REG, WC, DIV, CON, SB                                                                                                               |
+| `kickoff_utc`                                                                            | From nflverse `gameday` + `gametime`, which are US Eastern                                                                                       |
+| `home_team`, `away_team`                                                                 | FKs to `nfl_teams`. `neutral_site` is true when `location = Neutral` (designated home team)                                                      |
+| `home_score`, `away_score`, `overtime`                                                   | Results. **Post-hoc: never a feature for the same game**                                                                                         |
+| `final_observed_at`                                                                      | When our ingest first saw the final score. NULL for games already final at backfill (no import time on history)                                  |
+| `roof`, `surface`, `stadium_id`, `stadium`                                               | As played. A retractable roof's status is unknown before the game                                                                                |
+| `observed_temp_f`, `observed_wind_mph`                                                   | Weather as played. **Post-hoc**; forecasts arrive in MS-028                                                                                      |
+| `referee`, `home_coach`, `away_coach`                                                    |                                                                                                                                                  |
+| `home_qb_id`, `away_qb_id`                                                               | Starting QBs as played. Post-hoc; used only for the oracle-vs-expected-starter study                                                             |
+| `nflverse_close_home_spread`                                                             | nflverse `spread_line` (positive = home favored) stored as **−`spread_line`**, our home orientation. A labeled benchmark, never an observation   |
+| `nflverse_close_total`, `nflverse_close_home_moneyline`, `nflverse_close_away_moneyline` | nflverse closing total and moneylines                                                                                                            |
+| `event_id`                                                                               | Unique FK to `events`. Set by the linker: exact team names, same orientation, kickoff within 36 h. Swapped orientation is reported, never linked |
+
+Indexes: `(season, week)` and `kickoff_utc`. CHECKs: the teams differ; both scores are set or neither is.
+
+### `nfl_ingest_runs`
+
+The same claim pattern as `ingestion_runs`. `job_key` is unique (`schedules:<seasons>:<UTC date>` or a manual key). Also `dataset`, `status`, `attempt` (increments when a failed or stale run is reclaimed), `rows_upserted`, `source_version` (nflreadpy version + dataset SHA-256), and a sanitized `error_message`.
