@@ -201,6 +201,30 @@ This rule is what stops ~2,800 training games from being overfit by 40 factors.
 - **Parameter comparison table:** our fitted HFA, rest/bye, travel, reversion, QB share, P(plays | Q/D), coaching effect and wind effect, next to the published 538, ELWAY, nfelo and Inpredictable values. This is a headline result.
 - **Expected outcome, stated up front:** the model beats SRS and Elo and loses to the close. The interesting findings are which components matter, where performance and price disagree, and whether those disagreements carry information.
 
+### Factor selection (pre-registered 2026-10-18, before any candidate was fitted)
+
+The rule and candidate list are in `apps/football/src/marketscope_football/ratings/selection_design.py`. Each candidate is added on its own to the MS-031 model's game layer. It is kept only if both:
+
+1. its 2016–22 coefficient has the expected sign with |t| ≥ 2, and
+2. on 2023–24, paired against the MS-031 model, Δ margin MAE ≤ 0 and Δ log loss ≤ 0.
+
+**Candidates:**
+
+- rest difference
+- bye week
+- travel distance
+- time-zone shift
+- body clock
+- altitude
+- division game (smaller home edge)
+- playoffs (larger home edge)
+- new head coach (first 10 games)
+- new offensive play-caller (first 4 games)
+
+The RB absence value stays only if it passes the same rule. Margin weather is not testable (forecasts start in 2024).
+
+Kept factors are refitted jointly, and that model is frozen as `ratings-v1`. Its 2023–24 score is optimistic by construction, so the one-time 2025 test is the honest estimate.
+
 ## References
 
 - nflverse / nflreadpy data and licences: https://nflreadpy.nflverse.com/ (CC-BY 4.0; FTN data CC-BY-SA 4.0)
@@ -310,3 +334,4 @@ ADR-037. Validation 2023–24 (570 games), run once:
 - 2026-10-18: KenPom contract outputs (MS-030b, ADR-035). Additions to the design: a pace filter (32 units + mean) for AdjPace and totals; expected wins from per-game net adjusted EPA with a home term.
 - 2026-10-18: QB layer (MS-031a, ADR-036). QB continuity at the season boundary is handled by the QB feature's baseline rather than by conditioning ρ_s.
 - 2026-10-18: non-QB availability (MS-031b, ADR-037).
+- 2026-10-18: factor-selection rule pre-registered (MS-032), committed before any candidate was fitted.
