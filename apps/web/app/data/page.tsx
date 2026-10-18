@@ -168,7 +168,7 @@ export default async function DataCoveragePage() {
           </Notice>
         ) : (
           <>
-            <dl className="grid grid-cols-2 gap-3 md:grid-cols-4">
+            <dl className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
               <Stat label="Games stored" value={football.games.toLocaleString()}>
                 Seasons {football.firstSeason}–{football.lastSeason} ·{" "}
                 {football.finalGames.toLocaleString()} final
@@ -184,6 +184,10 @@ export default async function DataCoveragePage() {
                 value={`${football.statsGames.toLocaleString()} / ${football.finalGames.toLocaleString()}`}
               >
                 Final games aggregated from play-by-play (EPA, success, drives)
+              </Stat>
+              <Stat label="Injury reports" value={football.injuryRows.toLocaleString()}>
+                {football.liveInjuryRows.toLocaleString()} first seen live, before kickoff ·{" "}
+                {football.snapRows.toLocaleString()} player-game snap counts
               </Stat>
               {football.latestRun && (
                 <Stat label="Last football ingest" value={football.latestRun.status}>

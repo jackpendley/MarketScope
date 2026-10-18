@@ -64,6 +64,13 @@
       "when": 1792306612138,
       "tag": "0008_team_game_stats",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792307342912,
+      "tag": "0009_availability",
+      "breakpoints": true
     }
   ]
 }

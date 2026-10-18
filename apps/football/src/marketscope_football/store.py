@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import datetime
+
 import pandas as pd
 import psycopg
 
@@ -94,3 +96,68 @@ def replace_team_game_stats(conn: psycopg.Connection, season: int, rows: list[di
             for r in rows:
                 copy.write_row([*r.values(), stats_version])
     return len(rows)
+
+
+def replace_snaps(conn: psycopg.Connection, season: int, rows: list[dict]) -> int:
+    """Replace one season's snap counts (only games present in nfl_games)."""
+    if not rows:
+        return 0
+    cols = list(rows[0].keys())
+    with conn.cursor() as cur:
+        cur.execute("DELETE FROM nfl_player_game_snaps WHERE season = %s", (season,))
+        cur.execute("DROP TABLE IF EXISTS snaps_in")
+        cur.execute("CREATE TEMP TABLE snaps_in (LIKE nfl_player_game_snaps) ON COMMIT DROP")
+        with cur.copy(f"COPY snaps_in ({', '.join(cols)}) FROM STDIN") as copy:
+            for r in rows:
+                copy.write_row(list(r.values()))
+        cur.execute(f"""INSERT INTO nfl_player_game_snaps ({', '.join(cols)})
+                        SELECT {', '.join('s.' + c for c in cols)} FROM snaps_in s
+                        JOIN nfl_games g ON g.game_id = s.game_id""")
+        return cur.rowcount
+
+
+def team_kickoffs(conn: psycopg.Connection, seasons: list[int]) -> dict[tuple, tuple[str, datetime]]:
+    """(season, week, team) -> (game_id, kickoff_utc) for both teams of every game."""
+    rows = conn.execute(
+        """SELECT season, week, home_team, game_id, kickoff_utc FROM nfl_games WHERE season = ANY(%s)
+           UNION ALL
+           SELECT season, week, away_team, game_id, kickoff_utc FROM nfl_games WHERE season = ANY(%s)""",
+        (seasons, seasons),
+    ).fetchall()
+    return {(s, w, t): (g, k) for s, w, t, g, k in rows}
+
+
+def latest_injury_rows(conn: psycopg.Connection, seasons: list[int]) -> dict[tuple, dict]:
+    rows = conn.execute(
+        """SELECT DISTINCT ON (season, week, team, gsis_id) season, week, team, gsis_id, id, content_hash, first_seen_at
+           FROM nfl_injury_reports WHERE season = ANY(%s)
+           ORDER BY season, week, team, gsis_id, first_seen_at DESC NULLS LAST, id DESC""",
+        (seasons,),
+    ).fetchall()
+    return {(s, w, t, g): {"id": i, "content_hash": h, "first_seen_at": f} for s, w, t, g, i, h, f in rows}
+
+
+INJURY_COLUMNS = [
+    "season", "week", "game_type", "team", "game_id", "gsis_id", "full_name", "position", "report_status",
+    "report_primary_injury", "report_secondary_injury", "practice_status", "practice_primary_injury", "content_hash",
+    "first_seen_at", "last_seen_at",
+]
+
+
+def apply_injury_plan(conn: psycopg.Connection, plan, game_ids: dict[tuple, str]) -> int:
+    def with_game(r: dict) -> dict:
+        return {**r, "game_id": game_ids.get((r["season"], r["week"], r["team"]))}
+
+    cols = ", ".join(INJURY_COLUMNS)
+    values = ", ".join(f"%({c})s" for c in INJURY_COLUMNS)
+    with conn.cursor() as cur:
+        if plan.inserts:
+            cur.executemany(f"INSERT INTO nfl_injury_reports ({cols}) VALUES ({values})",
+                            [with_game(r) for r in plan.inserts])
+        if plan.touch:
+            cur.execute("UPDATE nfl_injury_reports SET last_seen_at = now() WHERE id = ANY(%s)", (plan.touch,))
+        if plan.backfill_updates:
+            sets = ", ".join(f"{c} = %({c})s" for c in INJURY_COLUMNS if c not in ("first_seen_at", "last_seen_at"))
+            cur.executemany(f"UPDATE nfl_injury_reports SET {sets} WHERE id = %(id)s",
+                            [with_game(r) for r in plan.backfill_updates])
+    return len(plan.inserts) + len(plan.touch) + len(plan.backfill_updates)

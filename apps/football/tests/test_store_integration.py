@@ -22,7 +22,7 @@ def conn():
         c = psycopg.connect(URL, connect_timeout=5)
     except psycopg.OperationalError:
         pytest.skip("test database unavailable")
-    c.execute("TRUNCATE nfl_games, nfl_teams, nfl_ingest_runs, events RESTART IDENTITY CASCADE")
+    c.execute("TRUNCATE nfl_injury_reports, nfl_player_game_snaps, nfl_team_game_stats, nfl_games, nfl_teams, nfl_ingest_runs, events RESTART IDENTITY CASCADE")
     c.commit()
     yield c
     c.rollback()
@@ -106,3 +106,50 @@ def test_team_game_stats_replace_a_season_and_only_final_games_qualify(conn):
         "SELECT team, plays, epa_per_play, epa_per_dropback, stats_version FROM nfl_team_game_stats ORDER BY team"
     ).fetchall()
     assert got == [("LA", 1, 0.5, None, "v2"), ("SF", 0, None, None, "v2")]
+
+
+def test_injury_snapshots_append_live_changes_and_link_the_game(conn):
+    from datetime import timedelta
+
+    from test_availability import injury, rows
+
+    from marketscope_football.availability import plan_injury_changes
+    from marketscope_football.store import apply_injury_plan, latest_injury_rows, team_kickoffs
+
+    upsert_teams(conn, TEAMS)
+    kickoff = datetime(2026, 9, 11, 0, 35, tzinfo=timezone.utc)
+    upsert_games(conn, [game(kickoff_utc=kickoff)])
+    games = team_kickoffs(conn, [2026])
+    assert games[(2026, 1, "SF")] == ("2026_01_SF_LA", kickoff)
+
+    def fetch(status: str, at: datetime) -> None:
+        fetched = rows(injury(week=1, team="SF", report_status=status))
+        plan = plan_injury_changes(fetched, latest_injury_rows(conn, [2026]), {k: v[1] for k, v in games.items()}, at)
+        apply_injury_plan(conn, plan, {k: v[0] for k, v in games.items()})
+
+    fetch("Questionable", kickoff - timedelta(days=2))
+    fetch("Questionable", kickoff - timedelta(days=1))  # unchanged: touch
+    fetch("Out", kickoff - timedelta(hours=20))  # change: new live row
+    fetch("Questionable", kickoff + timedelta(hours=1))  # after kickoff: frozen
+    got = conn.execute(
+        """SELECT report_status, game_id, first_seen_at = last_seen_at FROM nfl_injury_reports
+           ORDER BY first_seen_at"""
+    ).fetchall()
+    assert got == [("Questionable", "2026_01_SF_LA", False), ("Out", "2026_01_SF_LA", True)]
+
+
+def test_snaps_replace_a_season_and_skip_unknown_games(conn):
+    from marketscope_football.store import replace_snaps
+
+    upsert_teams(conn, TEAMS)
+    upsert_games(conn, [game()])
+    base = {"season": 2026, "week": 1, "gsis_id": "00-1", "player": "A", "position": "WR", "team": "LA",
+            "offense_snaps": 50, "offense_pct": 0.8, "defense_snaps": 0, "defense_pct": 0.0, "st_snaps": 3,
+            "st_pct": 0.1}
+    snaps = [{"game_id": "2026_01_SF_LA", "pfr_player_id": "PA", **base},
+             {"game_id": "2026_09_XX_YY", "pfr_player_id": "PA", **base}]
+    snaps = [{k: r[k] for k in ["game_id", "season", "week", "pfr_player_id", *base.keys() - {"season", "week"}]}
+             for r in snaps]
+    assert replace_snaps(conn, 2026, snaps) == 1
+    assert replace_snaps(conn, 2026, snaps) == 1
+    assert conn.execute("SELECT count(*) FROM nfl_player_game_snaps").fetchone()[0] == 1

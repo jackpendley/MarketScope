@@ -26,6 +26,10 @@ export interface FootballDataStatus {
   finalGames: number;
   /** Final games that have team-game stats (both teams' rows) from play-by-play. */
   statsGames: number;
+  /** Injury-report rows, and how many were first seen live (before kickoff) by our job. */
+  injuryRows: number;
+  liveInjuryRows: number;
+  snapRows: number;
   firstSeason: number | null;
   lastSeason: number | null;
   latestRun: FootballIngestRun | null;
@@ -46,11 +50,17 @@ export async function footballDataStatus(
     games: number;
     final_games: number;
     stats_games: number;
+    injury_rows: number;
+    live_injury_rows: number;
+    snap_rows: number;
     first_season: number | null;
     last_season: number | null;
   }>(sql`
     SELECT count(*)::int AS games, count(home_score)::int AS final_games,
            (SELECT count(DISTINCT game_id)::int FROM nfl_team_game_stats) AS stats_games,
+           (SELECT count(*)::int FROM nfl_injury_reports) AS injury_rows,
+           (SELECT count(first_seen_at)::int FROM nfl_injury_reports) AS live_injury_rows,
+           (SELECT count(*)::int FROM nfl_player_game_snaps) AS snap_rows,
            min(season) AS first_season, max(season) AS last_season
     FROM nfl_games
   `);
@@ -89,6 +99,9 @@ export async function footballDataStatus(
     games: totals?.games ?? 0,
     finalGames: totals?.final_games ?? 0,
     statsGames: totals?.stats_games ?? 0,
+    injuryRows: totals?.injury_rows ?? 0,
+    liveInjuryRows: totals?.live_injury_rows ?? 0,
+    snapRows: totals?.snap_rows ?? 0,
     firstSeason: totals?.first_season ?? null,
     lastSeason: totals?.last_season ?? null,
     latestRun: run
