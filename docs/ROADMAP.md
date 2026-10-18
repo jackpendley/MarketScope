@@ -219,9 +219,10 @@ New Python app `apps/football/` (nflreadpy, polars, psycopg). The schema stays i
 
 ## Phase 9 — MarketScope Ratings (MS-029–034)
 
-- [ ] **MS-029** Evaluation harness:
+- [x] **MS-029** Evaluation harness:
   - Walk-forward runner, clustered CIs, ablations.
   - Benchmarks: naive, SRS, Elo, market-implied ratings.
+  - 2023–24 margin MAE: close 9.84, Elo 10.33, SRS 10.37, market-implied 10.37, naive 11.16 (ADR-033, `apps/football/reports/benchmarks.md`).
 - [ ] **MS-030** Kalman unit ratings in the KenPom contract:
   - AdjO, AdjD, AdjST, AdjPace, AdjEM, each with a standard error.
   - Luck and its decomposition, SOS, Five Factors.

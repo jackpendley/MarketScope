@@ -21,6 +21,7 @@ PYTHONPATH=src .venv/bin/python -m marketscope_football.venues                  
 PYTHONPATH=src .venv/bin/python -m marketscope_football.plays_report --out reports/plays-given-status.md
 PYTHONPATH=src .venv/bin/python -m marketscope_football.crosscheck --seasons 2016-2026 --out reports/team-stats-crosscheck.md
 PYTHONPATH=src .venv/bin/python -m marketscope_football.luck_fit   # reproduces the frozen constants in design.py
+PYTHONPATH=src .venv/bin/python -m marketscope_football.eval.run_benchmarks --out reports/benchmarks.md  # walk-forward benchmarks
 ```
 
 `--seasons` accepts `2016-2026`, `2025,2026` or `current`. The daily GitHub workflow (`.github/workflows/football-data.yml`) runs `schedules`, `team-stats --refresh`, `snaps` and `injuries` for the current season at 13:00 UTC, and `injuries` again at 23:00 UTC.
@@ -36,6 +37,7 @@ PYTHONPATH=src .venv/bin/python -m marketscope_football.luck_fit   # reproduces 
 - **Venues** (`venues.py`, `data/venues.csv`, `venue_aliases.csv`, `venue_overrides.csv`): roof type (curated), coordinates (Wikipedia), elevation and time zone (Open-Meteo); overrides fix nflverse's mislabelled 2025 international games.
 - **Weather** (`weather.py`, ADR-032): Open-Meteo Previous Runs forecasts at leads 0/1/3/7 days for outdoor and retractable venues, game-window averages, 2024+.
 - **Context** (`context.py`): rest, bye, short week, travel, time-zone shift, body clock, altitude, road streak, coaching tenure.
+- **Evaluation** (`eval/`, ADR-033): walk-forward runner (results removed before `predict`; 2025 refused), pre-registered design, benchmarks (naive home field, 538 Elo, ridge SRS, market-implied ratings, the nflverse close), paired bootstrap scoring. Schedules 1999+ cached in `.cache/schedules/` with a manifest. See `reports/benchmarks.md`.
 - `final_observed_at` is stamped only when a game we already held becomes final. Backfilled history never gets the import time.
 
 Data: [nflverse](https://github.com/nflverse) (CC-BY 4.0). Coaching facts: Wikipedia (cited by revision) and the news sources in `data/*.csv`.

@@ -219,8 +219,26 @@ This rule is what stops ~2,800 training games from being overfit by 40 factors.
 
 ## Results
 
-_None yet. Each milestone appends its tables here: benchmarks (MS-029), Kalman parameters and ablations (MS-030), QB and availability (MS-031), factor selection, 2025 test, parameter comparison (MS-032)._
+_Each milestone appends its tables here: benchmarks (MS-029), Kalman parameters and ablations (MS-030), QB and availability (MS-031), factor selection, 2025 test, parameter comparison (MS-032)._
+
+### Benchmarks (MS-029)
+
+Walk-forward on the 2023–24 validation seasons (570 games, regular season and playoffs). 95% bootstrap CIs resample games. Full report: `apps/football/reports/benchmarks.md` (ADR-033).
+
+| Model                                          | Margin MAE | Δ MAE vs close (paired 95% CI) | Brier  | Log loss |
+| ---------------------------------------------- | ---------- | ------------------------------ | ------ | -------- |
+| naive home field                               | 11.16      | +1.32 (+0.91 to +1.71)         | 0.2481 | 0.6893   |
+| Elo (538, published constants)                 | 10.33      | +0.49 (+0.23 to +0.75)         | 0.2230 | 0.6371   |
+| SRS (ridge; half-life 126 d, λ 4)              | 10.37      | +0.53 (+0.29 to +0.77)         | 0.2246 | 0.6404   |
+| market-implied ratings (half-life 56 d, λ 0.5) | 10.37      | +0.52 (+0.29 to +0.77)         | 0.2231 | 0.6376   |
+| nflverse close                                 | 9.84       | –                              | 0.2098 | 0.6081   |
+
+- All five land in the ranges expected before the run (Elo/SRS 10–11, close 9.5–10).
+- Ratings fitted to past closing lines are no better than results-based SRS at predicting margins. Most of the close's edge comes from information arriving in the week of the game, not from a better summary of the past.
+- Ablations: classic current-season-only SRS is 0.32 worse (CI +0.15 to +0.50), mostly early in the season. Elo's margin-of-victory multiplier helps (+0.17 without it, CI just touching 0). 538's later home-field value (48) is indistinguishable from 65.
+- Win probability for margin-based benchmarks: Φ(margin / 11.90), with σ fit on 1999–2015 closing lines.
 
 ## Changelog
 
 - 2026-10-17: design frozen (ADR-028).
+- 2026-10-18: evaluation harness and benchmark results (MS-029, ADR-033). No design change.

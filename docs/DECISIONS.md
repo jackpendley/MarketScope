@@ -418,3 +418,27 @@ AWS Lambda + EventBridge remains an optional later upgrade (Phase 3).
 
 - Forecast skill is measured (`reports/weather-forecast-skill.md`). Temperature r = 0.98 at 1 day and 0.94 at 7 days; wind r = 0.74 at 1 day but 0.34 at 7 days. So wind enters only from short leads, and the R3 study uses 1 and 3-day leads.
 - Weather exists only for 2024+, so any weather factor is validated on 2024 alone, then tested once in 2025. It must show a large effect to earn a place.
+
+## ADR-033 — Evaluation harness: structural point-in-time, paired comparisons, a guarded test season (2026-10-18)
+
+**Context.** Every rating and factor from MS-030 on is judged by walk-forward accuracy on 2023–24 against simple benchmarks and the market close (RATINGS.md, Validation protocol). Each one must be scored the same way. Look-ahead must be impossible rather than just discouraged, and 2025 must stay untouched until MS-032.
+
+**Decision.**
+
+- **One runner for every model** (`eval/walkforward.py`). Models implement `predict(games)` and `update(results)`. For each (season, week) the runner calls `predict` with every result column removed, records the predictions, and only then calls `update`.
+  - Tests: a model that reads a result column fails, and predictions don't change when later games are deleted.
+- **The test season is guarded in code.** The runner raises if asked to score 2025 without `allow_test=True`, which only MS-032's one-time run will pass.
+- **Pre-registered design** (`eval/design.py`): season roles, bootstrap, benchmark constants and tuning grids, fixed before any benchmark ran.
+- **Benchmarks:**
+  - naive home field
+  - FiveThirtyEight Elo with its published constants (no tuning)
+  - SRS and market-implied ratings as **one weighted-ridge estimator on two targets** (results vs past closing spreads), tuned only on 2016–22
+  - the nflverse close itself
+- **Win probability from a margin:** Φ(margin / σ), with σ fit by maximum likelihood on 1999–2015 closing lines, outside every scored season. The key-number-aware distribution replaces it in MS-032.
+- **Paired comparisons:** every table reports bootstrap CIs resampling games and paired differences against a reference on the same games.
+
+**Consequences.**
+
+- On 2023–24 (570 games) the close has margin MAE 9.84; Elo 10.33, SRS 10.37 and market-implied ratings 10.37 sit about 0.5 behind (paired CI about ±0.25); naive home field is 11.16. These match the published ranges.
+- Absolute MAE CIs are wide (±0.7), but paired differences are tight. So a model or factor is judged by its paired difference against a baseline, never by comparing two separate intervals.
+- The bar for MS-030 is concrete: beat Elo/SRS by a margin whose paired CI excludes 0, and close part of the 0.5-point gap to the close.
