@@ -26,6 +26,19 @@ The tool runs the app's own query functions with representative inputs, captures
 | `gameCoverage` (`/data`, first version) | **575 ms** | 103      | Correlated per-game subqueries re-aggregated an inlined CTE once per game    | Rewritten (below).                                                |
 | `gameCoverage` (`/data`, rewrite)       | 141 ms     | 103      | One pass over 27K home-spread rows; aggregates joined                        | Acceptable for a low-traffic page; see the threshold below.       |
 
+## After migration 0006 (production, median of 3 runs)
+
+| Query                               | Before                              | After                     | What changed                                                                                 |
+| ----------------------------------- | ----------------------------------- | ------------------------- | -------------------------------------------------------------------------------------------- |
+| `listSignals` (Signal Lab, 30 days) | 55 ms, 7,956 rows read + top-N sort | **2.1 ms, 300 rows read** | `Index Scan using market_signals_recent_idx` feeds `LIMIT` directly; no sort                 |
+| `listSignals` (Signal Lab, 7 days)  | 5.4 ms, 708 rows + sort             | 2.2 ms, 300 rows          | same                                                                                         |
+| `latestQuotesForEvents` (board)     | 18 ms, bitmap scan + sort           | 9.7 ms                    | `Index Scan using odds_observations_history_idx` returns rows already in `DISTINCT ON` order |
+| `latestCompletedRun`, `recentRuns`  | seq scan                            | index scan                | `ingestion_runs_started_at_idx` now matches                                                  |
+| `gameCoverage` (`/data`)            | 575 ms (first version)              | 153 ms                    | query rewrite                                                                                |
+| everything else                     |                                     | unchanged within noise    |                                                                                              |
+
+The first run after the index rebuild was cold and up to 2× slower. Shared free-tier hardware also varies by about ±30%, so compare medians, not single runs.
+
 ## Findings and fixes
 
 1. **Index null ordering must match the query (migration 0006).**
