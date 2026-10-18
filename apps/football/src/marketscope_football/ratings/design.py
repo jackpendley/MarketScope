@@ -37,3 +37,9 @@ NO_CONTINUITY = "no play-caller continuity"
 INITIAL_VAR_UNIT = 0.01  # EPA/play^2 (team sd 0.1) at BURN_IN_FROM
 INITIAL_VAR_MEAN = 0.01
 INITIAL_VAR_ST = 4.0  # (EPA/game)^2
+
+# ---- QB layer (MS-031a; qb.py) --------------------------------------------------------------
+# Grid searched on 2016-22 (in-sample game-layer MAE with the expected starter).
+QB_HALF_LIFE_GRID = (182.0, 365.0, 730.0)  # days: QB rating memory
+QB_PRIOR_GRID = (100.0, 250.0, 500.0)  # dropbacks of replacement-level prior
+QB_BASELINE_HALF_LIFE_GRID = (28.0, 56.0, 112.0)  # days: memory of the team's QB baseline

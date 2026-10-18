@@ -20,7 +20,7 @@ PARAMS_PATH = Path(__file__).with_name("params.json")
 
 
 UNIT_CHANNELS = ("pass", "rush", "succ", "ppd")
-FEATURES = ("pass", "rush", "succ", "ppd", "st")
+FEATURES = ("pass", "rush", "succ", "ppd", "st")  # + "qb" when the QB layer is on (qb.py)
 
 
 @dataclass
@@ -187,15 +187,20 @@ class KalmanRatings:
     """Walk-forward model: filtered ratings before each week -> expected margin and win probability."""
 
     def __init__(self, name: str, teams: list[str], params: tuple, obs: pd.DataFrame, season_flags: dict,
-                 week_flags: dict, sigma: float, use_st: bool = True):
+                 week_flags: dict, sigma: float, use_st: bool = True, qb=None):
         units, st_p, self.layer = params
-        self.name, self.sigma = name, sigma
+        self.name, self.sigma, self.qb = name, sigma, qb
         self.engine = Engine(teams, units, st_p, obs, season_flags, week_flags, use_st)
+
+    def _features(self, g) -> dict[str, float]:
+        f = self.engine.features(g.home, g.away, bool(g.neutral), self.layer)
+        if self.qb is not None:
+            f["qb"] = self.qb.feature(g)
+        return f
 
     def predict(self, games: pd.DataFrame) -> pd.DataFrame:
         self.engine.begin(int(games["season"].iloc[0]), int(games["week"].iloc[0]))
-        margin = np.array([self.layer.margin(self.engine.features(g.home, g.away, bool(g.neutral), self.layer),
-                                             bool(g.neutral)) for g in games.itertuples(index=False)])
+        margin = np.array([self.layer.margin(self._features(g), bool(g.neutral)) for g in games.itertuples(index=False)])
         out = pd.DataFrame({"margin": margin, "p_home": win_probability(margin, self.sigma)}, index=games.index)
         if self.layer.total_b is not None and "pace" in self.engine.filters:
             out["total"] = [self.layer.total(self.engine.raw_total(g.home, g.away, bool(g.neutral)))
@@ -209,3 +214,5 @@ class KalmanRatings:
         self.engine.begin(season, int(results["week"].iloc[0]))
         for g in results.itertuples(index=False):
             self.engine.observe(g)
+        if self.qb is not None:
+            self.qb.update(results)

@@ -84,13 +84,14 @@
       "n_rush": 24.88090241343127,
       "n_drives": 11.1204092339979,
       "w": {
-        "pass": 0.19699593259521125,
-        "rush": 0.1620828857427733,
-        "succ": 58.2066258674136,
-        "ppd": 0.5428230271895423,
-        "st": 0.8488891039870389
+        "pass": 0.2103592297804304,
+        "rush": 0.230423181605756,
+        "succ": 56.66549086468294,
+        "ppd": 0.5173547364207464,
+        "st": 0.9006112001879351,
+        "qb": 0.5128349129141443
       },
-      "c": 0.2408318232915125,
+      "c": 0.31670623289456823,
       "total_a": 13.91720531484511,
       "total_b": 0.7255125672230742
     },
@@ -161,6 +162,37 @@
         "c": -0.2943158409116764,
         "total_a": null,
         "total_b": null
+      },
+      "no QB adjustment": {
+        "n_pass": 38.59076600209863,
+        "n_rush": 24.88090241343127,
+        "n_drives": 11.1204092339979,
+        "w": {
+          "pass": 0.19699593259521125,
+          "rush": 0.1620828857427733,
+          "succ": 58.2066258674136,
+          "ppd": 0.5428230271895423,
+          "st": 0.8488891039870389
+        },
+        "c": 0.2408318232915125,
+        "total_a": 13.91720531484511,
+        "total_b": 0.7255125672230742
+      },
+      "oracle starter (actual QB, hindsight)": {
+        "n_pass": 38.59076600209863,
+        "n_rush": 24.88090241343127,
+        "n_drives": 11.1204092339979,
+        "w": {
+          "pass": 0.1944729640136482,
+          "rush": 0.23918348296024572,
+          "succ": 58.036990372995014,
+          "ppd": 0.5163117410876468,
+          "st": 0.925321805782451,
+          "qb": 0.8845427873774424
+        },
+        "c": 0.32597508991856494,
+        "total_a": 13.91720531484511,
+        "total_b": 0.7255125672230742
       }
     },
     "meta": {
@@ -243,7 +275,213 @@
           "mae": 10.072233155943607,
           "rmse": 13.012959103163775
         }
+      },
+      "qb": {
+        "replacement": -0.10595227916941591,
+        "in_sample_mae": {
+          "no QB adjustment": 10.01872463726249,
+          "expected starter": 9.986304427227102,
+          "oracle starter": 9.947401802779835
+        },
+        "grid": [
+          {
+            "half_life_days": 182.0,
+            "prior_dropbacks": 100.0,
+            "baseline_half_life_days": 28.0,
+            "mae": 10.004554116499595,
+            "w_qb": 0.4154920068790518
+          },
+          {
+            "half_life_days": 182.0,
+            "prior_dropbacks": 100.0,
+            "baseline_half_life_days": 56.0,
+            "mae": 9.99942187386551,
+            "w_qb": 0.4208183607929343
+          },
+          {
+            "half_life_days": 182.0,
+            "prior_dropbacks": 100.0,
+            "baseline_half_life_days": 112.0,
+            "mae": 9.994883241962082,
+            "w_qb": 0.4266727273771733
+          },
+          {
+            "half_life_days": 182.0,
+            "prior_dropbacks": 250.0,
+            "baseline_half_life_days": 28.0,
+            "mae": 9.999951381648463,
+            "w_qb": 0.6556451283492746
+          },
+          {
+            "half_life_days": 182.0,
+            "prior_dropbacks": 250.0,
+            "baseline_half_life_days": 56.0,
+            "mae": 9.995111561076179,
+            "w_qb": 0.6613438596938511
+          },
+          {
+            "half_life_days": 182.0,
+            "prior_dropbacks": 250.0,
+            "baseline_half_life_days": 112.0,
+            "mae": 9.991499990666075,
+            "w_qb": 0.668991803856828
+          },
+          {
+            "half_life_days": 182.0,
+            "prior_dropbacks": 500.0,
+            "baseline_half_life_days": 28.0,
+            "mae": 9.9978879772292,
+            "w_qb": 0.9856890856472046
+          },
+          {
+            "half_life_days": 182.0,
+            "prior_dropbacks": 500.0,
+            "baseline_half_life_days": 56.0,
+            "mae": 9.992966407411876,
+            "w_qb": 0.9927612861850681
+          },
+          {
+            "half_life_days": 182.0,
+            "prior_dropbacks": 500.0,
+            "baseline_half_life_days": 112.0,
+            "mae": 9.98964398103892,
+            "w_qb": 1.0077087568793741
+          },
+          {
+            "half_life_days": 365.0,
+            "prior_dropbacks": 100.0,
+            "baseline_half_life_days": 28.0,
+            "mae": 10.003031884945907,
+            "w_qb": 0.37637210210531247
+          },
+          {
+            "half_life_days": 365.0,
+            "prior_dropbacks": 100.0,
+            "baseline_half_life_days": 56.0,
+            "mae": 9.997838422753743,
+            "w_qb": 0.38933687475054657
+          },
+          {
+            "half_life_days": 365.0,
+            "prior_dropbacks": 100.0,
+            "baseline_half_life_days": 112.0,
+            "mae": 9.991390805157009,
+            "w_qb": 0.4121565852071467
+          },
+          {
+            "half_life_days": 365.0,
+            "prior_dropbacks": 250.0,
+            "baseline_half_life_days": 28.0,
+            "mae": 10.000088811078534,
+            "w_qb": 0.5291539417530978
+          },
+          {
+            "half_life_days": 365.0,
+            "prior_dropbacks": 250.0,
+            "baseline_half_life_days": 56.0,
+            "mae": 9.99531214458639,
+            "w_qb": 0.544528592902911
+          },
+          {
+            "half_life_days": 365.0,
+            "prior_dropbacks": 250.0,
+            "baseline_half_life_days": 112.0,
+            "mae": 9.989128992916566,
+            "w_qb": 0.5688592553981711
+          },
+          {
+            "half_life_days": 365.0,
+            "prior_dropbacks": 500.0,
+            "baseline_half_life_days": 28.0,
+            "mae": 9.999328023435924,
+            "w_qb": 0.7238979167839956
+          },
+          {
+            "half_life_days": 365.0,
+            "prior_dropbacks": 500.0,
+            "baseline_half_life_days": 56.0,
+            "mae": 9.994676057535429,
+            "w_qb": 0.7416770355176602
+          },
+          {
+            "half_life_days": 365.0,
+            "prior_dropbacks": 500.0,
+            "baseline_half_life_days": 112.0,
+            "mae": 9.988773937743316,
+            "w_qb": 0.7691647985233306
+          },
+          {
+            "half_life_days": 730.0,
+            "prior_dropbacks": 100.0,
+            "baseline_half_life_days": 28.0,
+            "mae": 10.0025861334071,
+            "w_qb": 0.34270449176040924
+          },
+          {
+            "half_life_days": 730.0,
+            "prior_dropbacks": 100.0,
+            "baseline_half_life_days": 56.0,
+            "mae": 9.99759759626009,
+            "w_qb": 0.3614279334936798
+          },
+          {
+            "half_life_days": 730.0,
+            "prior_dropbacks": 100.0,
+            "baseline_half_life_days": 112.0,
+            "mae": 9.988544644429515,
+            "w_qb": 0.4007239104454278
+          },
+          {
+            "half_life_days": 730.0,
+            "prior_dropbacks": 250.0,
+            "baseline_half_life_days": 28.0,
+            "mae": 10.000553559697005,
+            "w_qb": 0.44819318380000406
+          },
+          {
+            "half_life_days": 730.0,
+            "prior_dropbacks": 250.0,
+            "baseline_half_life_days": 56.0,
+            "mae": 9.995559447150422,
+            "w_qb": 0.47028671949821976
+          },
+          {
+            "half_life_days": 730.0,
+            "prior_dropbacks": 250.0,
+            "baseline_half_life_days": 112.0,
+            "mae": 9.986304427227102,
+            "w_qb": 0.5128349129141443
+          },
+          {
+            "half_life_days": 730.0,
+            "prior_dropbacks": 500.0,
+            "baseline_half_life_days": 28.0,
+            "mae": 10.000433026931558,
+            "w_qb": 0.5657548830866654
+          },
+          {
+            "half_life_days": 730.0,
+            "prior_dropbacks": 500.0,
+            "baseline_half_life_days": 56.0,
+            "mae": 9.995259887292692,
+            "w_qb": 0.5903739230584963
+          },
+          {
+            "half_life_days": 730.0,
+            "prior_dropbacks": 500.0,
+            "baseline_half_life_days": 112.0,
+            "mae": 9.986333478562763,
+            "w_qb": 0.635030585197454
+          }
+        ]
       }
+    },
+    "qb": {
+      "half_life_days": 730.0,
+      "prior_dropbacks": 250.0,
+      "baseline_half_life_days": 112.0,
+      "replacement": -0.10595227916941591,
+      "p_questionable": 0.637
     }
   },
   "no luck adjustment": {

@@ -58,8 +58,8 @@ jobs:
         uses: actions/cache@v6
         with:
           path: apps/football/.cache/pbp
-          key: pbp-v1-${{ github.run_id }}
-          restore-keys: pbp-v1-
+          key: pbp-v2-${{ github.run_id }}
+          restore-keys: pbp-v2-
       - name: Schedules and results
         if: github.event.schedule != '0 23 * * *'
         run: PYTHONPATH=src python -m marketscope_football.ingest schedules --seasons "$SEASONS"

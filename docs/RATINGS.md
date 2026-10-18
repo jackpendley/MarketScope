@@ -267,6 +267,23 @@ Report: `apps/football/reports/ratings-contract.md` (ADR-035). Stored weekly in 
 - **Totals (2023–24):** MAE 10.22: −0.36 vs naive (CI −0.64 to −0.10), +0.26 vs the close (CI +0.04 to +0.48).
 - **Model home advantage:** 1.6 points.
 
+### QB layer (MS-031a)
+
+ADR-036. Validation 2023–24 (570 games), run once:
+
+|                                      | Δ margin MAE vs model with QB layer | Δ Brier |
+| ------------------------------------ | ----------------------------------- | ------- |
+| without the QB layer                 | −0.00 (−0.09 to +0.09)              | +0.0008 |
+| actual starter in hindsight (oracle) | −0.08 (−0.20 to +0.02)              | −0.0021 |
+
+- **QB-change games** (87, where a team's expected starter changed or might not play): the QB layer is 0.19 better (CI −0.53 to +0.16). The effect is concentrated where it should be, but there are too few games to show it.
+- **Expected starter accuracy:** 92.3% (2016–22), 91.0% (2023–24), 93.1% (2025–26), vs about 88% for "last game's starter".
+- **Fitted values:**
+  - P(starter plays | Questionable) = 0.64
+  - replacement level −0.106 EPA/dropback vs league
+  - QB rating half-life 730 days, prior 250 dropbacks
+  - game-layer weight 0.51 for the expected starter, 0.89 for the actual starter: the uncertainty about who starts halves the usable signal
+
 ## Changelog
 
 - 2026-10-17: design frozen (ADR-028).
@@ -278,3 +295,4 @@ Report: `apps/football/reports/ratings-contract.md` (ADR-035). Stored weekly in 
   - QB continuity deferred to MS-031
   - filter burn-in from 2012
 - 2026-10-18: KenPom contract outputs (MS-030b, ADR-035). Additions to the design: a pace filter (32 units + mean) for AdjPace and totals; expected wins from per-game net adjusted EPA with a home term.
+- 2026-10-18: QB layer (MS-031a, ADR-036). QB continuity at the season boundary is handled by the QB feature's baseline rather than by conditioning ρ_s.

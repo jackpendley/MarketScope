@@ -503,3 +503,41 @@ AWS Lambda + EventBridge remains an optional later upgrade (Phase 3).
 - **Agreement with classic KenPom:** about 0.6 rank correlation at week 4 and about 0.92 at the end of the regular season. They agree on who is good once data accumulates; early on the Kalman engine leans on its prior.
 - **Totals on 2023–24:** MAE 10.22, better than naive (−0.36, CI −0.64 to −0.10) and 0.26 behind the close (CI +0.04 to +0.48). That is a smaller gap than on margins (0.49).
 - **Not yet built:** remaining-schedule projections (projected record) need the season simulation (MS-034).
+
+## ADR-036 — QB layer: point-in-time expected starter, shrunk QB ratings, a team baseline (2026-10-18)
+
+**Context.** MS-029 found that the close's edge over the ratings is news in the week of the game. The biggest single piece of that news is who plays quarterback. RATINGS.md specifies a QB layer that compares the expected starter's value with the team's QB baseline (538-style), using P(plays | status) from the injury history.
+
+**Decision.**
+
+- **Expected starter (rule R5, chosen on 2016–22 among five rules):**
+  - Default: the team's previous starter.
+  - If the injury report lists him Out or Doubtful: depth-chart QB1, or QB2 when QB1 is the injured starter.
+  - In a team's first game of a season: depth-chart QB1.
+  - If listed Questionable: he plays with probability 0.637 (2016–22: 79 of 124 started), else his replacement.
+- **Sources and timing:**
+  - Depth charts are weekly through 2024. From 2025 they are timestamped, and we take the latest chart at least 24 h before kickoff.
+  - The injury report is the final weekly report.
+  - Weekly charts showed no sign of leaking the actual starter: they predict starter changes worse (37%) than the timestamped charts (62%).
+- **Accuracy (names the actual starter):**
+  - 2016–22: 92.3%, vs 88.2% for the previous starter alone.
+  - 2023–24: 91.0%. 2025–26: 93.1%.
+  - A "the main starter returns" refinement was rejected: it mistakes benchings for injuries.
+- **QB rating:**
+  - Time-decayed (half-life 730 days), shrunk mean of the QB's adjusted EPA per dropback relative to the league. Same measurement as the pass channel.
+  - Prior: 250 dropbacks at replacement level, −0.106 EPA/dropback (the first 150 dropbacks of QBs who debuted 2013–22).
+- **Team baseline:** the dropback-weighted, time-decayed (half-life 112 days) average of the current ratings of the QBs who threw the team's recent passes. That is the QB quality its pass ratings were learned from.
+- **Game feature:** league dropbacks per game × (expected starter rating − baseline), home minus away. It is added to the OLS game layer (weight 0.51; with the actual starter in hindsight, 0.89).
+- **Settings:** the three settings were chosen on a 27-point grid by in-sample MAE. Two sit at the grid's edge; the grid was not extended.
+- **AdjEM stays a team rating without the QB term.** The QB adjustment is a game-level factor, like home field.
+
+**Consequences.**
+
+- **In-sample (2016–22):** MAE 10.019 → 9.986 with the expected starter; 9.947 with the actual starter in hindsight.
+- **Validation (2023–24, run once):**
+  - Overall: no change (Δ −0.00, CI −0.09 to +0.09).
+  - In the 87 games where a team's expected starter changed or might not play: Δ −0.19 (CI −0.53 to +0.16), Brier −0.008.
+  - Knowing the actual starter would add 0.08 (CI −0.20 to +0.02).
+  - The layer points the right way where it should matter, but 87 games is too few to show it.
+- **QB continuity at the season boundary is not modeled separately.** The QB feature's baseline already handles a new starter in week 1.
+- **Cross-season and live use:** expected starters for upcoming games use today's depth chart and injury report, so the report's model estimates for the next week include them.

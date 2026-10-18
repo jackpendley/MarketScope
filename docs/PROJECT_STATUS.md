@@ -1,10 +1,10 @@
 # Project Status
 
-_Rewrite this file at the end of every session. Last updated: 2026-10-18 (session 1, continued; MS-030b)._
+_Rewrite this file at the end of every session. Last updated: 2026-10-18 (session 1, continued; MS-031a)._
 
 ## Current milestone
 
-**Phase 9 (MarketScope Ratings): MS-029 (harness), MS-030 (Kalman engine) and MS-030b (KenPom contract + `rating_snapshots`) are done. Next: MS-031 (QB and availability).**
+**Phase 9 (MarketScope Ratings): MS-029 (harness), MS-030 (Kalman engine), MS-030b (KenPom contract + `rating_snapshots`) and MS-031a (QB layer) are done. Next: MS-031b (non-QB availability).**
 
 - **Scope extended 2026-10-17 (ADR-028):** football context and MarketScope Ratings, "KenPom for the NFL". The design is frozen in `docs/RATINGS.md`.
 - **Site:** deployed privately at https://marketscope-delta.vercel.app (user `marketscope`; the password is `VERCEL_SITE_PASSWORD` in `apps/web/.env.local`).
@@ -60,16 +60,22 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-18 (sessio
   - Report: `apps/football/reports/kalman-ratings.md`, including current ratings through 2026 week 6.
   - New dependency: scipy 1.16.3.
 
-- **MS-030b (this PR):** the KenPom contract (ADR-035).
+- **MS-030b** (#30): the KenPom contract (ADR-035).
   - `rating_snapshots` (migration 0012, RLS): AdjEM/AdjO/AdjD/AdjST/AdjPace with SEs and ranks, luck + decomposition, SOS (played, remaining, non-division), Five Factors, prior weight. Every team after every week since 2016 (≈ 7.4k rows); `ingest ratings` rebuilds it daily (Actions cache for play-by-play).
   - A pace filter feeds AdjPace and totals: 2023–24 total MAE 10.22, −0.36 vs naive, +0.26 vs the close.
   - Luck fits: logistic on per-game net adjusted EPA (home term kept: home teams beat their efficiency by ≈ 1.4 pts); Pythagorean exponent 2.79.
   - Classic KenPom agrees with the Kalman ranks: ≈ 0.6 at week 4, ≈ 0.92 at the end of the season.
   - Report: `apps/football/reports/ratings-contract.md`, with the current table and model estimates for next week.
 
+- **MS-031a (this PR):** QB layer (ADR-036).
+  - Expected starter: previous starter, injury report (Out/Doubtful → depth chart), week-1 depth chart; Questionable plays 64%. Names the actual starter 92% of the time (vs 88%).
+  - QB ratings (shrunk, decayed adjusted EPA/dropback; replacement −0.106), team QB baseline, game feature.
+  - 2023–24: overall null (Δ −0.00); QB-change games −0.19 (CI −0.53 to +0.16); oracle starter would add 0.08.
+  - Play-by-play cache now includes `passer_id` (Actions cache key bumped to `pbp-v2`).
+
 ## Tests
 
-- **Football pytest:** 72 (unit tests, plus integration against the migrated test DB; includes validation of the committed coaching CSV).
+- **Football pytest:** 77 (unit tests, plus integration against the migrated test DB; includes validation of the committed coaching CSV).
 - **Research pytest:** 25.
 - **TS:** db 36, shared 192, collector 51, web 83, e2e 18.
 
@@ -81,8 +87,7 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-18 (sessio
 ## Data (production, Supabase)
 
 - **Size:** ≈ 75 MB of odds data plus ≈ 20 MB of football tables (team-game stats 3 MB, snaps 9 MB, injuries 3 MB, the rest small).
-- **Migrations:** 0007–0011 applied in production; 0012 (`rating_snapshots`) is applied on merge by `migrate-production.yml`.
-- **After merging this PR:** run `ingest ratings` against production once (the daily job also does it).
+- **Migrations:** 0007–0012 applied in production.
 
 ## Waiting on Jack
 
@@ -105,10 +110,11 @@ Nothing blocking.
 
 ## Next task
 
-**MS-031: QB and availability** (`ratings/qb.py`, `ratings/availability_adj.py`):
+**MS-031b: non-QB availability** (`ratings/availability_adj.py`):
 
-1. **QB state:** per-QB rolling, shrunk EPA/dropback + CPOE composite with an experience prior. The team's pass offense splits into a QB part and a rest-of-offense part. QB continuity joins the season-boundary reversion.
-2. **Expected starter at t:** the last starter unless listed Out or Doubtful (injury history, point-in-time), else the next QB on the depth chart. P(plays | status) by position from `plays_report` (Q ≈ 68%, D ≈ 1%).
-3. **Positional absence values:** snap-share-weighted absences by group × learned value (2016–22), as an expected-value adjustment.
-4. **Leakage lesson:** oracle starter (the actual starter) vs expected starter, quantified.
-5. **Evaluate in the harness** vs the MS-030 model (paired), on 2016–22 first. 2023–24 once for the final MS-031 model.
+1. **Data:** snap counts 2012+ (PFR, gsis-matched), final injury reports, weekly roster status (RES = reserve/IR), all cached.
+2. **Absence per position group** (OL, WR/TE, RB, front 7, secondary): Σ P(not play | status) × the player's recent snap share (last 3 team games). Long-term absences carry no recent snaps, so the filter's ratings already reflect them.
+3. **Game features:** home − away absence per group; OLS weights on 2016–22 = positional values (compare ELWAY's 0.5–1 pt typical, max ≈ 2).
+4. **Evaluate:** paired vs the MS-031a model on 2023–24, once.
+
+**Then:** MS-032, factor selection, the key-number margin distribution, calibration, the 2025 test, freeze `ratings-v1`, and start the live `model_predictions`.
