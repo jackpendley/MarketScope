@@ -1,10 +1,10 @@
 # Project Status
 
-_Rewrite this file at the end of every session. Last updated: 2026-10-18 (session 1, continued; MS-030)._
+_Rewrite this file at the end of every session. Last updated: 2026-10-18 (session 1, continued; MS-030b)._
 
 ## Current milestone
 
-**Phase 9 (MarketScope Ratings): MS-029 (harness) and MS-030 (Kalman engine) are done. Next: MS-030b (KenPom contract outputs + `rating_snapshots`).**
+**Phase 9 (MarketScope Ratings): MS-029 (harness), MS-030 (Kalman engine) and MS-030b (KenPom contract + `rating_snapshots`) are done. Next: MS-031 (QB and availability).**
 
 - **Scope extended 2026-10-17 (ADR-028):** football context and MarketScope Ratings, "KenPom for the NFL". The design is frozen in `docs/RATINGS.md`.
 - **Site:** deployed privately at https://marketscope-delta.vercel.app (user `marketscope`; the password is `VERCEL_SITE_PASSWORD` in `apps/web/.env.local`).
@@ -52,7 +52,7 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-18 (sessio
   - 2023–24 margin MAE: close 9.84, Elo 10.33, SRS 10.37, market-implied 10.37, naive 11.16. Elo/SRS trail the close by ≈ 0.5 (paired CI ±0.25).
   - Report: `apps/football/reports/benchmarks.md`; summary in RATINGS.md Results.
 
-- **MS-030 (this PR):** Kalman unit ratings in `apps/football/src/marketscope_football/ratings/` (ADR-034).
+- **MS-030** (#29): Kalman unit ratings in `apps/football/src/marketscope_football/ratings/` (ADR-034).
   - One filter per channel: pass, rush, success rate, points per drive (offense/defense + league mean); special teams.
   - ML fit on 2016–22, frozen in `ratings/params.json`; burn-in from 2012 (play-by-play 2012–15 now cached).
   - **2023–24: ties Elo/SRS** (MAE 10.33; paired CIs ±0.2). Better in weeks 1–4 (−0.31 vs SRS). The bar (beat Elo/SRS) is not met by unit ratings alone.
@@ -60,9 +60,16 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-18 (sessio
   - Report: `apps/football/reports/kalman-ratings.md`, including current ratings through 2026 week 6.
   - New dependency: scipy 1.16.3.
 
+- **MS-030b (this PR):** the KenPom contract (ADR-035).
+  - `rating_snapshots` (migration 0012, RLS): AdjEM/AdjO/AdjD/AdjST/AdjPace with SEs and ranks, luck + decomposition, SOS (played, remaining, non-division), Five Factors, prior weight. Every team after every week since 2016 (≈ 7.4k rows); `ingest ratings` rebuilds it daily (Actions cache for play-by-play).
+  - A pace filter feeds AdjPace and totals: 2023–24 total MAE 10.22, −0.36 vs naive, +0.26 vs the close.
+  - Luck fits: logistic on per-game net adjusted EPA (home term kept: home teams beat their efficiency by ≈ 1.4 pts); Pythagorean exponent 2.79.
+  - Classic KenPom agrees with the Kalman ranks: ≈ 0.6 at week 4, ≈ 0.92 at the end of the season.
+  - Report: `apps/football/reports/ratings-contract.md`, with the current table and model estimates for next week.
+
 ## Tests
 
-- **Football pytest:** 63 (unit tests, plus integration against the migrated test DB; includes validation of the committed coaching CSV).
+- **Football pytest:** 72 (unit tests, plus integration against the migrated test DB; includes validation of the committed coaching CSV).
 - **Research pytest:** 25.
 - **TS:** db 36, shared 192, collector 51, web 83, e2e 18.
 
@@ -74,7 +81,8 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-18 (sessio
 ## Data (production, Supabase)
 
 - **Size:** ≈ 75 MB of odds data plus ≈ 20 MB of football tables (team-game stats 3 MB, snaps 9 MB, injuries 3 MB, the rest small).
-- **Migrations:** 0007–0011 applied in production. MS-029 adds no tables (evaluation is file-based until `model_runs` in MS-032).
+- **Migrations:** 0007–0011 applied in production; 0012 (`rating_snapshots`) is applied on merge by `migrate-production.yml`.
+- **After merging this PR:** run `ingest ratings` against production once (the daily job also does it).
 
 ## Waiting on Jack
 
@@ -97,12 +105,10 @@ Nothing blocking.
 
 ## Next task
 
-**MS-030b: KenPom contract outputs** (`ratings/`):
+**MS-031: QB and availability** (`ratings/qb.py`, `ratings/availability_adj.py`):
 
-1. **AdjO/AdjD in points per drive** (from the channel units through the game layer), AdjST, AdjPace (opponent-adjusted drives per game and neutral seconds per play, which needs a pace filter), and AdjEM with SEs and ranks.
-2. **Luck:** expected wins (logistic on 2016–22), Pythagorean wins (exponent refit), and the decomposition (one-score games, fumble/INT/FG luck, return TDs).
-3. **SOS:** played, remaining, non-division; Opp AdjO/AdjD. **Five Factors** tables.
-4. **`kenpom_classic.py`** with rank correlation against the Kalman engine.
-5. **`rating_snapshots` table** (migration 0012, RLS): filtered weekly states 2016–26, backfilled locally and in production. Immutability test. Weekly refresh in `football-data.yml`.
-
-**Then:** MS-031, QB and availability, the expected source of lift (the close's edge is news in the week of the game).
+1. **QB state:** per-QB rolling, shrunk EPA/dropback + CPOE composite with an experience prior. The team's pass offense splits into a QB part and a rest-of-offense part. QB continuity joins the season-boundary reversion.
+2. **Expected starter at t:** the last starter unless listed Out or Doubtful (injury history, point-in-time), else the next QB on the depth chart. P(plays | status) by position from `plays_report` (Q ≈ 68%, D ≈ 1%).
+3. **Positional absence values:** snap-share-weighted absences by group × learned value (2016–22), as an expected-value adjustment.
+4. **Leakage lesson:** oracle starter (the actual starter) vs expected starter, quantified.
+5. **Evaluate in the harness** vs the MS-030 model (paired), on 2016–22 first. 2023–24 once for the final MS-031 model.

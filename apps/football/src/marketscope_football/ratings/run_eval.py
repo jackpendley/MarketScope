@@ -78,6 +78,17 @@ def current_ratings(games: pd.DataFrame) -> tuple[pd.DataFrame, tuple[int, int]]
     return out.sort_values("adj_em", ascending=False).reset_index(drop=True), eng.slot
 
 
+def total_lines(val: pd.DataFrame) -> list[str]:
+    """Paired total MAE differences: totals = expected drives x both offenses' expected points per drive
+    (pace and points-per-drive filters), linearly calibrated on 2016-22."""
+    part = val[val["model"].isin([MODEL, "naive home field", ed.REFERENCE])]
+    out = []
+    for ref in ("naive home field", ed.REFERENCE):
+        r = score_table(part[part["model"].isin([MODEL, ref])], ref).set_index("model").loc[MODEL]
+        out.append(f"{ref} {r['d_total_mae']:+.2f} ({r['d_total_mae_lo']:+.2f} to {r['d_total_mae_hi']:+.2f})")
+    return ["Totals (pace × points per drive, calibrated on 2016–22), paired Δ total MAE: " + "; vs ".join(["vs " + out[0], out[1]]) + "."]
+
+
 def split_lines(val: pd.DataFrame) -> list[str]:
     """Paired model-vs-benchmark differences early and late in the season (descriptive)."""
     lines = ["Paired Δ margin MAE (model minus benchmark) by part of the season:", "",
@@ -182,6 +193,7 @@ def main() -> None:
         f"Paired against the benchmarks the model must beat:", "",
         f"- {diff_line(vs['Elo (538)'], 'Elo (538)')}",
         f"- {diff_line(vs['SRS (ridge)'], 'SRS (ridge)')}", "",
+        *total_lines(val), "",
         *split_lines(val), "",
         "Margin MAE by season and part of the season:", "",
         "| Model | " + " | ".join(map(str, by_season.columns)) + " | " + " | ".join(by_phase.columns) + " |",

@@ -85,6 +85,13 @@
       "when": 1792309464514,
       "tag": "0011_weather_context",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1792343007935,
+      "tag": "0012_rating_snapshots",
+      "breakpoints": true
     }
   ]
 }

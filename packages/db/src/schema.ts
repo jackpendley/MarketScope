@@ -598,3 +598,95 @@ export const nflGameContext = pgTable(
     index("nfl_game_context_team_season_idx").on(t.team, t.season, t.week),
   ],
 ).enableRLS();
+
+/**
+ * MarketScope Ratings snapshots (MS-030b, ADR-035): the KenPom contract for every team after every
+ * week (week 0 = preseason prior), filtered = point-in-time. Written by apps/football; one row per
+ * (model_version, season, week, team). See docs/DATA_DICTIONARY.md and docs/RATINGS.md.
+ */
+export const ratingSnapshots = pgTable(
+  "rating_snapshots",
+  {
+    modelVersion: text().notNull(),
+    season: integer().notNull(),
+    /** Ratings after all games through this week; 0 = preseason (after season reversion). */
+    week: integer().notNull(),
+    team: text()
+      .notNull()
+      .references(() => nflTeams.abbr),
+    /** Expected margin vs an average team on a neutral field, points per game. */
+    adjEm: doublePrecision().notNull(),
+    adjEmSe: doublePrecision().notNull(),
+    adjEmRank: integer().notNull(),
+    /** Points per drive vs an average defense (higher is better). */
+    adjO: doublePrecision().notNull(),
+    adjOSe: doublePrecision().notNull(),
+    adjORank: integer().notNull(),
+    /** Points per drive allowed vs an average offense (lower is better; rank 1 = best). */
+    adjD: doublePrecision().notNull(),
+    adjDSe: doublePrecision().notNull(),
+    adjDRank: integer().notNull(),
+    /** Special-teams points per game vs average. */
+    adjSt: doublePrecision().notNull(),
+    adjStSe: doublePrecision().notNull(),
+    adjStRank: integer().notNull(),
+    /** Drives per team-game vs an average opponent (rank 1 = fastest). */
+    adjPace: doublePrecision().notNull(),
+    adjPaceSe: doublePrecision().notNull(),
+    adjPaceRank: integer().notNull(),
+    /** ≈ share of the rating still carried by the preseason prior (variance now / variance at week 0). */
+    priorWeight: doublePrecision().notNull(),
+    /** Unit ratings, EPA/play (success: rate; ppd: points per drive) above average; defense = allowed. */
+    passOff: doublePrecision().notNull(),
+    passDef: doublePrecision().notNull(),
+    rushOff: doublePrecision().notNull(),
+    rushDef: doublePrecision().notNull(),
+    succOff: doublePrecision().notNull(),
+    succDef: doublePrecision().notNull(),
+    ppdOff: doublePrecision().notNull(),
+    ppdDef: doublePrecision().notNull(),
+    games: integer().notNull(),
+    wins: integer().notNull(),
+    losses: integer().notNull(),
+    ties: integer().notNull(),
+    pointsFor: integer().notNull(),
+    pointsAgainst: integer().notNull(),
+    /** Sum over games of P(win | that game's net adjusted EPA, venue). */
+    expectedWins: doublePrecision().notNull(),
+    pythagWins: doublePrecision().notNull(),
+    /** Wins (+ half ties) minus expected wins. */
+    luck: doublePrecision().notNull(),
+    luckRank: integer().notNull(),
+    /** Luck decomposition: one-score games (wins), fumble and INT luck (EPA), FG luck (points), return/defensive TDs. */
+    oneScoreLuck: doublePrecision().notNull(),
+    fumbleLuck: doublePrecision().notNull(),
+    intLuck: doublePrecision().notNull(),
+    fgLuck: doublePrecision().notNull(),
+    returnTdDiff: integer().notNull(),
+    /** Venue-adjusted mean current AdjEM of opponents played; NULL before a team's first game. */
+    sos: doublePrecision(),
+    sosRank: integer(),
+    oppAdjO: doublePrecision(),
+    oppAdjD: doublePrecision(),
+    nondivSos: doublePrecision(),
+    /** Remaining regular-season opponents (NULL when none remain). */
+    remainingSos: doublePrecision(),
+    remainingGames: integer().notNull(),
+    /** Five Factors, season to date (raw): success rate, EPA per successful play, average start yard line, points per trip inside the 40, turnovers per game. */
+    offSuccessRate: doublePrecision(),
+    defSuccessRate: doublePrecision(),
+    offExplosiveness: doublePrecision(),
+    defExplosiveness: doublePrecision(),
+    offStartYardline: doublePrecision(),
+    defStartYardline: doublePrecision(),
+    offPointsPerOpp: doublePrecision(),
+    defPointsPerOpp: doublePrecision(),
+    offTurnovers: doublePrecision(),
+    defTurnovers: doublePrecision(),
+    computedAt: tstz().notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.modelVersion, t.season, t.week, t.team] }),
+    index("rating_snapshots_team_idx").on(t.team, t.season, t.week),
+  ],
+).enableRLS();

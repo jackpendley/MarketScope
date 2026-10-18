@@ -22,7 +22,7 @@ def conn():
         c = psycopg.connect(URL, connect_timeout=5)
     except psycopg.OperationalError:
         pytest.skip("test database unavailable")
-    c.execute("TRUNCATE nfl_game_context, nfl_weather_forecasts, nfl_coaching_staff, nfl_injury_reports, nfl_player_game_snaps, nfl_team_game_stats, nfl_games, nfl_teams, nfl_ingest_runs, events RESTART IDENTITY CASCADE")
+    c.execute("TRUNCATE rating_snapshots, nfl_game_context, nfl_weather_forecasts, nfl_coaching_staff, nfl_injury_reports, nfl_player_game_snaps, nfl_team_game_stats, nfl_games, nfl_teams, nfl_ingest_runs, events RESTART IDENTITY CASCADE")
     c.commit()
     yield c
     c.rollback()
@@ -179,3 +179,21 @@ def test_weather_upsert_is_idempotent(conn):
     upsert_weather(conn, [row])
     upsert_weather(conn, [{**row, "wind_mph": 6.5}])
     assert conn.execute("SELECT count(*), max(wind_mph) FROM nfl_weather_forecasts").fetchone() == (1, 6.5)
+
+
+def test_rating_snapshots_replace_one_model_version(conn):
+    from marketscope_football.store import RATING_COLUMNS, replace_rating_snapshots
+    import pandas as pd
+
+    upsert_teams(conn, TEAMS)
+    row = {c: 0.0 for c in RATING_COLUMNS}
+    row.update(model_version="kalman-v0", season=2026, week=5, sos=None, remaining_sos=None)
+    for c in ("adj_em_rank", "adj_o_rank", "adj_d_rank", "adj_st_rank", "adj_pace_rank", "luck_rank", "games", "wins",
+              "losses", "ties", "points_for", "points_against", "return_td_diff", "remaining_games"):
+        row[c] = 1
+    row["sos_rank"] = None
+    frame = pd.DataFrame([{**row, "team": "LA", "adj_em": 3.5}, {**row, "team": "SF", "adj_em": -3.5}])
+    assert replace_rating_snapshots(conn, frame, "kalman-v0") == 2
+    assert replace_rating_snapshots(conn, frame.iloc[[0]], "kalman-v0") == 1
+    rows = conn.execute("SELECT team, adj_em, sos FROM rating_snapshots ORDER BY team").fetchall()
+    assert rows == [("LA", 3.5, None)]

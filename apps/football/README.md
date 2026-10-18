@@ -24,9 +24,12 @@ PYTHONPATH=src .venv/bin/python -m marketscope_football.luck_fit   # reproduces 
 PYTHONPATH=src .venv/bin/python -m marketscope_football.eval.run_benchmarks --out reports/benchmarks.md  # walk-forward benchmarks
 PYTHONPATH=src .venv/bin/python -m marketscope_football.ratings.fit --variants all [--refine]      # ML fit -> ratings/params.json (~30 min)
 PYTHONPATH=src .venv/bin/python -m marketscope_football.ratings.run_eval --out reports/kalman-ratings.md
+PYTHONPATH=src .venv/bin/python -m marketscope_football.ratings.luck                                # luck fits -> params.json
+PYTHONPATH=src .venv/bin/python -m marketscope_football.ratings.report_contract --out reports/ratings-contract.md
+PYTHONPATH=src DATABASE_URL=... .venv/bin/python -m marketscope_football.ingest ratings             # rating_snapshots (2016+)
 ```
 
-`--seasons` accepts `2016-2026`, `2025,2026` or `current`. The daily GitHub workflow (`.github/workflows/football-data.yml`) runs `schedules`, `team-stats --refresh`, `snaps` and `injuries` for the current season at 13:00 UTC, and `injuries` again at 23:00 UTC.
+`--seasons` accepts `2016-2026`, `2025,2026` or `current`. The daily GitHub workflow (`.github/workflows/football-data.yml`) runs `schedules`, `team-stats --refresh`, `snaps`, `injuries`, `coaching` (+ drift check), `context`, `ratings` and `weather --recent` for the current season at 13:00 UTC (play-by-play kept in the Actions cache), and `injuries` again at 23:00 UTC.
 
 - **Schedules** (`schedules.py`): games, results, venue, observed weather (post-hoc), referee, coaches, and the nflverse closing line converted to our home orientation (`-spread_line`).
 - **Linker** (`linker.py`): odds events ↔ games by exact team names and kickoff within 36 h. Swapped orientation is reported, never repaired.
@@ -41,6 +44,7 @@ PYTHONPATH=src .venv/bin/python -m marketscope_football.ratings.run_eval --out r
 - **Context** (`context.py`): rest, bye, short week, travel, time-zone shift, body clock, altitude, road streak, coaching tenure.
 - **Evaluation** (`eval/`, ADR-033): walk-forward runner (results removed before `predict`; 2025 refused), pre-registered design, benchmarks (naive home field, 538 Elo, ridge SRS, market-implied ratings, the nflverse close), paired bootstrap scoring. Schedules 1999+ cached in `.cache/schedules/` with a manifest. See `reports/benchmarks.md`.
 - **Ratings** (`ratings/`, ADR-034): Kalman filters per channel (pass, rush, success rate, points per drive: offense/defense units + league mean; special teams), season reversion by play-caller continuity, ML parameters on 2016–22 frozen in `ratings/params.json`, an OLS game layer, and the harness wrapper. Play-by-play from 2012 is cached for burn-in. See `reports/kalman-ratings.md`.
+- **KenPom contract** (`ratings/outputs.py`, `luck.py`, `kenpom_classic.py`, ADR-035): weekly point-in-time snapshots (AdjEM/AdjO/AdjD/AdjST/AdjPace with SEs and ranks, luck and its decomposition, SOS, Five Factors) written to `rating_snapshots`; a pace filter feeds AdjPace and game totals. See `reports/ratings-contract.md`.
 - `final_observed_at` is stamped only when a game we already held becomes final. Backfilled history never gets the import time.
 
 Data: [nflverse](https://github.com/nflverse) (CC-BY 4.0). Coaching facts: Wikipedia (cited by revision) and the news sources in `data/*.csv`.
