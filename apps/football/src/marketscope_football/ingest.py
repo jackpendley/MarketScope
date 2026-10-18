@@ -1,9 +1,12 @@
 """Football ingest CLI.
 
-    DATABASE_URL=... .venv/bin/python -m marketscope_football.ingest schedules --seasons 2016-2026 [--dry-run]
+    DATABASE_URL=... .venv/bin/python -m marketscope_football.ingest schedules  --seasons 2016-2026 [--dry-run]
     DATABASE_URL=... .venv/bin/python -m marketscope_football.ingest team-stats --seasons 2016-2026 [--refresh] [--dry-run]
+    DATABASE_URL=... .venv/bin/python -m marketscope_football.ingest snaps      --seasons 2025-2026 [--dry-run]
+    DATABASE_URL=... .venv/bin/python -m marketscope_football.ingest injuries   --seasons 2025-2026 [--dry-run]
 
-Idempotent per job key (default: one run per dataset, seasons and UTC date).
+`--seasons` accepts `2016-2026`, `2025,2026` or `current`. Every run claims a job key first
+(see db.py), so a repeated or overlapping run is harmless.
 """
 
 from __future__ import annotations
@@ -11,17 +14,20 @@ from __future__ import annotations
 import argparse
 import hashlib
 from collections import Counter
+from collections.abc import Callable
 from datetime import datetime, timezone
 
 import nflreadpy as nfl
+import psycopg
 
 from . import pbp
+from .availability import injury_rows, plan_injury_changes, snap_rows
 from .db import claim_run, connect, fail_run, finish_run
 from .design import STATS_VERSION
 from .linker import match_events
 from .schedules import game_rows, team_rows
-from .store import (apply_links, final_game_ids, load_link_inputs, replace_team_game_stats, upsert_games,
-                    upsert_teams)
+from .store import (apply_injury_plan, apply_links, final_game_ids, latest_injury_rows, load_link_inputs,
+                    replace_snaps, replace_team_game_stats, team_kickoffs, upsert_games, upsert_teams)
 from .team_stats import team_game_stats
 
 
@@ -40,69 +46,28 @@ def parse_seasons(spec: str) -> list[int]:
     return [int(s) for s in spec.split(",")]
 
 
-def ingest_schedules(seasons: list[int], dry_run: bool, job_key: str | None) -> None:
-    teams = nfl.load_teams().to_pandas()
-    schedules = nfl.load_schedules(seasons).to_pandas()
-    t_rows, g_rows = team_rows(teams), game_rows(schedules)
-    digest = hashlib.sha256(schedules.to_csv(index=False).encode()).hexdigest()[:16]
-    version = f"nflreadpy {nfl.__version__}; schedules sha256:{digest}"
-    finals = sum(r["home_score"] is not None for r in g_rows)
-    print(f"nflverse: {len(t_rows)} teams, {len(g_rows)} games ({finals} final), seasons {seasons[0]}-{seasons[-1]}")
-    if dry_run:
-        return
-    key = job_key or f"schedules:{seasons[0]}-{seasons[-1]}:{datetime.now(timezone.utc):%Y-%m-%d}"
+def _span(seasons: list[int]) -> str:
+    return f"{seasons[0]}-{seasons[-1]}"
+
+
+def _today() -> str:
+    return f"{datetime.now(timezone.utc):%Y-%m-%d}"
+
+
+def run_job(key: str, dataset: str, version: str, work: Callable[[psycopg.Connection], tuple[int, str]]) -> None:
+    """Claim `key`, run `work` in one transaction, and record the outcome. `work` returns
+    (rows written, summary). A failure is recorded on the run, then re-raised."""
     with connect() as conn:
-        claim = claim_run(conn, key, "schedules")
+        claim = claim_run(conn, key, dataset)
         conn.commit()
         if claim.run_id is None:
             print(f"job {key}: {claim.status}; nothing to do")
             return
         try:
             with conn.transaction():
-                n = upsert_teams(conn, t_rows) + upsert_games(conn, g_rows)
-                events, games, names = load_link_inputs(conn)
-                result = match_events(events, games, names)
-                apply_links(conn, result)
+                n, summary = work(conn)
                 finish_run(conn, claim.run_id, n, version)
-            reasons = Counter(i["reason"] for i in result.issues)
-            print(f"job {key}: upserted {n} rows; linked {len(result.links)} of {len(events)} odds events"
-                  + (f"; unlinked: {dict(reasons)}" if reasons else ""))
-        except Exception as exc:  # recorded, then re-raised so the job fails visibly
-            conn.rollback()
-            fail_run(conn, claim.run_id, f"{type(exc).__name__}: {exc}")
-            conn.commit()
-            raise
-
-
-def ingest_team_stats(seasons: list[int], refresh: bool, dry_run: bool, job_key: str | None) -> None:
-    """Aggregate cached play-by-play into nfl_team_game_stats for games final in nfl_games.
-    `refresh` re-downloads play-by-play (use for the current season; past seasons are stable)."""
-    frames = {s: team_game_stats(pbp.load_season(s, refresh=refresh)) for s in seasons}
-    version = f"{STATS_VERSION}; {pbp.source_version(seasons)}"
-    print(f"play-by-play: {sum(f.height for f in frames.values())} team-games, seasons {seasons[0]}-{seasons[-1]}")
-    if dry_run:
-        return
-    manifest = pbp.read_manifest()
-    digest = "".join(manifest.get(str(s), {}).get("sha256", "?")[:8] for s in seasons)
-    # One run per day per (definitions, play-by-play content): unchanged data is never rewritten.
-    data = hashlib.sha256(f"{STATS_VERSION}|{digest}".encode()).hexdigest()[:12]
-    key = job_key or f"team-stats:{seasons[0]}-{seasons[-1]}:{datetime.now(timezone.utc):%Y-%m-%d}:{data}"
-    with connect() as conn:
-        claim = claim_run(conn, key, "team-stats")
-        conn.commit()
-        if claim.run_id is None:
-            print(f"job {key}: {claim.status}; nothing to do")
-            return
-        try:
-            with conn.transaction():
-                finals = final_game_ids(conn, seasons)
-                n, skipped = 0, 0
-                for season, frame in frames.items():
-                    final = frame.filter(frame["game_id"].is_in(list(finals)))
-                    skipped += frame.height - final.height
-                    n += replace_team_game_stats(conn, season, final.to_dicts(), STATS_VERSION)
-                finish_run(conn, claim.run_id, n, version)
-            print(f"job {key}: wrote {n} team-games" + (f"; skipped {skipped} not final in nfl_games" if skipped else ""))
+            print(f"job {key}: {summary}")
         except Exception as exc:
             conn.rollback()
             fail_run(conn, claim.run_id, f"{type(exc).__name__}: {exc}")
@@ -110,23 +75,113 @@ def ingest_team_stats(seasons: list[int], refresh: bool, dry_run: bool, job_key:
             raise
 
 
+def ingest_schedules(seasons: list[int], dry_run: bool, job_key: str | None) -> None:
+    teams = nfl.load_teams().to_pandas()
+    schedules = nfl.load_schedules(seasons).to_pandas()
+    t_rows, g_rows = team_rows(teams), game_rows(schedules)
+    digest = hashlib.sha256(schedules.to_csv(index=False).encode()).hexdigest()[:16]
+    finals = sum(r["home_score"] is not None for r in g_rows)
+    print(f"nflverse: {len(t_rows)} teams, {len(g_rows)} games ({finals} final), seasons {_span(seasons)}")
+    if dry_run:
+        return
+
+    def work(conn: psycopg.Connection) -> tuple[int, str]:
+        n = upsert_teams(conn, t_rows) + upsert_games(conn, g_rows)
+        events, games, names = load_link_inputs(conn)
+        result = match_events(events, games, names)
+        apply_links(conn, result)
+        reasons = Counter(i["reason"] for i in result.issues)
+        return n, (f"upserted {n} rows; linked {len(result.links)} of {len(events)} odds events"
+                   + (f"; unlinked: {dict(reasons)}" if reasons else ""))
+
+    run_job(job_key or f"schedules:{_span(seasons)}:{_today()}", "schedules",
+            f"nflreadpy {nfl.__version__}; schedules sha256:{digest}", work)
+
+
+def ingest_team_stats(seasons: list[int], refresh: bool, dry_run: bool, job_key: str | None) -> None:
+    """Aggregate cached play-by-play into nfl_team_game_stats for games final in nfl_games.
+    `refresh` re-downloads play-by-play (use for the current season; past seasons are stable)."""
+    frames = {s: team_game_stats(pbp.load_season(s, refresh=refresh)) for s in seasons}
+    print(f"play-by-play: {sum(f.height for f in frames.values())} team-games, seasons {_span(seasons)}")
+    if dry_run:
+        return
+    manifest = pbp.read_manifest()
+    digest = "".join(manifest.get(str(s), {}).get("sha256", "?")[:8] for s in seasons)
+    # One run per day per (definitions, play-by-play content): unchanged data is never rewritten.
+    data = hashlib.sha256(f"{STATS_VERSION}|{digest}".encode()).hexdigest()[:12]
+
+    def work(conn: psycopg.Connection) -> tuple[int, str]:
+        finals = final_game_ids(conn, seasons)
+        n, skipped = 0, 0
+        for season, frame in frames.items():
+            final = frame.filter(frame["game_id"].is_in(list(finals)))
+            skipped += frame.height - final.height
+            n += replace_team_game_stats(conn, season, final.to_dicts(), STATS_VERSION)
+        return n, f"wrote {n} team-games" + (f"; skipped {skipped} not final in nfl_games" if skipped else "")
+
+    run_job(job_key or f"team-stats:{_span(seasons)}:{_today()}:{data}", "team-stats",
+            f"{STATS_VERSION}; {pbp.source_version(seasons)}", work)
+
+
+def ingest_snaps(seasons: list[int], dry_run: bool, job_key: str | None) -> None:
+    players = nfl.load_players()
+    frames = {s: snap_rows(nfl.load_snap_counts([s]), players) for s in seasons}
+    rows = sum(f.height for f in frames.values())
+    unmapped = sum(f["gsis_id"].null_count() for f in frames.values())
+    digest = hashlib.sha256(b"".join(f.write_csv().encode() for f in frames.values())).hexdigest()[:12]
+    print(f"snap counts: {rows} player-games ({unmapped} without a gsis_id), seasons {_span(seasons)}")
+    if dry_run:
+        return
+
+    def work(conn: psycopg.Connection) -> tuple[int, str]:
+        n = sum(replace_snaps(conn, s, f.to_dicts()) for s, f in frames.items())
+        return n, f"wrote {n} player-games" + (f"; dropped {rows - n} for games not in nfl_games" if rows > n else "")
+
+    run_job(job_key or f"snaps:{_span(seasons)}:{_today()}:{digest}", "snaps",
+            f"nflreadpy {nfl.__version__}; snap_counts sha256:{digest}", work)
+
+
+def ingest_injuries(seasons: list[int], dry_run: bool, job_key: str | None) -> None:
+    """Snapshot injury reports: append status changes seen before kickoff (live), keep the final
+    report for games already played (backfill). Safe to run several times a day."""
+    fetched = injury_rows(nfl.load_injuries(seasons))
+    print(f"injury reports: {len(fetched)} player-weeks, seasons {_span(seasons)}")
+    if dry_run:
+        return
+    now = datetime.now(timezone.utc)
+
+    def work(conn: psycopg.Connection) -> tuple[int, str]:
+        games = team_kickoffs(conn, seasons)
+        plan = plan_injury_changes(fetched, latest_injury_rows(conn, seasons),
+                                   {k: v[1] for k, v in games.items()}, now)
+        n = apply_injury_plan(conn, plan, {k: v[0] for k, v in games.items()})
+        live = sum(r["first_seen_at"] is not None for r in plan.inserts)
+        return n, (f"{live} live and {len(plan.inserts) - live} backfill rows inserted; {len(plan.touch)} unchanged; "
+                   f"{len(plan.backfill_updates)} backfill corrections")
+
+    run_job(job_key or f"injuries:{_span(seasons)}:{now:%Y-%m-%dT%H}", "injuries", f"nflreadpy {nfl.__version__}", work)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     sub = parser.add_subparsers(dest="dataset", required=True)
-    s = sub.add_parser("schedules")
-    s.add_argument("--seasons", default="2016-2026")
-    s.add_argument("--dry-run", action="store_true")
-    s.add_argument("--job-key")
-    t = sub.add_parser("team-stats")
-    t.add_argument("--seasons", default="2016-2026")
-    t.add_argument("--refresh", action="store_true", help="re-download play-by-play before aggregating")
-    t.add_argument("--dry-run", action="store_true")
-    t.add_argument("--job-key")
+    for name in ("schedules", "team-stats", "snaps", "injuries"):
+        p = sub.add_parser(name)
+        p.add_argument("--seasons", default="current")
+        p.add_argument("--dry-run", action="store_true")
+        p.add_argument("--job-key")
+        if name == "team-stats":
+            p.add_argument("--refresh", action="store_true", help="re-download play-by-play before aggregating")
     args = parser.parse_args()
+    seasons = parse_seasons(args.seasons)
     if args.dataset == "schedules":
-        ingest_schedules(parse_seasons(args.seasons), args.dry_run, args.job_key)
+        ingest_schedules(seasons, args.dry_run, args.job_key)
     elif args.dataset == "team-stats":
-        ingest_team_stats(parse_seasons(args.seasons), args.refresh, args.dry_run, args.job_key)
+        ingest_team_stats(seasons, args.refresh, args.dry_run, args.job_key)
+    elif args.dataset == "snaps":
+        ingest_snaps(seasons, args.dry_run, args.job_key)
+    else:
+        ingest_injuries(seasons, args.dry_run, args.job_key)
 
 
 if __name__ == "__main__":

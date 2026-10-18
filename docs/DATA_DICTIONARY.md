@@ -203,6 +203,28 @@ Cross-checked against nflverse `load_team_stats` for every team-game 2016–2026
 
 Index: `(team, season, week)`.
 
+### `nfl_player_game_snaps`: snap counts per player per game (MS-027)
+
+PFR snap counts via nflverse, **current and previous season only** (older seasons are read from nflverse directly for modelling; ADR-030). PK `(game_id, pfr_player_id)`. `gsis_id` (the NFL id used by injury reports and play-by-play) is attached through nflverse `load_players`; it is NULL for the ≈ 0.2% of PFR ids that are unmapped. Also `season`, `week`, `player`, `position`, `team`, and `offense_snaps`/`offense_pct`, `defense_snaps`/`defense_pct`, `st_snaps`/`st_pct`. Each season is replaced wholesale; rows for games not in `nfl_games` are dropped. Index `(gsis_id, season, week)`.
+
+### `nfl_injury_reports`: injury-report history (MS-027)
+
+nflverse injury reports, current and previous season, as a **point-in-time history** (ADR-030).
+
+| Column                                                                                           | Notes                                                                                                                                                                                                                    |
+| ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `id`                                                                                             | Identity PK                                                                                                                                                                                                              |
+| `season`, `week`, `game_type`, `team`, `game_id`                                                 | `game_id` is the team's game that week (NULL if unknown)                                                                                                                                                                 |
+| `gsis_id`, `full_name`, `position`                                                               |                                                                                                                                                                                                                          |
+| `report_status`                                                                                  | Out, Doubtful, Questionable, or NULL (listed on the practice report only)                                                                                                                                                |
+| `report_primary_injury`, `report_secondary_injury`, `practice_status`, `practice_primary_injury` | `practice_status` is the last practice of the week (Full / Limited / Did Not Participate)                                                                                                                                |
+| `content_hash`                                                                                   | Hash of the reported fields (not the name); a change means a new status                                                                                                                                                  |
+| `first_seen_at`, `last_seen_at`                                                                  | **Live rows:** when our job first and last saw this exact content, always before the team's kickoff. **Backfill rows** (all history, and anything first seen after kickoff): both NULL. Never the import time on history |
+
+Live history is append-only before kickoff: a status change adds a row, an unchanged fetch only bumps `last_seen_at`, and nothing changes after kickoff. Backfill rows are corrected in place if nflverse revises them. A player removed from a report mid-week is not recorded as a change. Unique: one backfill row per (season, week, team, player); live rows unique on (season, week, team, player, `first_seen_at`). Indexes `(season, week, team)` and `gsis_id`.
+
+The "known before kickoff" assumption for backfill rows: NFL teams must publish their final game-status report the day before a game (two days before for Monday games), so the final weekly report precedes kickoff. Rates of players actually playing by status are in `apps/football/reports/plays-given-status.md`.
+
 ### `nfl_ingest_runs`
 
-The same claim pattern as `ingestion_runs`. `job_key` is unique (`schedules:<seasons>:<UTC date>`, `team-stats:<seasons>:<UTC date>:<data hash>`, or a manual key). Also `dataset`, `status`, `attempt` (increments when a failed or stale run is reclaimed), `rows_upserted`, `source_version` (nflreadpy version + dataset SHA-256), and a sanitized `error_message`.
+The same claim pattern as `ingestion_runs`. `job_key` is unique (`schedules:<seasons>:<UTC date>`, `team-stats:<seasons>:<UTC date>:<data hash>`, `snaps:<seasons>:<UTC date>:<data hash>`, `injuries:<seasons>:<UTC hour>`, or a manual key). Also `dataset`, `status`, `attempt` (increments when a failed or stale run is reclaimed), `rows_upserted`, `source_version` (nflreadpy version + dataset SHA-256), and a sanitized `error_message`.

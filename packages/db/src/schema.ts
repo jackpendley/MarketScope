@@ -27,6 +27,7 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -413,5 +414,75 @@ export const nflTeamGameStats = pgTable(
   (t) => [
     primaryKey({ columns: [t.gameId, t.team] }),
     index("nfl_team_game_stats_team_season_idx").on(t.team, t.season, t.week),
+  ],
+).enableRLS();
+
+/** Snap counts per player per game (PFR via nflverse), current and previous season only;
+ *  older seasons are read from nflverse directly for modelling (ADR-030). */
+export const nflPlayerGameSnaps = pgTable(
+  "nfl_player_game_snaps",
+  {
+    gameId: text()
+      .notNull()
+      .references(() => nflGames.gameId, { onDelete: "cascade" }),
+    season: integer().notNull(),
+    week: integer().notNull(),
+    pfrPlayerId: text().notNull(),
+    /** nflverse/NFL id (joins injury reports and play-by-play); NULL when PFR id is unmapped. */
+    gsisId: text(),
+    player: text().notNull(),
+    position: text(),
+    team: text()
+      .notNull()
+      .references(() => nflTeams.abbr),
+    offenseSnaps: integer().notNull(),
+    offensePct: doublePrecision(),
+    defenseSnaps: integer().notNull(),
+    defensePct: doublePrecision(),
+    stSnaps: integer().notNull(),
+    stPct: doublePrecision(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.gameId, t.pfrPlayerId] }),
+    index("nfl_player_game_snaps_gsis_idx").on(t.gsisId, t.season, t.week),
+  ],
+).enableRLS();
+
+/** Injury-report history (nflverse), current and previous season. Append-only before kickoff:
+ *  each status change seen before the team's kickoff is a new row with `first_seen_at` = when
+ *  our daily job first saw it (live). Rows first seen after kickoff, and all history, are
+ *  backfill rows with `first_seen_at` NULL: the final report, assumed known pre-game (ADR-030). */
+export const nflInjuryReports = pgTable(
+  "nfl_injury_reports",
+  {
+    id: bigint({ mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+    season: integer().notNull(),
+    week: integer().notNull(),
+    gameType: text().notNull(),
+    team: text()
+      .notNull()
+      .references(() => nflTeams.abbr),
+    /** The team's game that week (NULL if not in nfl_games). */
+    gameId: text().references(() => nflGames.gameId, { onDelete: "set null" }),
+    gsisId: text().notNull(),
+    fullName: text().notNull(),
+    position: text(),
+    /** Out, Doubtful, Questionable, or NULL (practice report only). */
+    reportStatus: text(),
+    reportPrimaryInjury: text(),
+    reportSecondaryInjury: text(),
+    practiceStatus: text(),
+    practicePrimaryInjury: text(),
+    contentHash: text().notNull(),
+    firstSeenAt: tstz(),
+    lastSeenAt: tstz(),
+  },
+  (t) => [
+    index("nfl_injury_reports_week_idx").on(t.season, t.week, t.team),
+    index("nfl_injury_reports_player_idx").on(t.gsisId),
+    unique("nfl_injury_reports_live_key").on(t.season, t.week, t.team, t.gsisId, t.firstSeenAt),
+    uniqueIndex("nfl_injury_reports_backfill_key")
+      .on(t.season, t.week, t.team, t.gsisId)
+      .where(sql`${t.firstSeenAt} IS NULL`),
   ],
 ).enableRLS();

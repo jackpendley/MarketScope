@@ -351,3 +351,19 @@ AWS Lambda + EventBridge remains an optional later upgrade (Phase 3).
 - **Automation.** `football-data.yml` runs daily at 13:00 UTC for the current season (schedules/results/links, then team stats), reusing the existing `DATABASE_URL` secret. Runs are idempotent per UTC day and data hash.
 
 **Consequences.** Whether each treatment helps (luck adjustment, WP weighting, cap) is an ablation in MS-030, measured on 2023–24, not an assumption. League-wide luck relative to the 2016–22 baseline is not exactly zero in later seasons (interception rates fell), which shifts all teams equally and cancels in opponent-adjusted ratings.
+
+## ADR-030 — Availability data: injury snapshots, snap counts, and what stays out of Postgres (2026-10-18)
+
+**Context.** Availability (who plays) is a large part of any NFL prediction (ELWAY, FPI). Three nflverse sources matter: injury reports (2009+), PFR snap counts (2012+) and depth charts (2001+, daily snapshots from 2025). Two questions: what is point-in-time, and what belongs in the database.
+
+**Decision.**
+
+- **Injury reports are captured as a history, not a table of final values.** nflverse publishes the latest report for each week, so intermediate statuses are lost unless we record them. Twice a day (13:00 and 23:00 UTC), `nfl_injury_reports` appends any change seen before the team's kickoff, with `first_seen_at`. This is our only irreplaceable football capture, and it feeds the R2 injury-news event study.
+- **History is backfill, not live.** Rows first seen after kickoff, including every past season, get `first_seen_at` NULL and are assumed known before kickoff, because teams must publish the final status report the day before the game. The import time is never assigned to history (the same rule as odds, ADR-026).
+- **Postgres holds what the product shows plus irreplaceable captures:** injury reports and snap counts for the current and previous season (≈ 11 MB). Modelling reads older seasons, and depth charts, directly from nflverse. They are re-fetchable, and depth charts would add tens of MB for nothing the UI shows yet.
+- **P(plays | status) is measured, not assumed** (`reports/plays-given-status.md`):
+  - Out: 0%. Doubtful: 0.9%, against ELWAY's ≈ 7% for quarterbacks.
+  - Questionable: 68% (2016–22) and 66% (2023–25).
+  - The last practice of the week moved the Questionable rate from 41% (missed) to 85% (full) in 2016–22, but only from 52% to 71% in 2023–25. MS-031 therefore lets the practice effect drift instead of freezing 2016–22 values.
+
+**Consequences.** Live injury history starts on 2026-10-18 (Week 6). Earlier 2026 weeks and 2025 exist only as final reports. Injury-news timing studies can use only live rows, and timing is known only to the interval between two snapshots, as with odds.

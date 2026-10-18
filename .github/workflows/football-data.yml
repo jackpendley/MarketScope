@@ -1,13 +1,16 @@
 name: Football data
 
-# Daily nflverse refresh for the current season (ADR-028): schedules and results (and event
-# links), then team-game stats from the latest play-by-play. nflverse rebuilds its files
-# overnight, so 13:00 UTC picks up Sunday, Monday and Thursday games the next morning.
-# Both steps are idempotent per job key (one run per UTC day and data version), so a delayed
-# or repeated run is harmless.
+# nflverse refresh for the current season (ADR-028/029/030).
+# 13:00 UTC: schedules and results (and event links), team-game stats from the latest
+#   play-by-play, snap counts and injury reports. nflverse rebuilds overnight, so this picks up
+#   Sunday, Monday and Thursday games the next morning.
+# 23:00 UTC: injury reports only, a second daily snapshot after teams publish their reports
+#   (≈ 4 pm ET), so status changes get a tighter first-seen time.
+# Every step is idempotent per job key, so a delayed or repeated run is harmless.
 on:
   schedule:
     - cron: "0 13 * * *"
+    - cron: "0 23 * * *"
   workflow_dispatch:
     inputs:
       seasons:
@@ -47,6 +50,13 @@ jobs:
           cache-dependency-path: apps/football/requirements.txt
       - run: pip install -r requirements.txt
       - name: Schedules and results
+        if: github.event.schedule != '0 23 * * *'
         run: PYTHONPATH=src python -m marketscope_football.ingest schedules --seasons "$SEASONS"
       - name: Team-game stats
+        if: github.event.schedule != '0 23 * * *'
         run: PYTHONPATH=src python -m marketscope_football.ingest team-stats --seasons "$SEASONS" --refresh
+      - name: Snap counts
+        if: github.event.schedule != '0 23 * * *'
+        run: PYTHONPATH=src python -m marketscope_football.ingest snaps --seasons "$SEASONS"
+      - name: Injury reports
+        run: PYTHONPATH=src python -m marketscope_football.ingest injuries --seasons "$SEASONS"
