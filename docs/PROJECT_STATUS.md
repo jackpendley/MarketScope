@@ -1,10 +1,10 @@
 # Project Status
 
-_Rewrite this file at the end of every session. Last updated: 2026-10-18 (session 1, continued; MS-035a)._
+_Rewrite this file at the end of every session. Last updated: 2026-10-18 (session 1, continued; MS-035b)._
 
 ## Current milestone
 
-**Phase 9 (MarketScope Ratings): MS-029 (harness), MS-030 (Kalman engine), MS-030b (KenPom contract + `rating_snapshots`) MS-031a (QB layer) and MS-031b (non-QB availability) are done. MS-032a (factor selection, probabilities), MS-032b (ratings-v1 frozen, 2025 test, live forward test), MS-033a (ratings and team pages), MS-033b (matchups, scorecard, game panel) and MS-034 (season simulation) are done: Phase 9 is complete. Phase 10: MS-035a (pre-registration + studies R1, R3, R4, R5) is done. Next: MS-035b (R6, R7; R2 when live injury data allows).**
+**Phase 9 (MarketScope Ratings): MS-029 (harness), MS-030 (Kalman engine), MS-030b (KenPom contract + `rating_snapshots`) MS-031a (QB layer) and MS-031b (non-QB availability) are done. MS-032a (factor selection, probabilities), MS-032b (ratings-v1 frozen, 2025 test, live forward test), MS-033a (ratings and team pages), MS-033b (matchups, scorecard, game panel) and MS-034 (season simulation) are done: Phase 9 is complete. Phase 10: MS-035a (pre-registration + studies R1, R3, R4, R5) and MS-035b (R6, R7, `/research`) are done; R2 and the R3 re-run wait for their gates. Next: MS-036 (market ML with football features).**
 
 - **Scope extended 2026-10-17 (ADR-028):** football context and MarketScope Ratings, "KenPom for the NFL". The design is frozen in `docs/RATINGS.md`.
 - **Site:** deployed privately at https://marketscope-delta.vercel.app (user `marketscope`; the password is `VERCEL_SITE_PASSWORD` in `apps/web/.env.local`).
@@ -107,7 +107,7 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-18 (sessio
   - Backtest 2016–24 (`reports/season-sim.md`): vs home-field coin flips, Brier playoffs −0.0077, division −0.018, #1 seed −0.005, wins MAE −0.22 (all CIs exclude 0); calibrated (70–80% → 69%); Super Bowl no skill; rating uncertainty ≈ no effect on scores.
   - `season_projections` (migration 0014, RLS), daily `ingest projections` (every week since 2016; 10k sims current season, 2k history); `/projections`, team-page season outlook (win distribution, odds by week), `/api/projections`; nav adds Projections.
 
-- **MS-035a (this PR, rebase-merged to keep the pre-registration first):** research studies (ADR-043).
+- **MS-035a** (#39, rebase-merged; #40 fixed the SHA references): research studies (ADR-043).
   - `research/PREREGISTRATION.md` (R1–R7) committed and pushed before any study code.
   - `football_studies.py` + `run_football_studies.py` → `research/reports/football-studies-v1.md`:
     - **R1:** consensus 6 days out as accurate as the close (+0.03, −0.26 to +0.28; 77 games); no book beats the consensus.
@@ -115,11 +115,28 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-18 (sessio
     - **R4:** ratings carry no information beyond the close (claim not met; 2023–24 slope −0.11). Exploratory: 2026 consensus moves toward the ratings (+0.10 per pt of gap).
     - **R5:** market does not overrate lucky teams; luck does not persist.
 
+- **MS-035b (this PR, rebase-merged so the addendum stays first):** R6, R7 and the `/research` page (ADR-044).
+  - **Addendum A** to `research/PREREGISTRATION.md` (9314b78 on the branch), committed before any R6 or R7 code. It fixes:
+    - R6's weight rule: the Brier-optimal weight on the previous 4 week slots, model weight capped at 0.60.
+    - R7's measure: observed points per drive, because filtered ratings already embed play-caller continuity in their reversion.
+    - The continuity definitions.
+  - **R6** (`apps/football/.../ratings/blend.py`, `run_blend.py` → `research/reports/r6-model-market-blend.md`, 570 games, 2023–24 walk-forward, frozen params):
+    - Result: the blend is **worse** than the close, Δ Brier +0.0026 (+0.0006 to +0.0047).
+    - The weight was 0 in 30 of 44 weeks.
+    - A fixed 35% model weight was also worse. nfelo's gain does not replicate.
+  - **R7** (`football_studies.py`, `run_playcaller_study.py` → `research/reports/r7-play-caller.md`, 256 pairs):
+    - Play-caller: no continuity effect once the QB is held fixed, +0.02 (−0.22 to +0.25).
+    - QB continuity matters: +0.33 (+0.04 to +0.61).
+    - Defence: no effect.
+    - Scheme: 19 movers, nothing clear.
+    - Implication: ratings-v1's play-caller-keyed reversion probably proxies QB changes. That is a candidate for a future version.
+  - **`/research`:** a static page from `lib/research-studies.ts`, with numbers copied from the reports and unit-tested for consistency. The nav link is enabled, plus e2e and mobile checks.
+
 ## Tests
 
-- **Football pytest:** 103 (unit tests, plus integration against the migrated test DB; includes validation of the committed coaching CSV and the 2016–24 seeding reproduction).
-- **Research pytest:** 31.
-- **TS:** db 47, shared 192, collector 51, web 104, e2e 36.
+- **Football pytest:** 106 (unit tests, plus integration against the migrated test DB; includes validation of the committed coaching CSV and the 2016–24 seeding reproduction).
+- **Research pytest:** 34.
+- **TS:** db 47, shared 192, collector 51, web 107, e2e 37.
 
 ## Quotas
 
@@ -144,7 +161,8 @@ Nothing blocking.
 
   The pipeline works around all three (ADR-031/032).
 
-- **Defensive play-callers** are mostly the coordinator default (90% of team-weeks), so treat defensive-caller findings as provisional.
+- **Defensive play-callers** are mostly the coordinator default (90% of team-weeks), so treat defensive-caller findings as provisional. This includes R7's defence result.
+- **Research page upkeep:** `/research` is static; update `apps/web/lib/research-studies.ts` whenever a study is re-run (R2, R3).
 - **Live injury history** begins 2026-10-18 (Week 6). Earlier weeks are final reports only.
 - **Market model v2:** re-run once the live forward check has ≥ 15 games.
 - **Generated reports:** run `pnpm exec prettier --write research/reports apps/football/reports apps/football/src/marketscope_football/ratings/params.json` after regenerating.
@@ -152,10 +170,14 @@ Nothing blocking.
 
 ## Next task
 
-**MS-035b:**
+**MS-036: market ML with football features.**
 
-1. **R6, model + market blend (2023–24):** generate walk-forward ratings-v1 win probabilities for 2023–24 with the eval harness (no 2025), then the trailing-relative-Brier blend vs the close, as pre-registered.
-2. **R7, play-caller impact (2016–24):** carryover regression with same-caller × same-QB terms; scheme fingerprint descriptive.
-3. **R2, injury news:** re-check the live injury history; run once the gate (30 events) is met.
-4. **R3:** re-run when the windy-game gate is met (30 games ≥ 15 mph).
-5. Then a `/research` page summarizing the studies (the nav's "Research (soon)").
+1. **Re-run the Phase 7 pipeline** (`research/src/marketscope_research/ml/`, target: |Δ consensus over 24 h| ≥ 0.5) with football features added:
+   - model margin − consensus, and Δ model margin over 24 h (from `model_predictions`, point in time)
+   - new expected-value absences since the last snapshot (live injury snapshots)
+   - Δ forecast wind or precipitation
+   - rest and travel
+2. **Report the lift over the market-only baseline**, with game-clustered CIs and an ablation by feature family.
+   - Pre-register the feature list and gate before computing, following the MS-024 pattern.
+   - Check the leakage audit covers the new features.
+3. **Along the way:** check the R2 gate (30 injury events) and the R3 gate (30 games at 15 mph or more). When either is met, run it under the frozen design and update `/research`.

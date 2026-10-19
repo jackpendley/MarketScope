@@ -45,6 +45,9 @@ test("matchups, the model scorecard and the game panel fit a phone screen", asyn
   await page.goto("/projections");
   await expect(page.getByRole("heading", { name: "Season projections" })).toBeVisible();
   await expectNoHorizontalScroll(page);
+  await page.goto("/research");
+  await expect(page.getByRole("heading", { name: "Research", level: 1 })).toBeVisible();
+  await expectNoHorizontalScroll(page);
   await page.goto("/nfl");
   await page.locator("section[aria-labelledby^='evt-']").first().getByRole("link").first().click();
   await expect(page.getByRole("heading", { name: "Model estimate" })).toBeVisible();

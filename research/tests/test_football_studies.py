@@ -82,3 +82,42 @@ def test_r3_buckets_and_gate():
     assert [b["wind"] for b in r["buckets"]] == ["< 10", "10-15", ">= 15"]
     assert r["close_per_mph"][0] == pytest.approx(-0.2, abs=1e-6)
     assert fs.r3_movement(pd.DataFrame({"crossed": [True] * 3 + [False] * 50, "move": 0.0}))["gate"] is False
+
+
+def test_r7_units_callers_and_qbs():
+    tg = pd.DataFrame({"season": 2020, "team": ["A", "B", "A", "B"], "opponent": ["B", "A", "B", "A"],
+                       "drives": [10, 10, 10, 10], "drive_points": [30, 10, 20, 20]})
+    u = fs.season_units(tg).set_index("team")
+    assert u.loc["A", "off"] == pytest.approx(0.5) and u.loc["A", "def"] == pytest.approx(-0.5)  # league 2.0 ppd
+    staff = pd.DataFrame({"season": 2020, "team": "A", "coach_id": ["oc1", "hc", "dc"], "from_week": [1, 9, 1],
+                          "to_week": [8, 21, 21], "offense_playcaller": [True, True, False],
+                          "defense_playcaller": [False, False, True]})
+    assert fs.caller_at(staff, "offense", {2020: 17})[(2020, "A")] == "hc"
+    assert fs.caller_at(staff, "offense", {2020: 1})[(2020, "A")] == "oc1"
+    assert fs.main_caller(staff, "offense")[(2020, "A")] == "hc"  # 9 regular-season weeks vs 8
+    starts = pd.DataFrame({"season": 2020, "team": "A", "week": [1, 2, 3, 4], "qb_id": ["q1", "q1", "q2", "q2"]})
+    assert fs.main_qb(starts)[(2020, "A")] == "q2"  # tie on starts: the later starter
+
+
+def test_r7_detects_planted_continuity_interaction():
+    rng = np.random.default_rng(5)
+    n = 600
+    x = rng.normal(scale=0.3, size=n)
+    same_c, same_q = rng.uniform(size=n) < 0.7, rng.uniform(size=n) < 0.7
+    y = (0.2 + 0.4 * same_c + 0.2 * same_q) * x + rng.normal(scale=0.15, size=n)
+    p = pd.DataFrame({"season": 2020, "team": "T", "x_off": x, "y_off": y, "same_off": same_c, "same_qb": same_q,
+                      "x_def": x, "y_def": 0.3 * x + np.random.default_rng(6).normal(scale=0.15, size=n), "same_def": same_c})
+    r = fs.r7_carryover(p, resamples=500)
+    assert r["gate"] and r["interaction"].excludes_zero() == "above 0"
+    assert r["interaction"].low < 0.4 < r["interaction"].high
+    assert r["defense"]["interaction"].excludes_zero() == "includes 0"
+    assert len(r["groups"]) == 4
+
+
+def test_scheme_movers_follow_the_coach_to_a_new_team():
+    callers = pd.Series({(2020, "A"): "c1", (2021, "B"): "c1", (2020, "B"): "c2", (2021, "A"): "c3"})
+    callers.index = callers.index.set_names(["season", "team"])
+    traits = pd.DataFrame({"season": [2020, 2020, 2021, 2021], "team": ["A", "B", "A", "B"], "proe": [5.0, -3.0, 0.0, 4.0]})
+    m = fs.scheme_movers(traits, callers)
+    assert len(m) == 1 and m.iloc[0]["to"] == "B"
+    assert (m.iloc[0]["proe_caller"], m.iloc[0]["proe_prior"], m.iloc[0]["proe_new"]) == (5.0, -3.0, 4.0)
