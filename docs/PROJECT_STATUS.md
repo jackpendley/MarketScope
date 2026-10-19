@@ -1,6 +1,6 @@
 # Project Status
 
-_Rewrite this file at the end of every session. Last updated: 2026-10-18 (session 1, continued; MS-035b)._
+_Rewrite this file at the end of every session. Last updated: 2026-10-18 (session 1, continued; MS-035c coaching audit)._
 
 ## Current milestone
 
@@ -132,11 +132,18 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-18 (sessio
     - Implication: ratings-v1's play-caller-keyed reversion probably proxies QB changes. That is a candidate for a future version.
   - **`/research`:** a static page from `lib/research-studies.ts`, with numbers copied from the reports and unit-tested for consistency. The nav link is enabled, plus e2e and mobile checks.
 
+- **MS-035c, part 1 (this PR): coaching-data audit (ADR-045).** Prompted by Jack's spot checks.
+  - **Week-by-week coordinator audit:** `coaching_audit.py` compares each game with Wikipedia staff-template revision history. It found 13 missing mid-season coordinator changes (e.g. 2025 NYJ Wilks → Harris; 2017 OAK, 2018 ARI/MIN/TB, 2019 LAC, 2020 ATL/LV/NYJ, 2022 CAR/IND, 2024 NYJ, 2025 NYG). It now reports 0 unexplained (`reports/coaching-audit.md`).
+  - **Defensive head coaches checked one by one:** 21 sourced overrides: Allen (NO 2022–24), Eberflus (CHI 2024), Quinn (ATL 2016 from week 13), Ryans (HOU 2025 weeks 1–3), Kuhr (NE 2025 from week 2), Ulbrich (NYJ 2024), Patricia (DET 2019), Saleh (TEN), Minter (BAL), Hafley (MIA 2026).
+    - Verified correct: Flores (MIN), Payton taking over from Webb in DEN week 5 2026, Ryans taking over in HOU in October 2026, and Glenn (NYJ 2026).
+  - **New basis `shared`:** BUF 2016 and 2025, DET 2019, ATL 2020. Team pages now show "calls defense (assumed)" for rule-only rows and "(shared)" for split calling.
+  - **Effect:** defensive rule-only weeks drop from 90% to 86%. On 2023–24, margins move 0.05 pts on average; MAE goes from 10.268 to 10.259. R6 is unchanged (+0.0026).
+
 ## Tests
 
-- **Football pytest:** 106 (unit tests, plus integration against the migrated test DB; includes validation of the committed coaching CSV and the 2016–24 seeding reproduction).
+- **Football pytest:** 108 (unit tests, plus integration against the migrated test DB; includes validation of the committed coaching CSV and the 2016–24 seeding reproduction).
 - **Research pytest:** 34.
-- **TS:** db 47, shared 192, collector 51, web 107, e2e 37.
+- **TS:** db 47, shared 192, collector 51, web 108, e2e 37.
 
 ## Quotas
 
@@ -170,14 +177,8 @@ Nothing blocking.
 
 ## Next task
 
-**MS-036: market ML with football features.**
-
-1. **Re-run the Phase 7 pipeline** (`research/src/marketscope_research/ml/`, target: |Δ consensus over 24 h| ≥ 0.5) with football features added:
-   - model margin − consensus, and Δ model margin over 24 h (from `model_predictions`, point in time)
-   - new expected-value absences since the last snapshot (live injury snapshots)
-   - Δ forecast wind or precipitation
-   - rest and travel
-2. **Report the lift over the market-only baseline**, with game-clustered CIs and an ablation by feature family.
-   - Pre-register the feature list and gate before computing, following the MS-024 pattern.
-   - Check the leakage audit covers the new features.
-3. **Along the way:** check the R2 gate (30 injury events) and the R3 gate (30 games at 15 mph or more). When either is met, run it under the frozen design and update `/research`.
+1. **After this PR merges:** trigger `football-data.yml` (workflow_dispatch) so production loads the corrected coaching CSV and rebuilds ratings and projections. Then re-run R7 (`run_playcaller_study`) and update its report, RATINGS.md and `/research` if any number moves.
+2. **Historical injury studies (pre-registration addendum B first).** Live R2 waits for snapshots, so add two studies:
+   - **R2h, 2016–24:** is the injury part of each estimate already in the close? Regress the ATS residual on ratings-v1's walk-forward availability adjustment (QB plus non-QB, from final reports).
+   - **R2w, 2026 weeks 1–6:** for starters on the final report as Out who played the previous game, the consensus move from 6 days out to the close, compared with team-games without one (OddsPapi and live odds).
+3. **MS-036:** market ML with football features (pre-register the feature list and gate first). R2 and R3 gates: check weekly.

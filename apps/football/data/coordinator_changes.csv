@@ -39,3 +39,16 @@ season,team,role,kind,coach_out,coach_in,effective_date,source_url,note
 2016,BUF,OC,change,Greg Roman,Anthony Lynn,2016-09-16,https://en.wikipedia.org/wiki/2016_Buffalo_Bills_season,Roman fired after Week 2; Lynn later interim HC; the final staff omits the OC
 2017,NYG,DC,add,,Steve Spagnuolo,,https://en.wikipedia.org/wiki/2017_New_York_Giants_season,DC all season (interim HC from Week 14); the final staff omits the DC
 2021,JAX,OC,add,,Darrell Bevell,,https://en.wikipedia.org/wiki/2021_Jacksonville_Jaguars_season,OC all season (interim HC from Week 15); the final staff omits the OC
+2017,OAK,DC,change,Ken Norton Jr,John Pagano,2017-11-21,https://www.washingtontimes.com/news/2017/nov/21/raiders-fire-defensive-coordinator-ken-norton-jr/,found by coaching_audit (MS-035c)
+2018,ARI,OC,change,Mike McCoy,Byron Leftwich,2018-10-19,https://www.nfl.com/news/cardinals-fire-offensive-coordinator-mike-mccoy-0ap3000000975904,found by coaching_audit (MS-035c)
+2018,MIN,OC,change,John DeFilippo,Kevin Stefanski,2018-12-11,https://www.si.com/nfl/2018/12/11/vikings-fire-john-defilippo-offensive-coordinator,found by coaching_audit (MS-035c)
+2018,TB,DC,change,Mike Smith,Mark Duffner,2018-10-15,https://www.si.com/nfl/2018/10/15/buccaneers-fire-defensive-coordinator-mike-smith,found by coaching_audit (MS-035c)
+2019,LAC,OC,change,Ken Whisenhunt,Shane Steichen,2019-10-28,https://www.cbssports.com/nfl/news/chargers-officially-announce-firing-of-offensive-coordinator-ken-whisenhunt,found by coaching_audit (MS-035c)
+2020,ATL,DC,change,Raheem Morris,Jeff Ulbrich,2020-10-12,https://www.si.com/nfl/falcons/news/atlanta-falcons-defensive-coordinator-call-plays-jeff-ulbrich-raheem-morris-01jjm7qxp9zz,"Quinn fired 2020-10-11; Morris interim HC (MS-035c)"
+2020,LV,DC,change,Paul Guenther,Rod Marinelli,2020-12-13,https://www.raiders.com/news/raiders-relieve-paul-guenther-of-duties,found by coaching_audit (MS-035c)
+2020,NYJ,DC,change,Gregg Williams,Frank Bush,2020-12-07,https://www.si.com/nfl/2020/12/07/gregg-williams-jets-loss-raiders-fired,found by coaching_audit (MS-035c)
+2022,CAR,DC,change,Phil Snow,Al Holcomb,2022-10-10,https://www.si.com/nfl/2022/10/10/panthers-part-ways-with-dc-phil-snow-amid-matt-rhule-firing-per-report,found by coaching_audit (MS-035c)
+2022,IND,OC,change,Marcus Brady,Parks Frazier,2022-11-01,https://www.si.com/nfl/2022/11/01/colts-fire-offensive-coordinator-marcus-brady,"title vacant until Frazier was named interim OC under Saturday (2022-11-07); found by coaching_audit (MS-035c)"
+2024,NYJ,DC,change,Jeff Ulbrich,Marquand Manuel,2024-10-08,https://www.nfl.com/news/jets-interim-coach-jeff-ulbrich-todd-downing-offensive-play-calling-duties-oc-nathaniel-hackett,"Ulbrich became interim HC (MS-035c)"
+2025,NYG,DC,change,Shane Bowen,Charlie Bullen,2025-11-24,https://abc7ny.com/post/source-giants-fire-defensive-coordinator-shane-bowen/18201502/,found by coaching_audit (MS-035c)
+2025,NYJ,DC,change,Steve Wilks,Chris Harris,2025-12-15,https://www.si.com/nfl/jets-fire-defensive-coordinator-steve-wilks,found by coaching_audit (MS-035c)

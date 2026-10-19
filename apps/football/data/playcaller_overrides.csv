@@ -122,3 +122,23 @@ season,team,side,coach,effective_date,source_kind,source_url,note
 2026,SEA,defense,Mike Macdonald,,stint,https://new.cbssports.com/nfl/news/top-10-offensive-and-defensive-play-callers/,
 2025,NYG,offense,Mike Kafka,,list,https://www.espn.com/nfl/story/_/id/46137832/nfl-playcallers-32-teams-mike-mcdaniel-sean-mcvay-brian-schottenheimer,assumed to keep calling plays as interim head coach from Week 11
 2018,NE,defense,Brian Flores,,direct,https://www.cbsnews.com/amp/boston/news/patriots-no-defensive-coordinator-brian-flores,LB coach; called the defense without the DC title
+2016,ATL,defense,Dan Quinn,2016-11-28,direct,https://www.4for4.com/news/falcons-hc-dan-quinn-back-leading-defense,took the calls from Richard Smith in Week 13 (MS-035c audit)
+2016,BUF,defense,Dennis Thurman,,shared,https://wkbw.com/sports/bills/rex-ryan-not-thurman-is-calling-bills-defense,"Thurman called from Week 3; Rex Ryan: 'everything goes through me' (MS-035c audit)"
+2018,NYJ,defense,Todd Bowles,2018-10-01,direct,https://www.cbsnews.com/amp/newyork/news/new-york-jets-kacy-rodgers-illness-jamal-adams,called Week 5 while Kacy Rodgers was ill (MS-035c audit)
+2018,NYJ,defense,=rule,2018-10-08,direct,https://www.cbsnews.com/amp/newyork/news/new-york-jets-kacy-rodgers-illness-jamal-adams,Rodgers back (MS-035c audit)
+2019,DET,defense,Matt Patricia,,shared,https://www.nationalfootballpost.com/nfl/lions-patricia-gives-up-defensive-play-calling/,"Pasqualoni held the title; Patricia called the bulk of the plays (MS-035c audit)"
+2020,ATL,defense,Jeff Ulbrich,2020-10-12,shared,https://www.si.com/nfl/falcons/news/atlanta-falcons-defensive-coordinator-call-plays-jeff-ulbrich-raheem-morris-01jjm7qxp9zz,"Ulbrich early downs, interim HC Raheem Morris late downs (MS-035c audit)"
+2022,NO,defense,Dennis Allen,,direct,https://crescentcitysports.com/saints-fill-vacancies-with-new-defensive-coordinator-joe-woods-veteran-assistant-todd-grantham/,head coach called the defense; co-DCs Nielsen and Richard did not (MS-035c audit)
+2023,NO,defense,Dennis Allen,,direct,https://www.cbssports.com/nfl/news/saints-to-hire-former-browns-defensive-coordinator-joe-woods-for-same-role-with-new-orleans/amp,Allen remained the play-caller with Joe Woods as DC (MS-035c audit)
+2024,NO,defense,Dennis Allen,,stint,https://crescentcitysports.com/saints-fill-vacancies-with-new-defensive-coordinator-joe-woods-veteran-assistant-todd-grantham/,arrangement set in 2023 (MS-035c audit)
+2024,NO,defense,=rule,2024-11-04,rule,,"Allen fired 2024-11-04; Joe Woods assumed (MS-035c audit)"
+2024,CHI,defense,Matt Eberflus,,direct,https://ca.sports.yahoo.com/news/bears-hc-matt-eberflus-continue-191152629.html,Eberflus kept the calls with Eric Washington as DC (MS-035c audit)
+2024,CHI,defense,=rule,2024-11-29,rule,,"Eberflus fired 2024-11-29; Washington assumed (MS-035c audit)"
+2024,NYJ,defense,Jeff Ulbrich,,direct,https://www.nfl.com/news/jets-interim-coach-jeff-ulbrich-todd-downing-offensive-play-calling-duties-oc-nathaniel-hackett,kept the defensive calls as interim HC (MS-035c audit)
+2025,BUF,defense,Bobby Babich,,shared,https://www.buffalorumblings.com/buffalo-bills-news/119907/bills-hc-sean-mcdermott-helping-dc-bobby-babich-call-plays,"McDermott: 'Bobby and I have done it together' (MS-035c audit)"
+2025,HOU,defense,DeMeco Ryans,,direct,https://www.si.com/nfl/texans/news/houston-texans-had-new-defensive-playcaller-matt-burke-tennessee-titans,Ryans called until Burke's first game vs Tennessee (MS-035c audit)
+2025,HOU,defense,=rule,2025-09-22,direct,https://www.si.com/nfl/texans/news/houston-texans-had-new-defensive-playcaller-matt-burke-tennessee-titans,Burke from Week 4 (MS-035c audit)
+2025,NE,defense,Zak Kuhr,2025-09-08,direct,https://www.boston.com/sports/new-england-patriots/2025/09/12/patriots-terrell-williams-defensive-coordinator-zak-kuhr-mike-vrabel,Terrell Williams stepped away after Week 1 (MS-035c audit)
+2026,TEN,defense,Robert Saleh,,direct,https://www.nbcsports.com/nfl/profootballtalk/rumor-mill/news/robert-saleh-will-call-the-titans-defensive-plays,Gus Bradley is DC (MS-035c audit)
+2026,BAL,defense,Jesse Minter,,direct,https://www.baltimoreravens.com/news/anthony-weaver-ravens-defensive-coordinator-hired-declan-doyle-offensive-coordinator-jesse-minter-john-harbaugh-mike-macdonald,Anthony Weaver is DC (MS-035c audit)
+2026,MIA,defense,Jeff Hafley,,direct,https://africa.espn.com/nfl/story/_/id/47800410/sources-dolphins-hiring-sean-duggan-defensive-coordinator,Sean Duggan is a non-play-calling DC (MS-035c audit)

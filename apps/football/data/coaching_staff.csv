@@ -3,9 +3,11 @@ season,team,role,coach_id,coach_name,from_week,to_week,offense_playcaller,defens
 2016,ARI,OC,Harold_Goodwin_(American_football),Harold Goodwin,1,17,False,False,https://en.wikipedia.org/w/index.php?oldid=1350648276,,
 2016,ARI,DC,James_Bettcher,James Bettcher,1,17,False,True,https://en.wikipedia.org/w/index.php?oldid=1350648276,rule,
 2016,ARI,STC,Amos_Jones,Amos Jones,1,17,False,False,https://en.wikipedia.org/w/index.php?oldid=1350648276,,
-2016,ATL,HC,Dan_Quinn_(American_football),Dan Quinn,1,21,False,False,nflverse schedules (home_coach/away_coach),,
+2016,ATL,HC,Dan_Quinn_(American_football),Dan Quinn,1,12,False,False,nflverse schedules (home_coach/away_coach),,
+2016,ATL,HC,Dan_Quinn_(American_football),Dan Quinn,13,21,False,True,nflverse schedules (home_coach/away_coach),direct,https://www.4for4.com/news/falcons-hc-dan-quinn-back-leading-defense
 2016,ATL,OC,Kyle_Shanahan,Kyle Shanahan,1,21,True,False,https://en.wikipedia.org/w/index.php?oldid=1376846634,rule,
-2016,ATL,DC,Richard_Smith_(American_football_coach),Richard Smith,1,21,False,True,https://en.wikipedia.org/w/index.php?oldid=1376846634,rule,
+2016,ATL,DC,Richard_Smith_(American_football_coach),Richard Smith,1,12,False,True,https://en.wikipedia.org/w/index.php?oldid=1376846634,rule,
+2016,ATL,DC,Richard_Smith_(American_football_coach),Richard Smith,13,21,False,False,https://en.wikipedia.org/w/index.php?oldid=1376846634,,
 2016,ATL,STC,Keith_Armstrong_(American_football),Keith Armstrong,1,21,False,False,https://en.wikipedia.org/w/index.php?oldid=1376846634,,
 2016,BAL,HC,John_Harbaugh,John Harbaugh,1,17,False,False,nflverse schedules (home_coach/away_coach),,
 2016,BAL,OC,Marc_Trestman,Marc Trestman,1,5,True,False,https://en.wikipedia.org/w/index.php?oldid=1370412163,rule,
@@ -16,7 +18,7 @@ season,team,role,coach_id,coach_name,from_week,to_week,offense_playcaller,defens
 2016,BUF,HC,Anthony_Lynn,Anthony Lynn,17,17,False,False,nflverse schedules (home_coach/away_coach),,
 2016,BUF,OC,Greg_Roman,Greg Roman,1,2,True,False,https://en.wikipedia.org/w/index.php?oldid=1341139589,rule,
 2016,BUF,OC,Anthony_Lynn,Anthony Lynn,3,17,True,False,https://en.wikipedia.org/wiki/2016_Buffalo_Bills_season,rule,
-2016,BUF,DC,Dennis_Thurman,Dennis Thurman,1,17,False,True,https://en.wikipedia.org/w/index.php?oldid=1341139589,rule,
+2016,BUF,DC,Dennis_Thurman,Dennis Thurman,1,17,False,True,https://en.wikipedia.org/w/index.php?oldid=1341139589,shared,https://wkbw.com/sports/bills/rex-ryan-not-thurman-is-calling-bills-defense
 2016,CAR,HC,Ron_Rivera,Ron Rivera,1,17,False,False,nflverse schedules (home_coach/away_coach),,
 2016,CAR,OC,Mike_Shula,Mike Shula,1,17,True,False,https://en.wikipedia.org/w/index.php?oldid=1380164422,rule,
 2016,CAR,DC,Sean_McDermott,Sean McDermott,1,17,False,True,https://en.wikipedia.org/w/index.php?oldid=1380164422,rule,
@@ -235,7 +237,8 @@ season,team,role,coach_id,coach_name,from_week,to_week,offense_playcaller,defens
 2017,NYJ,STC,Brant_Boyer,Brant Boyer,1,17,False,False,https://en.wikipedia.org/w/index.php?oldid=1369791253,,
 2017,OAK,HC,Jack_Del_Rio,Jack Del Rio,1,17,False,False,nflverse schedules (home_coach/away_coach),,
 2017,OAK,OC,Todd_Downing,Todd Downing,1,17,True,False,https://en.wikipedia.org/w/index.php?oldid=1369438262,rule,
-2017,OAK,DC,Ken_Norton_Jr,Ken Norton Jr,1,17,False,True,https://en.wikipedia.org/w/index.php?oldid=1369438262,rule,
+2017,OAK,DC,Ken_Norton_Jr,Ken Norton Jr,1,11,False,True,https://en.wikipedia.org/w/index.php?oldid=1369438262,rule,
+2017,OAK,DC,John_Pagano,John Pagano,12,17,False,True,https://www.washingtontimes.com/news/2017/nov/21/raiders-fire-defensive-coordinator-ken-norton-jr/,rule,
 2017,OAK,STC,Brad_Seely,Brad Seely,1,17,False,False,https://en.wikipedia.org/w/index.php?oldid=1369438262,,
 2017,PHI,HC,Doug_Pederson,Doug Pederson,1,21,True,False,nflverse schedules (home_coach/away_coach),bracketed,https://www.arrowheadpride.com/2016/12/23/14067406/the-numbers-on-andy-reid-calling-his-own-plays-for-the-chiefs ; https://www.espn.com/blog/nflnation/post/_/id/277514/finding-the-next-sean-mcvay-head-coaches-who-call-offensive-plays
 2017,PHI,OC,Frank_Reich,Frank Reich,1,21,False,False,https://en.wikipedia.org/w/index.php?oldid=1379498628,,
@@ -265,7 +268,8 @@ season,team,role,coach_id,coach_name,from_week,to_week,offense_playcaller,defens
 2017,WAS,DC,Greg_Manusky,Greg Manusky,1,17,False,True,https://en.wikipedia.org/w/index.php?oldid=1364404578,rule,
 2017,WAS,STC,Ben_Kotwica,Ben Kotwica,1,17,False,False,https://en.wikipedia.org/w/index.php?oldid=1364404578,,
 2018,ARI,HC,Steve_Wilks,Steve Wilks,1,17,False,False,nflverse schedules (home_coach/away_coach),,
-2018,ARI,OC,Mike_McCoy_(American_football_coach),Mike McCoy,1,17,True,False,https://en.wikipedia.org/w/index.php?oldid=1373366095,rule,
+2018,ARI,OC,Mike_McCoy_(American_football_coach),Mike McCoy,1,7,True,False,https://en.wikipedia.org/w/index.php?oldid=1373366095,rule,
+2018,ARI,OC,Byron_Leftwich,Byron Leftwich,8,17,True,False,https://www.nfl.com/news/cardinals-fire-offensive-coordinator-mike-mccoy-0ap3000000975904,rule,
 2018,ARI,DC,Al_Holcomb,Al Holcomb,1,17,False,True,https://en.wikipedia.org/w/index.php?oldid=1373366095,rule,
 2018,ARI,STC,Jeff_Rodgers,Jeff Rodgers,1,17,False,False,https://en.wikipedia.org/w/index.php?oldid=1373366095,,
 2018,ATL,HC,Dan_Quinn_(American_football),Dan Quinn,1,17,False,False,nflverse schedules (home_coach/away_coach),,
@@ -345,7 +349,8 @@ season,team,role,coach_id,coach_name,from_week,to_week,offense_playcaller,defens
 2018,MIA,DC,Matt_Burke_(American_football),Matt Burke,1,17,False,True,https://en.wikipedia.org/w/index.php?oldid=1341326711,rule,
 2018,MIA,STC,Darren_Rizzi,Darren Rizzi,1,17,False,False,https://en.wikipedia.org/w/index.php?oldid=1341326711,,
 2018,MIN,HC,Mike_Zimmer,Mike Zimmer,1,17,False,True,nflverse schedules (home_coach/away_coach),direct,https://www.espn.com/blog/minnesota-vikings/post/_/id/25083/mike-zimmer-says-he-may-turn-over-playcalling-duties-in-2018
-2018,MIN,OC,Kevin_Stefanski,Kevin Stefanski,1,17,True,False,https://en.wikipedia.org/w/index.php?oldid=1370334121,rule,
+2018,MIN,OC,John_DeFilippo,John DeFilippo,1,14,True,False,https://en.wikipedia.org/w/index.php?oldid=1370334121,rule,
+2018,MIN,OC,Kevin_Stefanski,Kevin Stefanski,15,17,True,False,https://www.si.com/nfl/2018/12/11/vikings-fire-john-defilippo-offensive-coordinator,rule,
 2018,MIN,DC,George_Edwards_(American_football),George Edwards,1,17,False,False,https://en.wikipedia.org/w/index.php?oldid=1370334121,,
 2018,MIN,STC,Mike_Priefer,Mike Priefer,1,17,False,False,https://en.wikipedia.org/w/index.php?oldid=1370334121,,
 2018,NE,HC,Bill_Belichick,Bill Belichick,1,21,False,False,nflverse schedules (home_coach/away_coach),,
@@ -359,9 +364,13 @@ season,team,role,coach_id,coach_name,from_week,to_week,offense_playcaller,defens
 2018,NYG,OC,Mike_Shula,Mike Shula,1,17,False,False,https://en.wikipedia.org/w/index.php?oldid=1358960066,,
 2018,NYG,DC,James_Bettcher,James Bettcher,1,17,False,True,https://en.wikipedia.org/w/index.php?oldid=1358960066,rule,
 2018,NYG,STC,Thomas_McGaughey,Thomas McGaughey,1,17,False,False,https://en.wikipedia.org/w/index.php?oldid=1358960066,,
-2018,NYJ,HC,Todd_Bowles,Todd Bowles,1,17,False,False,nflverse schedules (home_coach/away_coach),,
+2018,NYJ,HC,Todd_Bowles,Todd Bowles,1,4,False,False,nflverse schedules (home_coach/away_coach),,
+2018,NYJ,HC,Todd_Bowles,Todd Bowles,5,5,False,True,nflverse schedules (home_coach/away_coach),direct,https://www.cbsnews.com/amp/newyork/news/new-york-jets-kacy-rodgers-illness-jamal-adams
+2018,NYJ,HC,Todd_Bowles,Todd Bowles,6,17,False,False,nflverse schedules (home_coach/away_coach),,
 2018,NYJ,OC,Jeremy_Bates_(American_football),Jeremy Bates,1,17,True,False,https://en.wikipedia.org/w/index.php?oldid=1341192497,rule,
-2018,NYJ,DC,Kacy_Rodgers,Kacy Rodgers,1,17,False,True,https://en.wikipedia.org/w/index.php?oldid=1341192497,rule,
+2018,NYJ,DC,Kacy_Rodgers,Kacy Rodgers,1,4,False,True,https://en.wikipedia.org/w/index.php?oldid=1341192497,rule,
+2018,NYJ,DC,Kacy_Rodgers,Kacy Rodgers,5,5,False,False,https://en.wikipedia.org/w/index.php?oldid=1341192497,,
+2018,NYJ,DC,Kacy_Rodgers,Kacy Rodgers,6,17,False,True,https://en.wikipedia.org/w/index.php?oldid=1341192497,direct,https://www.cbsnews.com/amp/newyork/news/new-york-jets-kacy-rodgers-illness-jamal-adams
 2018,NYJ,STC,Brant_Boyer,Brant Boyer,1,17,False,False,https://en.wikipedia.org/w/index.php?oldid=1341192497,,
 2018,OAK,HC,Jon_Gruden,Jon Gruden,1,17,True,False,nflverse schedules (home_coach/away_coach),list,https://www.espn.com/blog/nflnation/post/_/id/277514/finding-the-next-sean-mcvay-head-coaches-who-call-offensive-plays
 2018,OAK,OC,Greg_Olson_(American_football),Greg Olson,1,17,False,False,https://en.wikipedia.org/w/index.php?oldid=1374265837,,
@@ -388,7 +397,8 @@ season,team,role,coach_id,coach_name,from_week,to_week,offense_playcaller,defens
 2018,TB,OC,Todd_Monken,Todd Monken,1,9,True,False,https://en.wikipedia.org/w/index.php?oldid=1379328863,rule,
 2018,TB,OC,Todd_Monken,Todd Monken,10,10,False,False,https://en.wikipedia.org/w/index.php?oldid=1379328863,,
 2018,TB,OC,Todd_Monken,Todd Monken,11,17,True,False,https://en.wikipedia.org/w/index.php?oldid=1379328863,direct,https://profootballrumors.com/2018/11/todd-monken-to-call-buccaneers-plays-in-week-11
-2018,TB,DC,Mark_Duffner,Mark Duffner,1,17,False,True,https://en.wikipedia.org/w/index.php?oldid=1379328863,rule,
+2018,TB,DC,Mike_Smith_(American_football_coach),Mike Smith,1,6,False,True,https://en.wikipedia.org/w/index.php?oldid=1379328863,rule,
+2018,TB,DC,Mark_Duffner,Mark Duffner,7,17,False,True,https://www.si.com/nfl/2018/10/15/buccaneers-fire-defensive-coordinator-mike-smith,rule,
 2018,TB,STC,Nate_Kaczor,Nate Kaczor,1,17,False,False,https://en.wikipedia.org/w/index.php?oldid=1379328863,,
 2018,TEN,HC,Mike_Vrabel,Mike Vrabel,1,17,False,False,nflverse schedules (home_coach/away_coach),,
 2018,TEN,OC,Matt_LaFleur,Matt LaFleur,1,17,True,False,https://en.wikipedia.org/w/index.php?oldid=1375586565,rule,
@@ -440,9 +450,9 @@ season,team,role,coach_id,coach_name,from_week,to_week,offense_playcaller,defens
 2019,DEN,OC,Rich_Scangarello,Rich Scangarello,1,17,True,False,https://en.wikipedia.org/w/index.php?oldid=1378884295,rule,
 2019,DEN,DC,Ed_Donatell,Ed Donatell,1,17,False,False,https://en.wikipedia.org/w/index.php?oldid=1378884295,,
 2019,DEN,STC,Tom_McMahon_(American_football),Tom McMahon,1,17,False,False,https://en.wikipedia.org/w/index.php?oldid=1378884295,,
-2019,DET,HC,Matt_Patricia,Matt Patricia,1,17,False,False,nflverse schedules (home_coach/away_coach),,
+2019,DET,HC,Matt_Patricia,Matt Patricia,1,17,False,True,nflverse schedules (home_coach/away_coach),shared,https://www.nationalfootballpost.com/nfl/lions-patricia-gives-up-defensive-play-calling/
 2019,DET,OC,Darrell_Bevell,Darrell Bevell,1,17,True,False,https://en.wikipedia.org/w/index.php?oldid=1369028206,rule,
-2019,DET,DC,Paul_Pasqualoni,Paul Pasqualoni,1,17,False,True,https://en.wikipedia.org/w/index.php?oldid=1369028206,rule,
+2019,DET,DC,Paul_Pasqualoni,Paul Pasqualoni,1,17,False,False,https://en.wikipedia.org/w/index.php?oldid=1369028206,,
 2019,DET,STC,John_Bonamego,John Bonamego,1,17,False,False,https://en.wikipedia.org/w/index.php?oldid=1369028206,,
 2019,GB,HC,Matt_LaFleur,Matt LaFleur,1,20,True,False,nflverse schedules (home_coach/away_coach),direct,https://wausaupilotandreview.com/2019/11/06/calling-plays-in-nfl-a-challenge-for-some-rookie-nfl-coaches/
 2019,GB,OC,Nathaniel_Hackett,Nathaniel Hackett,1,20,False,False,https://en.wikipedia.org/w/index.php?oldid=1378105796,,
@@ -468,7 +478,8 @@ season,team,role,coach_id,coach_name,from_week,to_week,offense_playcaller,defens
 2019,LA,DC,Wade_Phillips,Wade Phillips,1,17,False,True,https://en.wikipedia.org/w/index.php?oldid=1356559182,rule,
 2019,LA,STC,John_Fassel,John Fassel,1,17,False,False,https://en.wikipedia.org/w/index.php?oldid=1356559182,,
 2019,LAC,HC,Anthony_Lynn,Anthony Lynn,1,17,False,False,nflverse schedules (home_coach/away_coach),,
-2019,LAC,OC,Shane_Steichen,Shane Steichen,1,17,True,False,https://en.wikipedia.org/w/index.php?oldid=1367129156,rule,
+2019,LAC,OC,Ken_Whisenhunt,Ken Whisenhunt,1,8,True,False,https://en.wikipedia.org/w/index.php?oldid=1367129156,rule,
+2019,LAC,OC,Shane_Steichen,Shane Steichen,9,17,True,False,https://www.cbssports.com/nfl/news/chargers-officially-announce-firing-of-offensive-coordinator-ken-whisenhunt,rule,
 2019,LAC,DC,Gus_Bradley,Gus Bradley,1,17,False,True,https://en.wikipedia.org/w/index.php?oldid=1367129156,rule,
 2019,LAC,STC,George_Stewart_(American_football),George Stewart,1,17,False,False,https://en.wikipedia.org/w/index.php?oldid=1367129156,,
 2019,MIA,HC,Brian_Flores,Brian Flores,1,17,False,False,nflverse schedules (home_coach/away_coach),,
@@ -535,7 +546,8 @@ season,team,role,coach_id,coach_name,from_week,to_week,offense_playcaller,defens
 2020,ATL,HC,Dan_Quinn_(American_football),Dan Quinn,1,5,False,False,nflverse schedules (home_coach/away_coach),,
 2020,ATL,HC,Raheem_Morris,Raheem Morris,6,17,False,False,nflverse schedules (home_coach/away_coach),,
 2020,ATL,OC,Dirk_Koetter,Dirk Koetter,1,17,True,False,https://en.wikipedia.org/w/index.php?oldid=1379649877,list,https://www.4for4.com/2020/preseason/how-play-calling-tendencies-affect-fantasy-football-2020
-2020,ATL,DC,Jeff_Ulbrich,Jeff Ulbrich,1,17,False,True,https://en.wikipedia.org/w/index.php?oldid=1379649877,rule,
+2020,ATL,DC,Raheem_Morris,Raheem Morris,1,5,False,True,https://en.wikipedia.org/w/index.php?oldid=1379649877,rule,
+2020,ATL,DC,Jeff_Ulbrich,Jeff Ulbrich,6,17,False,True,https://www.si.com/nfl/falcons/news/atlanta-falcons-defensive-coordinator-call-plays-jeff-ulbrich-raheem-morris-01jjm7qxp9zz,shared,https://www.si.com/nfl/falcons/news/atlanta-falcons-defensive-coordinator-call-plays-jeff-ulbrich-raheem-morris-01jjm7qxp9zz
 2020,ATL,STC,Ben_Kotwica,Ben Kotwica,1,17,False,False,https://en.wikipedia.org/w/index.php?oldid=1379649877,,
 2020,BAL,HC,John_Harbaugh,John Harbaugh,1,19,False,False,nflverse schedules (home_coach/away_coach),,
 2020,BAL,OC,Greg_Roman,Greg Roman,1,19,True,False,https://en.wikipedia.org/w/index.php?oldid=1379969072,list,https://www.4for4.com/2020/preseason/how-play-calling-tendencies-affect-fantasy-football-2020
@@ -607,7 +619,8 @@ season,team,role,coach_id,coach_name,from_week,to_week,offense_playcaller,defens
 2020,LAC,STC,Keith_Burns_(American_football_player),Keith Burns,1,17,False,False,https://en.wikipedia.org/w/index.php?oldid=1377916717,,
 2020,LV,HC,Jon_Gruden,Jon Gruden,1,17,True,False,nflverse schedules (home_coach/away_coach),list,https://www.4for4.com/2020/preseason/how-play-calling-tendencies-affect-fantasy-football-2020
 2020,LV,OC,Greg_Olson_(American_football),Greg Olson,1,17,False,False,https://en.wikipedia.org/w/index.php?oldid=1379767852,,
-2020,LV,DC,Rod_Marinelli,Rod Marinelli,1,17,False,True,https://en.wikipedia.org/w/index.php?oldid=1379767852,rule,
+2020,LV,DC,Paul_Guenther_(American_football),Paul Guenther,1,14,False,True,https://en.wikipedia.org/w/index.php?oldid=1379767852,rule,
+2020,LV,DC,Rod_Marinelli,Rod Marinelli,15,17,False,True,https://www.raiders.com/news/raiders-relieve-paul-guenther-of-duties,rule,
 2020,LV,STC,Rich_Bisaccia,Rich Bisaccia,1,17,False,False,https://en.wikipedia.org/w/index.php?oldid=1379767852,,
 2020,MIA,HC,Brian_Flores,Brian Flores,1,17,False,False,nflverse schedules (home_coach/away_coach),,
 2020,MIA,OC,Chan_Gailey,Chan Gailey,1,17,True,False,https://en.wikipedia.org/w/index.php?oldid=1369940723,list,https://www.4for4.com/2020/preseason/how-play-calling-tendencies-affect-fantasy-football-2020
@@ -632,7 +645,8 @@ season,team,role,coach_id,coach_name,from_week,to_week,offense_playcaller,defens
 2020,NYG,STC,Thomas_McGaughey,Thomas McGaughey,1,17,False,False,https://en.wikipedia.org/w/index.php?oldid=1354180766,,
 2020,NYJ,HC,Adam_Gase,Adam Gase,1,17,True,False,nflverse schedules (home_coach/away_coach),list,https://www.4for4.com/2020/preseason/how-play-calling-tendencies-affect-fantasy-football-2020
 2020,NYJ,OC,Dowell_Loggains,Dowell Loggains,1,17,False,False,https://en.wikipedia.org/w/index.php?oldid=1353253309,,
-2020,NYJ,DC,Frank_Bush,Frank Bush,1,17,False,True,https://en.wikipedia.org/w/index.php?oldid=1353253309,rule,
+2020,NYJ,DC,Gregg_Williams,Gregg Williams,1,13,False,True,https://en.wikipedia.org/w/index.php?oldid=1353253309,rule,
+2020,NYJ,DC,Frank_Bush,Frank Bush,14,17,False,True,https://www.si.com/nfl/2020/12/07/gregg-williams-jets-loss-raiders-fired,rule,
 2020,NYJ,STC,Brant_Boyer,Brant Boyer,1,17,False,False,https://en.wikipedia.org/w/index.php?oldid=1353253309,,
 2020,PHI,HC,Doug_Pederson,Doug Pederson,1,17,True,False,nflverse schedules (home_coach/away_coach),list,https://www.4for4.com/2020/preseason/how-play-calling-tendencies-affect-fantasy-football-2020
 2020,PHI,DC,Jim_Schwartz,Jim Schwartz,1,17,False,True,https://en.wikipedia.org/w/index.php?oldid=1374777841,rule,
@@ -816,7 +830,8 @@ season,team,role,coach_id,coach_name,from_week,to_week,offense_playcaller,defens
 2022,CAR,HC,Matt_Rhule,Matt Rhule,1,5,False,False,nflverse schedules (home_coach/away_coach),,
 2022,CAR,HC,Steve_Wilks,Steve Wilks,6,18,False,False,nflverse schedules (home_coach/away_coach),,
 2022,CAR,OC,Ben_McAdoo,Ben McAdoo,1,18,True,False,https://en.wikipedia.org/w/index.php?oldid=1341321701,rule,
-2022,CAR,DC,Al_Holcomb,Al Holcomb,1,18,False,True,https://en.wikipedia.org/w/index.php?oldid=1341321701,rule,
+2022,CAR,DC,Phil_Snow,Phil Snow,1,5,False,True,https://en.wikipedia.org/w/index.php?oldid=1341321701,rule,
+2022,CAR,DC,Al_Holcomb,Al Holcomb,6,18,False,True,https://www.si.com/nfl/2022/10/10/panthers-part-ways-with-dc-phil-snow-amid-matt-rhule-firing-per-report,rule,
 2022,CAR,STC,Chris_Tabor,Chris Tabor,1,18,False,False,https://en.wikipedia.org/w/index.php?oldid=1341321701,,
 2022,CHI,HC,Matt_Eberflus,Matt Eberflus,1,18,False,False,nflverse schedules (home_coach/away_coach),,
 2022,CHI,OC,Luke_Getsy,Luke Getsy,1,18,True,False,https://en.wikipedia.org/w/index.php?oldid=1376417715,rule,
@@ -854,8 +869,9 @@ season,team,role,coach_id,coach_name,from_week,to_week,offense_playcaller,defens
 2022,HOU,STC,Frank_Ross_(American_football),Frank Ross,1,18,False,False,https://en.wikipedia.org/w/index.php?oldid=1374963016,,
 2022,IND,HC,Frank_Reich,Frank Reich,1,9,True,False,nflverse schedules (home_coach/away_coach),direct,https://www.colts.com/news/parks-frazier-offensive-play-caller-jeff-saturday-interim-head-coach
 2022,IND,HC,Jeff_Saturday,Jeff Saturday,10,18,False,False,nflverse schedules (home_coach/away_coach),,
-2022,IND,OC,Parks_Frazier,Parks Frazier,1,9,False,False,https://en.wikipedia.org/w/index.php?oldid=1373775128,,
-2022,IND,OC,Parks_Frazier,Parks Frazier,10,18,True,False,https://en.wikipedia.org/w/index.php?oldid=1373775128,direct,https://www.colts.com/news/parks-frazier-offensive-play-caller-jeff-saturday-interim-head-coach
+2022,IND,OC,Marcus_Brady,Marcus Brady,1,8,False,False,https://en.wikipedia.org/w/index.php?oldid=1373775128,,
+2022,IND,OC,Parks_Frazier,Parks Frazier,9,9,False,False,https://www.si.com/nfl/2022/11/01/colts-fire-offensive-coordinator-marcus-brady,,
+2022,IND,OC,Parks_Frazier,Parks Frazier,10,18,True,False,https://www.si.com/nfl/2022/11/01/colts-fire-offensive-coordinator-marcus-brady,direct,https://www.colts.com/news/parks-frazier-offensive-play-caller-jeff-saturday-interim-head-coach
 2022,IND,DC,Gus_Bradley,Gus Bradley,1,18,False,True,https://en.wikipedia.org/w/index.php?oldid=1373775128,rule,
 2022,IND,STC,Raymond_Ventrone,Raymond Ventrone,1,18,False,False,https://en.wikipedia.org/w/index.php?oldid=1373775128,,
 2022,JAX,HC,Doug_Pederson,Doug Pederson,1,20,True,False,nflverse schedules (home_coach/away_coach),direct,https://www.espn.com/nfl/story/_/id/41018846/nfl-playcallers-32-teams-mike-mcdaniel-sean-mcvay-nathaniel-hackett
@@ -890,9 +906,9 @@ season,team,role,coach_id,coach_name,from_week,to_week,offense_playcaller,defens
 2022,NE,STC,Cameron_Achord,Cam Achord,1,18,False,False,https://en.wikipedia.org/w/index.php?oldid=1376571792,,
 2022,NE,PC,Matt_Patricia,Matt Patricia,1,18,True,False,https://nesn.com/2022/09/patriots-play-caller-plan-finally-revealed-ahead-of-week-1,direct,https://nesn.com/2022/09/patriots-play-caller-plan-finally-revealed-ahead-of-week-1
 2022,NE,PC,name:steve-belichick,Steve Belichick,1,18,False,True,https://www.nbcsportsboston.com/nfl/new-england-patriots/report-steve-belichick-is-patriots-defensive-play-caller/392007/,stint,https://www.nbcsportsboston.com/nfl/new-england-patriots/report-steve-belichick-is-patriots-defensive-play-caller/392007/
-2022,NO,HC,Dennis_Allen_(American_football),Dennis Allen,1,18,False,False,nflverse schedules (home_coach/away_coach),,
+2022,NO,HC,Dennis_Allen_(American_football),Dennis Allen,1,18,False,True,nflverse schedules (home_coach/away_coach),direct,https://crescentcitysports.com/saints-fill-vacancies-with-new-defensive-coordinator-joe-woods-veteran-assistant-todd-grantham/
 2022,NO,OC,Pete_Carmichael_Jr.,Pete Carmichael,1,18,True,False,https://en.wikipedia.org/w/index.php?oldid=1358667182,rule,
-2022,NO,DC,Ryan_Nielsen,Ryan Nielsen,1,18,False,True,https://en.wikipedia.org/w/index.php?oldid=1358667182,rule,
+2022,NO,DC,Ryan_Nielsen,Ryan Nielsen,1,18,False,False,https://en.wikipedia.org/w/index.php?oldid=1358667182,,
 2022,NO,DC,Kris_Richard,Kris Richard,1,18,False,False,https://en.wikipedia.org/wiki/2022_New_Orleans_Saints_season,,
 2022,NO,STC,Darren_Rizzi,Darren Rizzi,1,18,False,False,https://en.wikipedia.org/w/index.php?oldid=1358667182,,
 2022,NYG,HC,Brian_Daboll,Brian Daboll,1,20,False,False,nflverse schedules (home_coach/away_coach),,
@@ -1028,9 +1044,9 @@ season,team,role,coach_id,coach_name,from_week,to_week,offense_playcaller,defens
 2023,NE,OC,Bill_O'Brien_(American_football),Bill O'Brien,1,18,True,False,https://en.wikipedia.org/w/index.php?oldid=1374989112,list,https://www.espn.com/nfl/story/_/id/38108724/key-intel-all-32-nfl-playcallers-including-mike-mccarthy
 2023,NE,STC,Cameron_Achord,Cam Achord,1,18,False,False,https://en.wikipedia.org/w/index.php?oldid=1374989112,,
 2023,NE,PC,name:steve-belichick,Steve Belichick,1,18,False,True,https://nesn.com/2023/04/jerod-mayo-opens-up-about-new-patriots-role-coaching-future,direct,https://nesn.com/2023/04/jerod-mayo-opens-up-about-new-patriots-role-coaching-future
-2023,NO,HC,Dennis_Allen_(American_football),Dennis Allen,1,18,False,False,nflverse schedules (home_coach/away_coach),,
+2023,NO,HC,Dennis_Allen_(American_football),Dennis Allen,1,18,False,True,nflverse schedules (home_coach/away_coach),direct,https://www.cbssports.com/nfl/news/saints-to-hire-former-browns-defensive-coordinator-joe-woods-for-same-role-with-new-orleans/amp
 2023,NO,OC,Pete_Carmichael_Jr.,Pete Carmichael,1,18,True,False,https://en.wikipedia.org/w/index.php?oldid=1377206530,list,https://www.espn.com/nfl/story/_/id/38108724/key-intel-all-32-nfl-playcallers-including-mike-mccarthy
-2023,NO,DC,Joe_Woods_(American_football),Joe Woods,1,18,False,True,https://en.wikipedia.org/w/index.php?oldid=1377206530,rule,
+2023,NO,DC,Joe_Woods_(American_football),Joe Woods,1,18,False,False,https://en.wikipedia.org/w/index.php?oldid=1377206530,,
 2023,NO,STC,Darren_Rizzi,Darren Rizzi,1,18,False,False,https://en.wikipedia.org/w/index.php?oldid=1377206530,,
 2023,NYG,HC,Brian_Daboll,Brian Daboll,1,18,False,False,nflverse schedules (home_coach/away_coach),,
 2023,NYG,OC,Mike_Kafka,Mike Kafka,1,18,True,False,https://en.wikipedia.org/w/index.php?oldid=1371478203,list,https://www.espn.com/nfl/story/_/id/38108724/key-intel-all-32-nfl-playcallers-including-mike-mccarthy
@@ -1090,12 +1106,13 @@ season,team,role,coach_id,coach_name,from_week,to_week,offense_playcaller,defens
 2024,CAR,OC,Brad_Idzik,Brad Idzik,1,18,False,False,https://en.wikipedia.org/w/index.php?oldid=1375065519,,
 2024,CAR,DC,Ejiro_Evero,Ejiro Evero,1,18,False,True,https://en.wikipedia.org/w/index.php?oldid=1375065519,rule,
 2024,CAR,STC,Tracy_Smith_(American_football),Tracy Smith,1,18,False,False,https://en.wikipedia.org/w/index.php?oldid=1375065519,,
-2024,CHI,HC,Matt_Eberflus,Matt Eberflus,1,13,False,False,https://en.wikipedia.org/w/index.php?oldid=1366457887,,
+2024,CHI,HC,Matt_Eberflus,Matt Eberflus,1,13,False,True,https://en.wikipedia.org/w/index.php?oldid=1366457887,direct,https://ca.sports.yahoo.com/news/bears-hc-matt-eberflus-continue-191152629.html
 2024,CHI,HC,Thomas_Brown_(American_football_coach),Thomas Brown,14,18,True,False,https://en.wikipedia.org/wiki/2024_Chicago_Bears_season,direct,https://new.cbssports.com/nfl/news/bears-fire-offensive-coordinator-shane-waldron-thomas-brown-to-take-over-play-calling-duties-per-report/
 2024,CHI,OC,Shane_Waldron,Shane Waldron,1,10,True,False,https://en.wikipedia.org/w/index.php?oldid=1366457887,list,https://www.espn.com/nfl/story/_/id/41018846/nfl-playcallers-32-teams-mike-mcdaniel-sean-mcvay-nathaniel-hackett
 2024,CHI,OC,Thomas_Brown_(American_football_coach),Thomas Brown,11,13,True,False,https://en.wikipedia.org/wiki/2024_Chicago_Bears_season,direct,https://new.cbssports.com/nfl/news/bears-fire-offensive-coordinator-shane-waldron-thomas-brown-to-take-over-play-calling-duties-per-report/
 2024,CHI,OC,Chris_Beatty,Chris Beatty,14,18,False,False,https://en.wikipedia.org/wiki/2024_Chicago_Bears_season,,
-2024,CHI,DC,Eric_Washington_(American_football),Eric Washington,1,18,False,True,https://en.wikipedia.org/w/index.php?oldid=1366457887,rule,
+2024,CHI,DC,Eric_Washington_(American_football),Eric Washington,1,13,False,False,https://en.wikipedia.org/w/index.php?oldid=1366457887,,
+2024,CHI,DC,Eric_Washington_(American_football),Eric Washington,14,18,False,True,https://en.wikipedia.org/w/index.php?oldid=1366457887,rule,
 2024,CHI,STC,Richard_Hightower,Richard Hightower,1,18,False,False,https://en.wikipedia.org/w/index.php?oldid=1366457887,,
 2024,CIN,HC,Zac_Taylor,Zac Taylor,1,18,True,False,nflverse schedules (home_coach/away_coach),list,https://www.espn.com/nfl/story/_/id/41018846/nfl-playcallers-32-teams-mike-mcdaniel-sean-mcvay-nathaniel-hackett
 2024,CIN,OC,Dan_Pitcher,Dan Pitcher,1,18,False,False,https://en.wikipedia.org/w/index.php?oldid=1377715703,,
@@ -1164,19 +1181,21 @@ season,team,role,coach_id,coach_name,from_week,to_week,offense_playcaller,defens
 2024,NE,OC,Alex_Van_Pelt,Alex Van Pelt,1,18,True,False,https://en.wikipedia.org/w/index.php?oldid=1376529902,list,https://www.espn.com/nfl/story/_/id/41018846/nfl-playcallers-32-teams-mike-mcdaniel-sean-mcvay-nathaniel-hackett
 2024,NE,DC,DeMarcus_Covington,DeMarcus Covington,1,18,False,True,https://en.wikipedia.org/w/index.php?oldid=1376529902,rule,
 2024,NE,STC,Jeremy_Springer,Jeremy Springer,1,18,False,False,https://en.wikipedia.org/w/index.php?oldid=1376529902,,
-2024,NO,HC,Dennis_Allen_(American_football),Dennis Allen,1,9,False,False,https://en.wikipedia.org/w/index.php?oldid=1364114732,,
+2024,NO,HC,Dennis_Allen_(American_football),Dennis Allen,1,9,False,True,https://en.wikipedia.org/w/index.php?oldid=1364114732,stint,https://crescentcitysports.com/saints-fill-vacancies-with-new-defensive-coordinator-joe-woods-veteran-assistant-todd-grantham/
 2024,NO,HC,Darren_Rizzi,Darren Rizzi,10,18,False,False,https://en.wikipedia.org/wiki/2024_New_Orleans_Saints_season,,
 2024,NO,OC,Klint_Kubiak,Klint Kubiak,1,18,True,False,https://en.wikipedia.org/w/index.php?oldid=1364114732,list,https://www.espn.com/nfl/story/_/id/41018846/nfl-playcallers-32-teams-mike-mcdaniel-sean-mcvay-nathaniel-hackett
-2024,NO,DC,Joe_Woods_(American_football),Joe Woods,1,18,False,True,https://en.wikipedia.org/w/index.php?oldid=1364114732,rule,
+2024,NO,DC,Joe_Woods_(American_football),Joe Woods,1,9,False,False,https://en.wikipedia.org/w/index.php?oldid=1364114732,,
+2024,NO,DC,Joe_Woods_(American_football),Joe Woods,10,18,False,True,https://en.wikipedia.org/w/index.php?oldid=1364114732,rule,
 2024,NYG,HC,Brian_Daboll,Brian Daboll,1,18,True,False,nflverse schedules (home_coach/away_coach),list,https://www.espn.com/nfl/story/_/id/41018846/nfl-playcallers-32-teams-mike-mcdaniel-sean-mcvay-nathaniel-hackett
 2024,NYG,OC,Mike_Kafka,Mike Kafka,1,18,False,False,https://en.wikipedia.org/w/index.php?oldid=1378659455,,
 2024,NYG,DC,Shane_Bowen,Shane Bowen,1,18,False,True,https://en.wikipedia.org/w/index.php?oldid=1378659455,rule,
 2024,NYG,STC,Michael_Ghobrial,Michael Ghobrial,1,18,False,False,https://en.wikipedia.org/w/index.php?oldid=1378659455,,
 2024,NYJ,HC,Robert_Saleh,Robert Saleh,1,5,False,False,https://en.wikipedia.org/w/index.php?oldid=1378552856,,
-2024,NYJ,HC,Jeff_Ulbrich,Jeff Ulbrich,6,18,False,False,https://www.nfl.com/news/jets-interim-coach-jeff-ulbrich-todd-downing-offensive-play-calling-duties-oc-nathaniel-hackett,,
+2024,NYJ,HC,Jeff_Ulbrich,Jeff Ulbrich,6,18,False,True,https://www.nfl.com/news/jets-interim-coach-jeff-ulbrich-todd-downing-offensive-play-calling-duties-oc-nathaniel-hackett,direct,https://www.nfl.com/news/jets-interim-coach-jeff-ulbrich-todd-downing-offensive-play-calling-duties-oc-nathaniel-hackett
 2024,NYJ,OC,Nathaniel_Hackett,Nathaniel Hackett,1,5,True,False,https://en.wikipedia.org/w/index.php?oldid=1378552856,list,https://www.espn.com/nfl/story/_/id/41018846/nfl-playcallers-32-teams-mike-mcdaniel-sean-mcvay-nathaniel-hackett
 2024,NYJ,OC,Nathaniel_Hackett,Nathaniel Hackett,6,18,False,False,https://en.wikipedia.org/w/index.php?oldid=1378552856,,
-2024,NYJ,DC,Marquand_Manuel,Marquand Manuel,1,18,False,True,https://en.wikipedia.org/w/index.php?oldid=1378552856,rule,
+2024,NYJ,DC,Jeff_Ulbrich,Jeff Ulbrich,1,5,False,True,https://www.nfl.com/news/jets-interim-coach-jeff-ulbrich-todd-downing-offensive-play-calling-duties-oc-nathaniel-hackett,direct,https://www.nfl.com/news/jets-interim-coach-jeff-ulbrich-todd-downing-offensive-play-calling-duties-oc-nathaniel-hackett
+2024,NYJ,DC,Marquand_Manuel,Marquand Manuel,6,18,False,False,https://www.nfl.com/news/jets-interim-coach-jeff-ulbrich-todd-downing-offensive-play-calling-duties-oc-nathaniel-hackett,,
 2024,NYJ,STC,Brant_Boyer,Brant Boyer,1,18,False,False,https://en.wikipedia.org/w/index.php?oldid=1378552856,,
 2024,NYJ,PC,Todd_Downing,Todd Downing,6,18,True,False,https://www.nfl.com/news/jets-interim-coach-jeff-ulbrich-todd-downing-offensive-play-calling-duties-oc-nathaniel-hackett,direct,https://www.nfl.com/news/jets-interim-coach-jeff-ulbrich-todd-downing-offensive-play-calling-duties-oc-nathaniel-hackett
 2024,PHI,HC,Nick_Sirianni,Nick Sirianni,1,22,False,False,nflverse schedules (home_coach/away_coach),,
@@ -1219,7 +1238,7 @@ season,team,role,coach_id,coach_name,from_week,to_week,offense_playcaller,defens
 2025,BAL,STC,Chris_Horton,Chris Horton,1,18,False,False,https://en.wikipedia.org/w/index.php?oldid=1380347843,,
 2025,BUF,HC,Sean_McDermott,Sean McDermott,1,20,False,False,nflverse schedules (home_coach/away_coach),,
 2025,BUF,OC,Joe_Brady_(American_football_coach),Joe Brady,1,20,True,False,https://en.wikipedia.org/w/index.php?oldid=1380603441,list,https://www.espn.com/nfl/story/_/id/46137832/nfl-playcallers-32-teams-mike-mcdaniel-sean-mcvay-brian-schottenheimer
-2025,BUF,DC,Bobby_Babich,Bobby Babich,1,20,False,True,https://en.wikipedia.org/w/index.php?oldid=1380603441,rule,
+2025,BUF,DC,Bobby_Babich,Bobby Babich,1,20,False,True,https://en.wikipedia.org/w/index.php?oldid=1380603441,shared,https://www.buffalorumblings.com/buffalo-bills-news/119907/bills-hc-sean-mcdermott-helping-dc-bobby-babich-call-plays
 2025,BUF,STC,Chris_Tabor,Chris Tabor,1,20,False,False,https://en.wikipedia.org/w/index.php?oldid=1380603441,,
 2025,CAR,HC,Dave_Canales,Dave Canales,1,19,True,False,nflverse schedules (home_coach/away_coach),list,https://www.espn.com/nfl/story/_/id/46137832/nfl-playcallers-32-teams-mike-mcdaniel-sean-mcvay-brian-schottenheimer
 2025,CAR,OC,Brad_Idzik,Brad Idzik,1,19,False,False,https://en.wikipedia.org/w/index.php?oldid=1380126932,,
@@ -1255,9 +1274,11 @@ season,team,role,coach_id,coach_name,from_week,to_week,offense_playcaller,defens
 2025,GB,OC,Adam_Stenavich,Adam Stenavich,1,19,False,False,https://en.wikipedia.org/w/index.php?oldid=1378893584,,
 2025,GB,DC,Jeff_Hafley,Jeff Hafley,1,19,False,True,https://en.wikipedia.org/w/index.php?oldid=1378893584,rule,
 2025,GB,STC,Rich_Bisaccia,Rich Bisaccia,1,19,False,False,https://en.wikipedia.org/w/index.php?oldid=1378893584,,
-2025,HOU,HC,DeMeco_Ryans,DeMeco Ryans,1,20,False,False,nflverse schedules (home_coach/away_coach),,
+2025,HOU,HC,DeMeco_Ryans,DeMeco Ryans,1,3,False,True,nflverse schedules (home_coach/away_coach),direct,https://www.si.com/nfl/texans/news/houston-texans-had-new-defensive-playcaller-matt-burke-tennessee-titans
+2025,HOU,HC,DeMeco_Ryans,DeMeco Ryans,4,20,False,False,nflverse schedules (home_coach/away_coach),,
 2025,HOU,OC,Nick_Caley,Nick Caley,1,20,True,False,https://en.wikipedia.org/w/index.php?oldid=1379945267,list,https://www.espn.com/nfl/story/_/id/46137832/nfl-playcallers-32-teams-mike-mcdaniel-sean-mcvay-brian-schottenheimer
-2025,HOU,DC,Matt_Burke_(American_football),Matt Burke,1,20,False,True,https://en.wikipedia.org/w/index.php?oldid=1379945267,rule,
+2025,HOU,DC,Matt_Burke_(American_football),Matt Burke,1,3,False,False,https://en.wikipedia.org/w/index.php?oldid=1379945267,,
+2025,HOU,DC,Matt_Burke_(American_football),Matt Burke,4,20,False,True,https://en.wikipedia.org/w/index.php?oldid=1379945267,direct,https://www.si.com/nfl/texans/news/houston-texans-had-new-defensive-playcaller-matt-burke-tennessee-titans
 2025,HOU,STC,Frank_Ross_(American_football),Frank Ross,1,20,False,False,https://en.wikipedia.org/w/index.php?oldid=1379945267,,
 2025,IND,HC,Shane_Steichen,Shane Steichen,1,18,True,False,nflverse schedules (home_coach/away_coach),list,https://www.espn.com/nfl/story/_/id/46137832/nfl-playcallers-32-teams-mike-mcdaniel-sean-mcvay-brian-schottenheimer
 2025,IND,OC,Jim_Bob_Cooter,Jim Bob Cooter,1,18,False,False,https://en.wikipedia.org/w/index.php?oldid=1375947728,,
@@ -1294,8 +1315,10 @@ season,team,role,coach_id,coach_name,from_week,to_week,offense_playcaller,defens
 2025,MIN,STC,Matt_Daniels,Matt Daniels,1,18,False,False,https://en.wikipedia.org/w/index.php?oldid=1379565053,,
 2025,NE,HC,Mike_Vrabel,Mike Vrabel,1,22,False,False,nflverse schedules (home_coach/away_coach),,
 2025,NE,OC,Josh_McDaniels,Josh McDaniels,1,22,True,False,https://en.wikipedia.org/w/index.php?oldid=1377902806,list,https://www.espn.com/nfl/story/_/id/46137832/nfl-playcallers-32-teams-mike-mcdaniel-sean-mcvay-brian-schottenheimer
-2025,NE,DC,Terrell_Williams,Terrell Williams,1,22,False,True,https://en.wikipedia.org/w/index.php?oldid=1377902806,rule,
+2025,NE,DC,Terrell_Williams,Terrell Williams,1,1,False,True,https://en.wikipedia.org/w/index.php?oldid=1377902806,rule,
+2025,NE,DC,Terrell_Williams,Terrell Williams,2,22,False,False,https://en.wikipedia.org/w/index.php?oldid=1377902806,,
 2025,NE,STC,Jeremy_Springer,Jeremy Springer,1,22,False,False,https://en.wikipedia.org/w/index.php?oldid=1377902806,,
+2025,NE,PC,Zak_Kuhr,Zak Kuhr,2,22,False,True,https://www.boston.com/sports/new-england-patriots/2025/09/12/patriots-terrell-williams-defensive-coordinator-zak-kuhr-mike-vrabel,direct,https://www.boston.com/sports/new-england-patriots/2025/09/12/patriots-terrell-williams-defensive-coordinator-zak-kuhr-mike-vrabel
 2025,NO,HC,Kellen_Moore,Kellen Moore,1,18,True,False,nflverse schedules (home_coach/away_coach),list,https://www.espn.com/nfl/story/_/id/46137832/nfl-playcallers-32-teams-mike-mcdaniel-sean-mcvay-brian-schottenheimer
 2025,NO,OC,Doug_Nussmeier,Doug Nussmeier,1,18,False,False,https://en.wikipedia.org/w/index.php?oldid=1369212197,,
 2025,NO,DC,Brandon_Staley,Brandon Staley,1,18,False,True,https://en.wikipedia.org/w/index.php?oldid=1369212197,rule,
@@ -1304,11 +1327,13 @@ season,team,role,coach_id,coach_name,from_week,to_week,offense_playcaller,defens
 2025,NYG,HC,Mike_Kafka,Mike Kafka,11,18,True,False,https://www.giants.com/news/brian-daboll-relieved-of-duties-mike-kafka-to-serve-as-giants-interim-head-coach,list,https://www.espn.com/nfl/story/_/id/46137832/nfl-playcallers-32-teams-mike-mcdaniel-sean-mcvay-brian-schottenheimer
 2025,NYG,OC,Mike_Kafka,Mike Kafka,1,10,True,False,https://www.giants.com/news/brian-daboll-relieved-of-duties-mike-kafka-to-serve-as-giants-interim-head-coach,list,https://www.espn.com/nfl/story/_/id/46137832/nfl-playcallers-32-teams-mike-mcdaniel-sean-mcvay-brian-schottenheimer
 2025,NYG,OC,Tim_Kelly_(American_football),Tim Kelly,11,18,False,False,https://en.wikipedia.org/wiki/2025_New_York_Giants_season,,
-2025,NYG,DC,Charlie_Bullen,Charlie Bullen,1,18,False,True,https://en.wikipedia.org/w/index.php?oldid=1378658203,rule,
+2025,NYG,DC,Shane_Bowen,Shane Bowen,1,12,False,True,https://en.wikipedia.org/w/index.php?oldid=1378658203,rule,
+2025,NYG,DC,Charlie_Bullen,Charlie Bullen,13,18,False,True,https://abc7ny.com/post/source-giants-fire-defensive-coordinator-shane-bowen/18201502/,rule,
 2025,NYG,STC,Michael_Ghobrial,Michael Ghobrial,1,18,False,False,https://en.wikipedia.org/w/index.php?oldid=1378658203,,
 2025,NYJ,HC,Aaron_Glenn,Aaron Glenn,1,18,False,False,nflverse schedules (home_coach/away_coach),,
 2025,NYJ,OC,Tanner_Engstrand,Tanner Engstrand,1,18,True,False,https://en.wikipedia.org/w/index.php?oldid=1378429752,list,https://www.espn.com/nfl/story/_/id/46137832/nfl-playcallers-32-teams-mike-mcdaniel-sean-mcvay-brian-schottenheimer
-2025,NYJ,DC,Chris_Harris_(safety),Chris Harris,1,18,False,True,https://en.wikipedia.org/w/index.php?oldid=1378429752,rule,
+2025,NYJ,DC,Steve_Wilks,Steve Wilks,1,15,False,True,https://en.wikipedia.org/w/index.php?oldid=1378429752,rule,
+2025,NYJ,DC,Chris_Harris_(safety),Chris Harris,16,18,False,True,https://www.si.com/nfl/jets-fire-defensive-coordinator-steve-wilks,rule,
 2025,NYJ,STC,Chris_Banjo,Chris Banjo,1,18,False,False,https://en.wikipedia.org/w/index.php?oldid=1378429752,,
 2025,PHI,HC,Nick_Sirianni,Nick Sirianni,1,19,False,False,nflverse schedules (home_coach/away_coach),,
 2025,PHI,OC,Kevin_Patullo,Kevin Patullo,1,19,True,False,https://en.wikipedia.org/w/index.php?oldid=1377747994,list,https://www.espn.com/nfl/story/_/id/46137832/nfl-playcallers-32-teams-mike-mcdaniel-sean-mcvay-brian-schottenheimer
@@ -1349,9 +1374,9 @@ season,team,role,coach_id,coach_name,from_week,to_week,offense_playcaller,defens
 2026,ATL,OC,Tommy_Rees_(American_football),Tommy Rees,1,18,True,False,https://en.wikipedia.org/w/index.php?oldid=1366381155,list,https://abc7.com/post/calls-plays-every-nfl-team-2026-what-know/19783946/
 2026,ATL,DC,Jeff_Ulbrich,Jeff Ulbrich,1,18,False,True,https://en.wikipedia.org/w/index.php?oldid=1366381155,rule,
 2026,ATL,STC,Craig_Aukerman,Craig Aukerman,1,18,False,False,https://en.wikipedia.org/w/index.php?oldid=1366381155,,
-2026,BAL,HC,Jesse_Minter,Jesse Minter,1,18,False,False,nflverse schedules (home_coach/away_coach),,
+2026,BAL,HC,Jesse_Minter,Jesse Minter,1,18,False,True,nflverse schedules (home_coach/away_coach),direct,https://www.baltimoreravens.com/news/anthony-weaver-ravens-defensive-coordinator-hired-declan-doyle-offensive-coordinator-jesse-minter-john-harbaugh-mike-macdonald
 2026,BAL,OC,Declan_Doyle,Declan Doyle,1,18,True,False,https://en.wikipedia.org/w/index.php?oldid=1360987194,list,https://abc7.com/post/calls-plays-every-nfl-team-2026-what-know/19783946/
-2026,BAL,DC,Anthony_Weaver,Anthony Weaver,1,18,False,True,https://en.wikipedia.org/w/index.php?oldid=1360987194,rule,
+2026,BAL,DC,Anthony_Weaver,Anthony Weaver,1,18,False,False,https://en.wikipedia.org/w/index.php?oldid=1360987194,,
 2026,BAL,STC,Anthony_Levine,Anthony Levine Sr.,1,18,False,False,https://en.wikipedia.org/w/index.php?oldid=1360987194,,
 2026,BUF,HC,Joe_Brady_(American_football_coach),Joe Brady,1,18,True,False,https://en.wikipedia.org/w/index.php?oldid=1357823788,list,https://abc7.com/post/calls-plays-every-nfl-team-2026-what-know/19783946/
 2026,BUF,OC,Pete_Carmichael_Jr.,Pete Carmichael,1,18,False,False,https://en.wikipedia.org/w/index.php?oldid=1357823788,,
@@ -1421,9 +1446,9 @@ season,team,role,coach_id,coach_name,from_week,to_week,offense_playcaller,defens
 2026,LV,OC,Andrew_Janocko,Andrew Janocko,1,18,False,False,https://en.wikipedia.org/w/index.php?oldid=1377673420,,
 2026,LV,DC,Rob_Leonard,Rob Leonard,1,18,False,True,https://en.wikipedia.org/w/index.php?oldid=1377673420,rule,
 2026,LV,STC,Joe_DeCamillis,Joe DeCamillis,1,18,False,False,https://en.wikipedia.org/w/index.php?oldid=1377673420,,
-2026,MIA,HC,Jeff_Hafley,Jeff Hafley,1,18,False,False,nflverse schedules (home_coach/away_coach),,
+2026,MIA,HC,Jeff_Hafley,Jeff Hafley,1,18,False,True,nflverse schedules (home_coach/away_coach),direct,https://africa.espn.com/nfl/story/_/id/47800410/sources-dolphins-hiring-sean-duggan-defensive-coordinator
 2026,MIA,OC,Bobby_Slowik,Bobby Slowik,1,18,True,False,https://en.wikipedia.org/w/index.php?oldid=1377674367,list,https://abc7.com/post/calls-plays-every-nfl-team-2026-what-know/19783946/
-2026,MIA,DC,Sean_Duggan_(American_football),Sean Duggan,1,18,False,True,https://en.wikipedia.org/w/index.php?oldid=1377674367,rule,
+2026,MIA,DC,Sean_Duggan_(American_football),Sean Duggan,1,18,False,False,https://en.wikipedia.org/w/index.php?oldid=1377674367,,
 2026,MIA,STC,Chris_Tabor,Chris Tabor,1,18,False,False,https://en.wikipedia.org/w/index.php?oldid=1377674367,,
 2026,MIN,HC,Kevin_O'Connell_(American_football),Kevin O'Connell,1,18,True,False,nflverse schedules (home_coach/away_coach),list,https://abc7.com/post/calls-plays-every-nfl-team-2026-what-know/19783946/
 2026,MIN,OC,Wes_Phillips,Wes Phillips,1,18,False,False,https://en.wikipedia.org/w/index.php?oldid=1361532574,,
@@ -1464,9 +1489,9 @@ season,team,role,coach_id,coach_name,from_week,to_week,offense_playcaller,defens
 2026,TB,HC,Todd_Bowles,Todd Bowles,1,18,False,True,nflverse schedules (home_coach/away_coach),rule,
 2026,TB,OC,Zac_Robinson,Zac Robinson,1,18,True,False,https://en.wikipedia.org/w/index.php?oldid=1374099175,list,https://abc7.com/post/calls-plays-every-nfl-team-2026-what-know/19783946/
 2026,TB,STC,Danny_Smith_(American_football),Danny Smith,1,18,False,False,https://en.wikipedia.org/w/index.php?oldid=1374099175,,
-2026,TEN,HC,Robert_Saleh,Robert Saleh,1,18,False,False,nflverse schedules (home_coach/away_coach),,
+2026,TEN,HC,Robert_Saleh,Robert Saleh,1,18,False,True,nflverse schedules (home_coach/away_coach),direct,https://www.nbcsports.com/nfl/profootballtalk/rumor-mill/news/robert-saleh-will-call-the-titans-defensive-plays
 2026,TEN,OC,Brian_Daboll,Brian Daboll,1,18,True,False,https://en.wikipedia.org/w/index.php?oldid=1366362778,list,https://abc7.com/post/calls-plays-every-nfl-team-2026-what-know/19783946/
-2026,TEN,DC,Gus_Bradley,Gus Bradley,1,18,False,True,https://en.wikipedia.org/w/index.php?oldid=1366362778,rule,
+2026,TEN,DC,Gus_Bradley,Gus Bradley,1,18,False,False,https://en.wikipedia.org/w/index.php?oldid=1366362778,,
 2026,TEN,STC,John_Fassel,John Fassel,1,18,False,False,https://en.wikipedia.org/w/index.php?oldid=1366362778,,
 2026,WAS,HC,Dan_Quinn_(American_football),Dan Quinn,1,18,False,False,nflverse schedules (home_coach/away_coach),,
 2026,WAS,OC,David_Blough,David Blough,1,18,True,False,https://en.wikipedia.org/w/index.php?oldid=1370016856,list,https://abc7.com/post/calls-plays-every-nfl-team-2026-what-know/19783946/

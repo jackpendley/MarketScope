@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { RatingRow } from "@marketscope/db";
 import {
   isSyntheticVersion,
+  playcallerTag,
   parseRatingsQuery,
   rankBy,
   rankTone,
@@ -95,5 +96,17 @@ describe("formatting", () => {
   it("detects synthetic model versions", () => {
     expect(isSyntheticVersion("synthetic-demo")).toBe(true);
     expect(isSyntheticVersion("ratings-v1")).toBe(false);
+  });
+});
+
+describe("playcallerTag", () => {
+  it("labels sourced, assumed and shared play-callers", () => {
+    expect(playcallerTag("list", "offense")).toEqual({ label: "calls offense", note: null });
+    expect(playcallerTag("rule", "defense").label).toBe("calls defense (assumed)");
+    expect(playcallerTag("shared", "defense").label).toBe("calls defense (shared)");
+    // A coach calling both sides: offense basis first, defense basis last.
+    expect(playcallerTag("direct | rule", "offense").label).toBe("calls offense");
+    expect(playcallerTag("direct | rule", "defense").label).toBe("calls defense (assumed)");
+    expect(playcallerTag(null, "offense").label).toBe("calls offense");
   });
 });

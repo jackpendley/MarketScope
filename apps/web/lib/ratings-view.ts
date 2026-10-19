@@ -131,3 +131,27 @@ export function rankBy<T>(
 export function isSyntheticVersion(version: string): boolean {
   return version.toLowerCase().includes("synthetic");
 }
+
+export type PlaycallerTag = { label: string; note: string | null };
+
+/**
+ * The badge for a play-calling flag. `basis` is the row's playcaller_basis; a row calling both
+ * sides holds "offense | defense". "rule" means no source names the play-caller (the coordinator is
+ * assumed); "shared" means sources say two coaches split the calls.
+ */
+export function playcallerTag(basis: string | null, side: "offense" | "defense"): PlaycallerTag {
+  const parts = (basis ?? "").split(" | ");
+  const b = (side === "offense" ? parts[0] : parts[parts.length - 1]) ?? "";
+  const label = `calls ${side}`;
+  if (b === "rule")
+    return {
+      label: `${label} (assumed)`,
+      note: `No source names the ${side} play-caller; the ${side === "offense" ? "offensive" : "defensive"} coordinator is assumed.`,
+    };
+  if (b === "shared")
+    return {
+      label: `${label} (shared)`,
+      note: "Sources say two coaches split the calls; this is the one reported as primary.",
+    };
+  return { label, note: null };
+}

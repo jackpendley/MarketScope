@@ -107,3 +107,24 @@ def test_committed_coaching_staff_csv_is_valid():
     assert len(rows) > 1000
     assert validate_staff(rows) == []
     assert {r["role"] for r in rows} <= {"HC", "OC", "DC", "STC", "PC"}
+
+
+def test_audit_merges_consecutive_flagged_weeks_and_follows_relocations():
+    from marketscope_football.coaching_audit import last_name, spans, template_title
+
+    f = lambda w, tpl: {"season": 2025, "team": "NYJ", "week": w, "role": "DC", "csv": ["Chris Harris"],  # noqa: E731
+                        "template": [tpl], "revid": 1}
+    out = spans([f(1, "Steve Wilks"), f(2, "Steve Wilks"), f(3, "Steve Wilks"), f(5, "Someone Else")])
+    assert [(s["from_week"], s["to_week"], s["template"]) for s in out] == [(1, 3, ["Steve Wilks"]), (5, 5, ["Someone Else"])]
+    assert template_title("OAK") == template_title("LV") == "Template:Las Vegas Raiders staff"
+    assert template_title("WAS") == "Template:Washington Commanders staff"
+    assert last_name("Steve Wilks") == last_name("Steve  Wilks")
+
+
+def test_curated_overrides_use_known_bases():
+    import csv
+    from pathlib import Path
+
+    rows = list(csv.DictReader((Path(__file__).resolve().parents[1] / "data" / "playcaller_overrides.csv").open()))
+    assert {r["source_kind"] for r in rows} <= {"list", "direct", "bracketed", "stint", "shared", "rule"}
+    assert all(r["source_url"] for r in rows if r["source_kind"] != "rule")
