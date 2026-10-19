@@ -723,3 +723,18 @@ The test is only honest if the model is fixed before it runs and cannot be re-ru
 - **Backtest:** clearly better than home-field coin flips for playoffs, division, #1 seed, conference and wins; well calibrated; no skill for the Super Bowl winner. Rating uncertainty barely changes the scores.
 - **Cost:** about 2 minutes per daily run (10,000 seasons take ≈ 2 s; history dominates).
 - **Not modeled:** seeds other than #1 resting starters, in-season coaching changes beyond the filter's bumps, and future injuries.
+
+## ADR-043 — Research studies: pre-registration committed before code, rating studies stop at 2024 (2026-10-18)
+
+**Context.** Phase 10 runs seven studies over market and football data. With many possible tests and a public repo, the results are only credible if the questions, windows, metrics and decision rules are fixed before any outcome is seen, and if the ratings-v1 test season stays clean.
+
+**Decision.**
+
+- **Pre-registration first.** `research/PREREGISTRATION.md` (all seven studies, one primary hypothesis each, gates, decision rules) was committed and pushed (168538a) before any study code was written. Study code follows in a later commit, and the PR is rebase-merged so the order survives on `main`. Before writing it, only data counts were looked at, and the doc says so. It also states what was already known (R4 expected null from MS-032).
+- **Seasons.** Rating-based studies use 2016–24 only; 2025 remains the untouched ratings-v1 test season. Studies without model output (R1 market accuracy, R3 weather) may use 2025–26.
+- **Inference and reporting.** Game-resampled 95% intervals plus HC1 errors; a claim needs its interval to exclude zero in the stated direction. Gates are enforced: a study one game short is reported as inconclusive, with the estimate shown for transparency. Nulls are published. Secondary results are labelled exploratory, with no multiple-comparison correction but every test visible.
+
+**Consequences.**
+
+- **v1 results (R1, R3, R4, R5):** no primary claim met. The consensus 6 days out was as accurate as the close (77 games, 2026). The wind study missed its gate by one windy game. Ratings carry no information beyond the close, and the market does not overrate lucky teams.
+- **Re-runs.** R2 (injury news) waits for live injury history; R3 is re-run when the windy-game gate is met. A re-run reuses the frozen design; any change to the design is a new pre-registration.
