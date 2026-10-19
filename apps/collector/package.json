@@ -7,6 +7,7 @@
     "collect:nfl": "node --env-file-if-exists=.env.local --import tsx src/scripts/collect-nfl.ts",
     "signals:compute": "node --env-file-if-exists=.env.local --import tsx src/scripts/compute-signals.ts",
     "import:oddspapi": "node --env-file-if-exists=.env.local --import tsx src/scripts/import-oddspapi.ts",
+    "import:line-moves": "node --env-file-if-exists=.env.local --import tsx src/scripts/import-line-moves.ts",
     "verify:provider": "node --env-file-if-exists=.env.local --import tsx src/scripts/verify-provider.ts",
     "probe:books": "node --env-file-if-exists=.env.local --import tsx src/scripts/probe-books.ts",
     "seed:synthetic": "node --import tsx src/scripts/seed-synthetic.ts",

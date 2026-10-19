@@ -54,6 +54,20 @@ export const REFERENCE_BOOKMAKERS: readonly BookmakerInfo[] = [
   },
 ];
 
+/**
+ * Books stored only as minute-level line moves (MS-042, `line_moves`), never as snapshots:
+ * market makers used as references for the sharp-market studies. Sourced from OddsPapi.
+ */
+export const LINE_MOVE_ONLY_BOOKMAKERS: readonly BookmakerInfo[] = [
+  { key: "circa", displayName: "Circa (reference)", regionHint: "oddspapi", paidPlanOnly: false },
+  {
+    key: "bookmaker_eu",
+    displayName: "Bookmaker.eu (reference)",
+    regionHint: "oddspapi",
+    paidPlanOnly: false,
+  },
+];
+
 export interface BoardBook {
   id: string;
   displayName: string;
@@ -73,6 +87,7 @@ export const BOARD_BOOKS: readonly BoardBook[] = [
 export function getBookmakerInfo(key: string): BookmakerInfo | undefined {
   return (
     COLLECTED_BOOKMAKERS.find((b) => b.key === key) ??
-    REFERENCE_BOOKMAKERS.find((b) => b.key === key)
+    REFERENCE_BOOKMAKERS.find((b) => b.key === key) ??
+    LINE_MOVE_ONLY_BOOKMAKERS.find((b) => b.key === key)
   );
 }

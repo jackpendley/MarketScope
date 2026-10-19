@@ -74,7 +74,7 @@ Phase 12 needs to see the market at the resolution sharp action happens: minutes
 
 ## Security note
 
-The OddsPapi `/v4/account` endpoint **returns the API key in its response body**. MS-041's probe printed that response once into a working session, so the key should be rotated in the OddsPapi dashboard. Any future account check must print selected fields only.
+The OddsPapi `/v4/account` endpoint **returns the API key in its response body**. MS-041's probe printed that response once into a working session. Jack rotated the key on 2026-10-19. Any account check must print selected fields only (the client's `account()` returns just the request limit and count).
 
 ## Sources (checked 2026-10-19)
 
