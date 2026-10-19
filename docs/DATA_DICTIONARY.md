@@ -339,6 +339,18 @@ Written by the daily job (`ingest projections`), replaced per model version: eve
 | `playoff_p`, `division_p`, `seed1_p` | Made the playoffs, won the division, earned the conference's #1 seed                                                                               |
 | `conf_p`, `sb_p`                     | Won the conference (reached the Super Bowl), won the Super Bowl                                                                                    |
 
+### Site accounts: `auth_users`, `auth_sessions`, `auth_accounts`, `auth_verifications`, `auth_rate_limits` (MS-038)
+
+Better Auth's tables (ADR-049), written by the web app and the account CLI (`pnpm --filter @marketscope/web users`). RLS is on, as on every table.
+
+| Table                | Contents                                                                                                                                                                                               |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `auth_users`         | One row per invited person: `email` (unique, lower-cased), `username` (unique, lower-cased) and `display_username` (as typed), `name`, `email_verified` (true for invited accounts). No password here. |
+| `auth_accounts`      | How a user signs in. `provider_id = 'credential'` rows hold the salted scrypt `password` hash. OAuth columns are unused.                                                                               |
+| `auth_sessions`      | One row per signed-in browser: random `token` (in an httpOnly cookie), `expires_at` (30 days, sliding daily), `ip_address`, `user_agent`. Deleted on sign-out, password reset or `users sign-out`.     |
+| `auth_verifications` | Short-lived tokens for flows such as email verification (unused until email is added).                                                                                                                 |
+| `auth_rate_limits`   | Request counters per key (IP + path) and window, shared by every serverless instance. Sign-in allows 5 a minute.                                                                                       |
+
 ### `nfl_ingest_runs`
 
 The same claim pattern as `ingestion_runs`. `job_key` is unique (`schedules:<seasons>:<UTC date>`, `team-stats:<seasons>:<UTC date>:<data hash>`, `snaps:<seasons>:<UTC date>:<data hash>`, `injuries:<seasons>:<UTC hour>`, `coaching:<csv hash>`, `context:<UTC date>:<hash>`, `weather:<seasons>:<UTC hour>[:recent]`, or a manual key). Also `dataset`, `status`, `attempt` (increments when a failed or stale run is reclaimed), `rows_upserted`, `source_version` (nflreadpy version + dataset SHA-256), and a sanitized `error_message`.

@@ -799,3 +799,82 @@ export const modelPredictions = pgTable(
     index("model_predictions_game_idx").on(t.gameId),
   ],
 ).enableRLS();
+
+// ---- Site accounts (MS-038, ADR-049) ------------------------------------------------------------
+// Better Auth's core tables (user, session, account, verification) plus its username plugin fields
+// and database-backed rate limiting. Invite-only: there is no sign-up endpoint; accounts are
+// created by `pnpm --filter @marketscope/web user:create`. Passwords live hashed (scrypt) in
+// auth_accounts.password, never in auth_users. Better Auth works with Date objects, so these
+// tables use mode "date" timestamps.
+const authTs = () => timestamp({ withTimezone: true, mode: "date" });
+
+export const authUsers = pgTable("auth_users", {
+  id: text().primaryKey(),
+  name: text().notNull(),
+  email: text().notNull().unique(),
+  emailVerified: boolean().notNull().default(false),
+  image: text(),
+  /** Login name (lower-cased by Better Auth); displayUsername keeps the original casing. */
+  username: text().unique(),
+  displayUsername: text(),
+  createdAt: authTs().notNull().defaultNow(),
+  updatedAt: authTs().notNull().defaultNow(),
+}).enableRLS();
+
+export const authSessions = pgTable(
+  "auth_sessions",
+  {
+    id: text().primaryKey(),
+    /** Random session token; the browser holds it in a signed, httpOnly cookie. */
+    token: text().notNull().unique(),
+    userId: text()
+      .notNull()
+      .references(() => authUsers.id, { onDelete: "cascade" }),
+    expiresAt: authTs().notNull(),
+    ipAddress: text(),
+    userAgent: text(),
+    createdAt: authTs().notNull().defaultNow(),
+    updatedAt: authTs().notNull().defaultNow(),
+  },
+  (t) => [index("auth_sessions_user_idx").on(t.userId)],
+).enableRLS();
+
+export const authAccounts = pgTable(
+  "auth_accounts",
+  {
+    id: text().primaryKey(),
+    /** "credential" for username/email + password; OAuth providers would add rows here. */
+    providerId: text().notNull(),
+    accountId: text().notNull(),
+    userId: text()
+      .notNull()
+      .references(() => authUsers.id, { onDelete: "cascade" }),
+    password: text(),
+    accessToken: text(),
+    refreshToken: text(),
+    idToken: text(),
+    accessTokenExpiresAt: authTs(),
+    refreshTokenExpiresAt: authTs(),
+    scope: text(),
+    createdAt: authTs().notNull().defaultNow(),
+    updatedAt: authTs().notNull().defaultNow(),
+  },
+  (t) => [index("auth_accounts_user_idx").on(t.userId)],
+).enableRLS();
+
+export const authVerifications = pgTable("auth_verifications", {
+  id: text().primaryKey(),
+  identifier: text().notNull(),
+  value: text().notNull(),
+  expiresAt: authTs().notNull(),
+  createdAt: authTs().notNull().defaultNow(),
+  updatedAt: authTs().notNull().defaultNow(),
+}).enableRLS();
+
+/** Login rate limiting shared by every serverless instance (in-memory counters would not be). */
+export const authRateLimits = pgTable("auth_rate_limits", {
+  id: text().primaryKey(),
+  key: text().notNull().unique(),
+  count: integer().notNull(),
+  lastRequest: bigint({ mode: "number" }).notNull(),
+}).enableRLS();

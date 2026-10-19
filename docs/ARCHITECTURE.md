@@ -28,10 +28,10 @@ flowchart LR
     CI["ci.yml · every PR<br/>lint · types · unit · integration · pytest · e2e"]
   end
 
-  DB[("Supabase PostgreSQL 17<br/>19 tables, RLS on every table")]
+  DB[("Supabase PostgreSQL 17<br/>24 tables, RLS on every table")]
 
   subgraph Readers
-    W["apps/web on Vercel<br/>Next.js 16 server components<br/>Basic auth (proxy.ts)"]
+    W["apps/web on Vercel<br/>Next.js 16 server components<br/>accounts + sessions (proxy.ts)"]
     R["research/ (Python)<br/>read-only, pre-registered studies"]
   end
 
@@ -69,11 +69,12 @@ flowchart LR
 
 ## Schema overview
 
-| Group             | Tables                                                                                                                                                                               | Written by        | Notes                                                                                                                        |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| Odds              | `events`, `bookmakers`, `ingestion_runs`, `ingestion_payloads`, `odds_observations`, `market_signals`                                                                                | collector         | Observations are append-only. One row per selection, per run and per snapshot. Lines keep their posted signs.                |
-| Football          | `nfl_teams`, `nfl_games`, `nfl_team_game_stats`, `nfl_player_game_snaps`, `nfl_injury_reports`, `nfl_coaching_staff`, `nfl_weather_forecasts`, `nfl_game_context`, `nfl_ingest_runs` | football pipeline | `nfl_games.event_id` links each game to its odds event. The nflverse close is a labelled benchmark and never an observation. |
-| Ratings and model | `rating_snapshots`, `season_projections`, `model_runs`, `model_predictions`                                                                                                          | football pipeline | Snapshots are filtered (point in time). Predictions are immutable; a new model version means new rows.                       |
+| Group             | Tables                                                                                                                                                                               | Written by                                | Notes                                                                                                                        |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Odds              | `events`, `bookmakers`, `ingestion_runs`, `ingestion_payloads`, `odds_observations`, `market_signals`                                                                                | collector                                 | Observations are append-only. One row per selection, per run and per snapshot. Lines keep their posted signs.                |
+| Football          | `nfl_teams`, `nfl_games`, `nfl_team_game_stats`, `nfl_player_game_snaps`, `nfl_injury_reports`, `nfl_coaching_staff`, `nfl_weather_forecasts`, `nfl_game_context`, `nfl_ingest_runs` | football pipeline                         | `nfl_games.event_id` links each game to its odds event. The nflverse close is a labelled benchmark and never an observation. |
+| Accounts          | `auth_users`, `auth_sessions`, `auth_accounts`, `auth_verifications`, `auth_rate_limits`                                                                                             | web app (Better Auth) and the account CLI | Invite-only. Passwords are hashed in `auth_accounts`.                                                                        |
+| Ratings and model | `rating_snapshots`, `season_projections`, `model_runs`, `model_predictions`                                                                                                          | football pipeline                         | Snapshots are filtered (point in time). Predictions are immutable; a new model version means new rows.                       |
 
 The full column reference is in `DATA_DICTIONARY.md`. Hot queries and their EXPLAIN plans are in `PERFORMANCE.md`.
 
@@ -99,7 +100,7 @@ The full column reference is in `DATA_DICTIONARY.md`. Hot queries and their EXPL
 
 ## Security model
 
-- **Site:** reachable on the public internet, but every page and `/api/*` route requires HTTP Basic auth (`apps/web/proxy.ts`, ADR-022). Only `/api/health/live` is open. The Odds API terms forbid redistributing its data through our own API, so `/api/*` stays protected even if the pages are ever opened up.
+- **Site:** reachable on the public internet, but every page and `/api/*` route requires a signed-in account (Better Auth sessions in Postgres, invite-only; `apps/web/proxy.ts`, ADR-049). Only `/login`, `/api/auth/*` and `/api/health/live` are open. The Odds API terms forbid redistributing its data through our own API, so `/api/*` needs a session too.
 - **Database:** the Supabase REST API is locked out of every table by RLS. The site and jobs connect as Postgres users through the pooler.
 - **Secrets:**
   - The site has only `DATABASE_URL` (Vercel). The jobs use one GitHub secret. Local copies sit in gitignored `.env.local` files.

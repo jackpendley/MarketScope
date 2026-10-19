@@ -148,6 +148,11 @@ describe("Data API lock-down (ADR-018)", () => {
       JOIN pg_namespace n ON n.oid = c.relnamespace
       WHERE n.nspname = 'public' AND c.relkind = 'r' ORDER BY c.relname`;
     expect(rows.map((r) => r.relname)).toEqual([
+      "auth_accounts",
+      "auth_rate_limits",
+      "auth_sessions",
+      "auth_users",
+      "auth_verifications",
       "bookmakers",
       "events",
       "ingestion_payloads",

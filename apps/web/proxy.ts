@@ -1,27 +1,43 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { basicAuthConfigFromEnv, isAuthorized } from "@/lib/basic-auth";
+import { isSameOriginMutation } from "@/lib/same-origin";
+import { authConfigured, getAuth } from "@/lib/server/auth";
 
 /**
- * Keeps the deployed site private (ADR-022): every page and API route requires HTTP Basic
- * credentials when BASIC_AUTH_PASSWORD is set. The Odds API terms allow displaying data in
- * a UI but not serving it as a raw-data API to others, so /api/* is protected too.
+ * Every page and API route requires a signed-in account (ADR-049, replacing the shared Basic-auth
+ * password of ADR-022). The Odds API terms allow showing data in a UI but not serving it as a
+ * raw-data API to others, so /api/* needs a session too. Signed-out page requests go to /login;
+ * API requests get a JSON 401.
  */
-export function proxy(request: NextRequest) {
-  const config = basicAuthConfigFromEnv(process.env);
-  if (!config) {
-    // Fail closed on Vercel: a missing password must never make the deployment public.
-    if (process.env.VERCEL) {
-      return new NextResponse("Site access is not configured.", { status: 503 });
-    }
-    return NextResponse.next(); // local development and e2e
-  }
-  if (isAuthorized(request.headers.get("authorization"), config)) {
-    return NextResponse.next();
-  }
-  return new NextResponse("Authentication required.", {
-    status: 401,
-    headers: { "WWW-Authenticate": 'Basic realm="MarketScope", charset="UTF-8"' },
-  });
+const PUBLIC = ["/login", "/api/auth/"];
+
+export async function proxy(request: NextRequest) {
+  const { pathname, search } = request.nextUrl;
+  if (!authConfigured()) return new NextResponse("Site access is not configured.", { status: 503 });
+  if (
+    pathname.startsWith("/api/auth/") &&
+    !isSameOriginMutation(
+      request.method,
+      request.headers.get("origin"),
+      request.headers.get("host"),
+    )
+  )
+    return NextResponse.json(
+      { error: { code: "FORBIDDEN", message: "Cross-origin request refused." } },
+      { status: 403 },
+    );
+  if (PUBLIC.some((p) => pathname === p || pathname.startsWith(p))) return NextResponse.next();
+
+  const session = await getAuth().api.getSession({ headers: request.headers });
+  if (session) return NextResponse.next();
+
+  if (pathname.startsWith("/api/"))
+    return NextResponse.json(
+      { error: { code: "UNAUTHENTICATED", message: "Sign in required." } },
+      { status: 401 },
+    );
+  const login = new URL("/login", request.url);
+  if (pathname !== "/") login.searchParams.set("next", `${pathname}${search}`);
+  return NextResponse.redirect(login);
 }
 
 export const config = {

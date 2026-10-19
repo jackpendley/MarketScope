@@ -1,13 +1,13 @@
 # Project Status
 
-_Rewrite this file at the end of every session. Last updated: 2026-10-18 (session 1, continued; MS-037)._
+_Rewrite this file at the end of every session. Last updated: 2026-10-18 (session 1, continued; MS-038)._
 
 ## Current milestone
 
 **Phase 9 (MarketScope Ratings): MS-029 (harness), MS-030 (Kalman engine), MS-030b (KenPom contract + `rating_snapshots`) MS-031a (QB layer) and MS-031b (non-QB availability) are done. MS-032a (factor selection, probabilities), MS-032b (ratings-v1 frozen, 2025 test, live forward test), MS-033a (ratings and team pages), MS-033b (matchups, scorecard, game panel) and MS-034 (season simulation) are done: Phase 9 is complete. Phase 10: MS-035a (pre-registration + studies R1, R3, R4, R5) and MS-035b (R6, R7, `/research`), MS-035c (coaching audit, R2h, R2w) and MS-036 (market ML with football features) are done: Phase 10 is complete apart from the gated live R2 and the R3 re-run. Phase 11: MS-037 (portfolio release) is done. Next: ongoing weekly checks and v2 work as data accumulates.**
 
 - **Scope extended 2026-10-17 (ADR-028):** football context and MarketScope Ratings, "KenPom for the NFL". The design is frozen in `docs/RATINGS.md`.
-- **Site:** live at https://marketscope-delta.vercel.app, password-protected (HTTP Basic auth) (user `marketscope`; the password is `VERCEL_SITE_PASSWORD` in `apps/web/.env.local`).
+- **Site:** live at https://marketscope-delta.vercel.app. Being switched from the shared Basic-auth password to invite-only accounts (MS-038, ADR-049); see Next task.
 
 ## Done so far
 
@@ -163,11 +163,19 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-18 (sessio
   - **Secret audit:** clean (SECURITY.md): no secret value or pattern anywhere in history, and no env file ever committed.
   - **Wording:** "password-protected", not "private" (Jack confirmed the site is public behind the password).
 
+- **MS-038 (this PR): invite-only accounts (ADR-049).**
+  - **Library:** Better Auth 1.7.7 (username or email + password), with the five `auth_*` tables (migration 0015, RLS).
+  - **Proxy:** session-checking, failing closed without `BETTER_AUTH_SECRET` on Vercel.
+  - **Pages:** `/login` (polished card, show/hide password, generic errors) and `/account` (change password, sign out). The header shows the user and "Sign out".
+  - **Account CLI:** `pnpm --filter @marketscope/web users list | create | reset-password | sign-out`, with a hidden prompt and confirmation for non-local databases.
+  - **Hardening:** 5 attempts a minute per IP (in Postgres), same-origin guard on `/api/auth/*` writes, origin check forced on, open-redirect guard on `next`, allowed hosts.
+  - **Tests:** `tests/auth.integration.test.ts` (hashing, sign-in by username or email, generic failures, rate limit, no sign-up, origin, reset ends sessions); unit tests for the redirect, message and same-origin helpers; e2e auth specs and a signed-in session for the rest.
+
 ## Tests
 
 - **Football pytest:** 110 (unit tests, plus integration against the migrated test DB; includes validation of the committed coaching CSV and the 2016–24 seeding reproduction).
 - **Research pytest:** 40.
-- **TS:** db 47, shared 192, collector 51, web 108, e2e 49.
+- **TS:** db 47, shared 192, collector 51, web 115 (unit + integration), e2e 56.
 
 ## Quotas
 
@@ -201,14 +209,11 @@ Nothing blocking.
 
 ## Next task
 
-All planned phases are done. Ongoing work, roughly weekly:
-
-1. **Gates:** the live R2 (30 injury events from the 2026-10-18 snapshots) and R3 (30 games with wind of at least 15 mph). When one is met, run it under the frozen design and update `/research` (`apps/web/lib/research-studies.ts`).
-2. **Forward checks:** the MS-024 and MS-036 checks need 15 labelled live games. Then plan v2 with rolling-origin evaluation and the live injury snapshots as a feature (pre-register first).
-3. **Live forward test:** the `/model` scorecard fills in as games finish. Summarise it after about 50 scored games.
-4. **Coaching:** re-run `coaching_audit` after any coaching change.
-5. **Possible next projects** (ask Jack):
-   - ratings-v2 with QB-keyed reversion (R7), as a new version
-   - the "ML Lab" page (the nav placeholder)
-   - a screen-reader pass
-   - opening the site, which needs his approval
+1. **Finish the MS-038 rollout:**
+   1. Add `BETTER_AUTH_SECRET` to Vercel (Production and Preview), with Jack's approval.
+   2. Merge (this applies migration 0015 and deploys).
+   3. Jack creates his account with `users create` (see DEPLOYMENT.md) and signs in.
+   4. Verify: `/nfl` redirects to `/login`, and `/api/games` returns 401.
+   5. Delete `BASIC_AUTH_USER` and `BASIC_AUTH_PASSWORD` from Vercel.
+2. **Then the next projects:** ratings-v2 (QB-keyed reversion), the ML Lab page, and a screen-reader pass.
+3. **Ongoing:** the live R2 and R3 gates, the MS-024/036 forward checks, the scorecard, and `coaching_audit`.

@@ -40,4 +40,5 @@ __pycache__/
 
 # Playwright
 /apps/web/playwright/.cache/
+/apps/web/e2e/.auth/
 /apps/web/blob-report/

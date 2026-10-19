@@ -285,6 +285,15 @@ New Python app `apps/football/` (nflreadpy, polars, psycopg). The schema stays i
 
 ---
 
+## Post-release projects
+
+- [x] **MS-038** Invite-only accounts (ADR-049). Better Auth (username or email + password), a login page, `/account` (change password), the account CLI, a rate-limited and CSRF-guarded sign-in. Replaces the shared Basic-auth password.
+- [ ] ratings-v2: between-season reversion keyed on QB continuity (R7), as a new version with its own validation.
+- [ ] ML Lab page: market-movement models and their results (the nav placeholder).
+- [ ] Screen-reader pass and chart summaries.
+
+---
+
 ## Approval checkpoints
 
 **Standing approvals (2026-10-16):**
@@ -297,7 +306,7 @@ New Python app `apps/football/` (nflreadpy, polars, psycopg). The schema stays i
 - Adding repo secrets.
 - Creating any cloud resource.
 - Buying any paid plan or raising the credit budget.
-- Removing the site password (opening the pages to anyone).
+- Opening the site (a sign-up page or no login).
 
 Managed DB: **Supabase**, used as Postgres only (ADR-018). Its session-pooler URL is stored locally as `SUPABASE_DATABASE_URL` in `apps/collector/.env.local`, and in GitHub as the `DATABASE_URL` secret.
 

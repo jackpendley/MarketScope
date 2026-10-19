@@ -2,10 +2,17 @@
 
 Next.js route handlers in `apps/web/app/api`. All data comes from MarketScope's own PostgreSQL database. **The browser never calls the odds provider.**
 
+## Authentication
+
+Every route needs a signed-in session (ADR-049), except `GET /api/health/live` and Better Auth's own
+`/api/auth/*` endpoints. Sign in at `/login`; the session is an httpOnly cookie, so the API works from
+the signed-in site. Without a session, routes answer `401 { "error": { "code": "UNAUTHENTICATED", … } }`.
+Writes to `/api/auth/*` from another origin get `403 FORBIDDEN`. There is no sign-up endpoint.
+
 ## Conventions
 
 - Success: `{ "data": …, "meta": { "generatedAt": ISO, … } }`
-- Error: `{ "error": { "code", "message", "details"? } }`, with codes `INVALID_PARAMETERS` (400), `NOT_FOUND` (404), `DATA_SOURCE_UNAVAILABLE` (503), and `INTERNAL_ERROR` (500).
+- Error: `{ "error": { "code", "message", "details"? } }`, with codes `INVALID_PARAMETERS` (400), `NOT_FOUND` (404), `DATA_SOURCE_UNAVAILABLE` (503), `INTERNAL_ERROR` (500), and from the proxy `UNAUTHENTICATED` (401) and `FORBIDDEN` (403).
 - Timestamps are ISO 8601 UTC (`…Z`).
 - Query parameters are validated with Zod (`apps/web/lib/params.ts`). Unknown parameters are rejected, not ignored.
 - Results are always bounded (max 100 games; windows up to 31 days).

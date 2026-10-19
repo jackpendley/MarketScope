@@ -1,4 +1,6 @@
+import { randomBytes } from "node:crypto";
 import { defineConfig, devices } from "@playwright/test";
+import { STORAGE_STATE } from "./e2e/e2e-user";
 
 // End-to-end smoke tests against a production build, served from a database seeded with
 // SYNTHETIC history (see e2e/global-setup.ts). Run `pnpm build` first.
@@ -18,13 +20,21 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   projects: [
+    // Signs in once (e2e/auth.setup.ts); every other project reuses the saved session.
+    { name: "setup", testMatch: /auth\.setup\.ts/ },
     {
       name: "desktop",
-      use: { ...devices["Desktop Chrome"], viewport: { width: 1400, height: 1000 } },
+      use: {
+        ...devices["Desktop Chrome"],
+        viewport: { width: 1400, height: 1000 },
+        storageState: STORAGE_STATE,
+      },
+      dependencies: ["setup"],
     },
     {
       name: "mobile",
-      use: { ...devices["Pixel 7"] },
+      use: { ...devices["Pixel 7"], storageState: STORAGE_STATE },
+      dependencies: ["setup"],
       testMatch: /(mobile|screenshots)\.spec\.ts/,
     },
   ],
@@ -36,6 +46,10 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
     timeout: 60_000,
     // Process env wins over apps/web/.env.local, so the server reads the e2e database.
-    env: { DATABASE_URL: E2E_DATABASE_URL },
+    // A throwaway auth secret for the local e2e server, generated per run.
+    env: {
+      DATABASE_URL: E2E_DATABASE_URL,
+      BETTER_AUTH_SECRET: (process.env.E2E_AUTH_SECRET ??= randomBytes(32).toString("hex")),
+    },
   },
 });
