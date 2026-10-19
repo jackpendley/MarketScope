@@ -730,7 +730,7 @@ The test is only honest if the model is fixed before it runs and cannot be re-ru
 
 **Decision.**
 
-- **Pre-registration first.** `research/PREREGISTRATION.md` (all seven studies, one primary hypothesis each, gates, decision rules) was committed and pushed (168538a) before any study code was written. Study code follows in a later commit, and the PR is rebase-merged so the order survives on `main`. Before writing it, only data counts were looked at, and the doc says so. It also states what was already known (R4 expected null from MS-032).
+- **Pre-registration first.** `research/PREREGISTRATION.md` (all seven studies, one primary hypothesis each, gates, decision rules) was committed and pushed (88adf4f on `main`; first pushed as 168538a, see PR #39) before any study code was written. Study code follows in a later commit, and the PR is rebase-merged so the order survives on `main`. Before writing it, only data counts were looked at, and the doc says so. It also states what was already known (R4 expected null from MS-032).
 - **Seasons.** Rating-based studies use 2016–24 only; 2025 remains the untouched ratings-v1 test season. Studies without model output (R1 market accuracy, R3 weather) may use 2025–26.
 - **Inference and reporting.** Game-resampled 95% intervals plus HC1 errors; a claim needs its interval to exclude zero in the stated direction. Gates are enforced: a study one game short is reported as inconclusive, with the estimate shown for transparency. Nulls are published. Secondary results are labelled exploratory, with no multiple-comparison correction but every test visible.
 

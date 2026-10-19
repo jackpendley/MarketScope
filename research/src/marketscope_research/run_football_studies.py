@@ -114,7 +114,7 @@ def main() -> None:
         f"_Generated {now} · commit `{commit}` · reproduce with "
         "`research/src/marketscope_research/run_football_studies.py`._",
         "",
-        "Design pre-registered in `research/PREREGISTRATION.md` (commit 168538a, before this code). 95% intervals "
+        "Design pre-registered in `research/PREREGISTRATION.md` (commit 88adf4f on `main`, first pushed as 168538a in PR #39, before this code). 95% intervals "
         "resample games (5,000 draws). Model estimates and market data; not betting advice.",
         "",
         "## Summary",
