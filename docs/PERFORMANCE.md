@@ -58,6 +58,14 @@ The first run after the index rebuild was cold and up to 2× slower. Shared free
 | `matchupsForWeek` (matchups page)    | 1.9 ms  | 14       | Per-game lookups: snapshot week, both teams' snapshots, last estimate, QB names by `gsis_id` | Fine.                                                 |
 | `forwardTest` (scorecard, 2 queries) | 0.6 ms  | 0 / 1    | `DISTINCT ON` over the `model_predictions` primary key, then `nfl_games_pkey`                | Fine; grows by about 16 rows a week (≈ 300 a season). |
 
+## Projections (MS-034, production, 2026-10-19)
+
+| Query (caller)                          | Exec    | Rows out | Plan                                                             | Verdict |
+| --------------------------------------- | ------- | -------- | ---------------------------------------------------------------- | ------- |
+| `projectionWeeks` (week picker)         | 2.4 ms  | 191      | Index-only scan on the primary key (6,112 rows)                  | Fine.   |
+| `projectionsForWeek` (projections page) | 0.3 ms  | 32       | Primary-key scans on `season_projections` and `rating_snapshots` | Fine.   |
+| `teamProjectionHistory` (team page)     | 0.07 ms | 6        | Index scan `season_projections_team_idx`                         | Fine.   |
+
 ## Findings and fixes
 
 1. **Index null ordering must match the query (migration 0006).**

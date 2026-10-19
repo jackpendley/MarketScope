@@ -24,12 +24,15 @@ import {
   matchupsForWeek,
   matchupWeeks,
   observationSummaries,
+  projectionsForWeek,
+  projectionWeeks,
   ratingsForWeek,
   ratingVersion,
   ratingWeeks,
   recentRuns,
   selectionHistory,
   teamGames,
+  teamProjectionHistory,
   teamRatingHistory,
 } from "../queries";
 import * as schema from "../schema";
@@ -175,6 +178,21 @@ async function main() {
         );
       }
       await step("forwardTest (model scorecard)", () => forwardTest(db, version));
+      const pweeks = await step("projectionWeeks (projections week picker)", () =>
+        projectionWeeks(db, version),
+      );
+      const pat = pweeks.at(-1);
+      if (pat) {
+        const rows = await step("projectionsForWeek (projections page)", () =>
+          projectionsForWeek(db, { version, ...pat }),
+        );
+        const t = rows[0]?.team;
+        if (t) {
+          await step("teamProjectionHistory (team page outlook)", () =>
+            teamProjectionHistory(db, { version, team: t, season: pat.season }),
+          );
+        }
+      }
     }
 
     const results: {
