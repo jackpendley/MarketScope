@@ -6,6 +6,7 @@ import {
   parseRatingsQuery,
   rankBy,
   rankTone,
+  rankText,
   record,
   resolveWeek,
   signed,
@@ -87,6 +88,8 @@ describe("formatting", () => {
     expect(rankTone(16, 32)).toBe("");
     expect(rankTone(32, 32)).toBe("bg-danger/30");
     expect(rankTone(null, 32)).toBe("");
+    expect(rankText(1, 32)).toBe("text-fg/85");
+    expect(rankText(16, 32)).toBe("text-muted");
   });
   it("ranks values with ties sharing a rank", () => {
     const rows = [{ v: 3 }, { v: 1 }, { v: 3 }, { v: null }];

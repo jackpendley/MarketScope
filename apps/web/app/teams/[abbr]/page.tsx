@@ -21,6 +21,7 @@ import {
   parseRatingsQuery,
   rankBy,
   rankTone,
+  rankText,
   record,
   resolveWeek,
   signed,
@@ -108,7 +109,7 @@ function Stat({
         {value}{" "}
         {rank !== undefined && (
           <span
-            className={`rounded px-1 text-xs font-normal text-muted ${rankTone(rank, n ?? 32)}`}
+            className={`rounded px-1 text-xs font-normal ${rankText(rank, n ?? 32)} ${rankTone(rank, n ?? 32)}`}
           >
             #{rank ?? "–"}
           </span>
@@ -286,7 +287,7 @@ export default async function TeamPage(props: PageProps<"/teams/[abbr]">) {
                     <td key={side} className="py-1 text-right tabular-nums">
                       {fixed(r[f[side]] as number | null, f.digits)}{" "}
                       <span
-                        className={`rounded px-1 text-xs text-muted ${rankTone(ranks[i]![side], n)}`}
+                        className={`rounded px-1 text-xs ${rankText(ranks[i]![side], n)} ${rankTone(ranks[i]![side], n)}`}
                       >
                         #{ranks[i]![side] ?? "–"}
                       </span>

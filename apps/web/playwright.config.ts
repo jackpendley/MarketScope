@@ -22,7 +22,11 @@ export default defineConfig({
       name: "desktop",
       use: { ...devices["Desktop Chrome"], viewport: { width: 1400, height: 1000 } },
     },
-    { name: "mobile", use: { ...devices["Pixel 7"] }, testMatch: /mobile\.spec\.ts/ },
+    {
+      name: "mobile",
+      use: { ...devices["Pixel 7"] },
+      testMatch: /(mobile|screenshots)\.spec\.ts/,
+    },
   ],
   webServer: {
     command: `pnpm exec next start -p ${PORT}`,

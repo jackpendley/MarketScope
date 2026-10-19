@@ -23,7 +23,7 @@ First deployed 2026-10-16 (`dpl_8EEKWRxZDFX7Fad6PDqJVYM46TLk`). The Vercel CLI (
 
 Vercel Authentication is also enabled (`all_except_custom_domains`), which protects preview and deployment URLs. The production domain is protected by the app's Basic auth.
 
-The whole site is private behind HTTP Basic auth (ADR-022). Your browser prompts for the user and password above. `GET /api/health/live` is open for uptime checks.
+The site is on the public internet, but every page and `/api/*` route is password-protected with HTTP Basic auth (ADR-022). Your browser prompts for the user and password above. `GET /api/health/live` is open for uptime checks.
 
 ## Verifying a deployment
 
