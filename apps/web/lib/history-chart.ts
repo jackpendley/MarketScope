@@ -104,3 +104,26 @@ export function axisTicks(
   for (let v = lo(); v <= hi() + 1e-9; v += s) ticks.push(Math.round(v * 100) / 100);
   return { domain: [lo(), hi()], ticks };
 }
+
+/**
+ * A text alternative for a history chart (screen readers): each book's first and last value and
+ * how many times it changed, e.g. "DraftKings −3 to −3.5 (1 change); FanDuel −3 throughout".
+ */
+export function seriesSummary(
+  series: readonly (BookSeries & { displayName: string })[],
+  field: ChartField,
+  format: (v: number) => string,
+): string {
+  const parts = series.flatMap((s) => {
+    const values = s.points
+      .map((p) => (field === "point" ? p.point : americanToScale(p.americanPrice)))
+      .filter((v): v is number => typeof v === "number" && Number.isFinite(v));
+    if (values.length === 0) return [];
+    const changes = values.slice(1).filter((v, i) => v !== values[i]).length;
+    const first = format(values[0]!);
+    const last = format(values[values.length - 1]!);
+    if (changes === 0) return [`${s.displayName} ${first} throughout`];
+    return [`${s.displayName} ${first} to ${last} (${changes} change${changes === 1 ? "" : "s"})`];
+  });
+  return parts.length ? parts.join("; ") + "." : "No observations.";
+}

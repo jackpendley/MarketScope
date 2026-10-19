@@ -28,7 +28,7 @@ _All screenshots show the synthetic demo database used by the end-to-end tests (
   - **2025 test, run once:** margin error 10.06 points per game, against 9.67 for the closing line, 10.19 for 538-style Elo and 11.02 for home field alone.
   - **2026:** a live forward test with estimates stored before kickoff.
 - **Season projections.** 10,000 simulated seasons with NFL tiebreakers, giving playoff, division, #1 seed and Super Bowl odds. The tiebreakers reproduce every 2016–24 playoff field.
-- **Research.** Nine pre-registered studies plus two ML experiments. The questions and decision rules were committed before the code. Most results are nulls, all are published, and one claim met its bar: the consensus moves about 0.4 points per starter newly ruled Out during the week.
+- **Research and ML Lab.** Nine pre-registered studies plus the market-movement ML experiments (`/research`, `/ml-lab`). The questions and decision rules were committed before the code. Most results are nulls, all are published, and one claim met its bar: the consensus moves about 0.4 points per starter newly ruled Out during the week.
 
 | Ratings and team pages                            | Matchups (FanMatch-style)                          | Research                                                 |
 | ------------------------------------------------- | -------------------------------------------------- | -------------------------------------------------------- |
