@@ -21,6 +21,12 @@ reversion and every mid-season play-caller bump stay as in v1):
   its main QB of the previous regular season (most starts; ties go to the later starter).
 - "qb_or_caller": offence changed = the QB changed (as above) OR the offensive play-caller changed.
 
+Clarification (2026-10-19, committed before any fit ran): "v1's log likelihood" in step 4 means
+the play-caller-keyed structure ("caller") refitted by the same code on the same data. v1's stored
+likelihoods predate the ADR-045 coaching corrections, so comparing against them would favour v2.
+Frozen v1 replayed on the current data is reported as well. The validation comparison (step 4)
+is against the frozen, deployed ratings-v1.
+
 Procedure:
 1. Refit the four unit channels (pass, rush, succ, ppd) by maximum likelihood on LIKELIHOOD_SEASONS
    (2016–22) for each variant, with v1's code, start values and iteration limits. Special teams and
@@ -44,4 +50,5 @@ from __future__ import annotations
 
 VERSION = "ratings-v2"
 VARIANTS = ("qb", "qb_or_caller")
+REFERENCE = "caller"  # v1's structure, refitted on the same data for the likelihood comparison
 VALIDATION_SEASONS = (2023, 2024)
