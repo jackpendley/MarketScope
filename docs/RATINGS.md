@@ -367,6 +367,13 @@ Rest-of-season odds from simulated seasons (ADR-042; report `apps/football/repor
 - **Rating uncertainty barely matters** for these scores (playoffs −0.0005 vs simulating with point ratings): the season's own randomness dominates. It is kept because it is the model's honest predictive distribution and it widens the win distributions.
 - **Super Bowl odds** are indistinguishable from the coin-flip baseline: single-elimination luck swamps a few points of strength.
 
+### Ratings vs the market (MS-035, research)
+
+Pre-registered studies (`research/PREREGISTRATION.md`, report `research/reports/football-studies-v1.md`), 2016–24:
+
+- **R4, is performance priced?** ATS residual per point of gap between the rating margin and the close: +0.12 (−0.05 to +0.29), positive in 6 of 9 seasons but negative on 2023–24 (−0.11). Claim not met: the ratings carry no information beyond the close. Exploratory: in 2026 the consensus moved toward the ratings between 6 days out and the close (+0.10 per point of gap, 77 games).
+- **R5, luck:** the market does not overrate lucky teams (−0.02 ATS points per win of luck, −0.50 to +0.47), and luck does not persist (+0.08 per win, interval includes 0).
+
 ### Parameter comparison (fitted values vs published models)
 
 | Parameter                                | MarketScope (fitted 2016–22)               | Published                                                               |

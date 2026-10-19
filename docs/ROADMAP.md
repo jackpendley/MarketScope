@@ -256,7 +256,7 @@ New Python app `apps/football/` (nflreadpy, polars, psycopg). The schema stays i
 
 ## Phase 10 — Research studies + ML with football features (MS-035–036)
 
-- [ ] **MS-035** Pre-registered studies:
+- [ ] **MS-035** Pre-registered studies (`research/PREREGISTRATION.md`, ADR-043). **035a done:** R1, R3, R4, R5 in `research/reports/football-studies-v1.md` (no primary claim met; R3 one windy game short of its gate). Remaining: R2, R6, R7.
   - R1: market accuracy over time.
   - R2: injury-news event study.
   - R3: weather → totals.

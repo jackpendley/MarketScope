@@ -148,7 +148,9 @@ def main() -> None:
         "## R3: weather and totals (2024–26)",
         "",
         f"{r3['games']} outdoor/open-roof games with a 1-day forecast and a closing total; {r3['windy']} with forecast "
-        f"wind ≥ {fs.R3_WINDY:.0f} mph (gate: {fs.R3_MIN_GAMES} and {fs.R3_MIN_WINDY}).",
+        f"wind ≥ {fs.R3_WINDY:.0f} mph (gate: {fs.R3_MIN_GAMES} and {fs.R3_MIN_WINDY})."
+        + ("" if r3["gate"] else " **The gate is not met, so the primary result is inconclusive**; the estimate is "
+           "shown for transparency and makes no claim. It will be re-run when more windy games are final."),
         "",
         f"- **Primary:** total residual (actual − close) per mph of forecast wind: {ci(r3['slope'], 3)}.",
         f"- **Market response (exploratory):** the closing total moves {r3['close_per_mph'][0]:+.3f} points per mph "
@@ -159,7 +161,7 @@ def main() -> None:
         table([[b["wind"], b["games"], f"{b['mean_close']:.1f}", ci(b["mean_residual"])] for b in r3["buckets"]],
               ["Forecast wind (mph)", "Games", "Mean close", "Mean residual (actual − close)"]),
         "",
-        f"- **Movement (exploratory, 2026 odds):** {r3m['crossings']} games crossed {fs.R3_WINDY:.0f} mph between the "
+        f"- **Movement (exploratory, 2026 odds):** {r3m['crossings']} game{'' if r3m['crossings'] == 1 else 's'} crossed {fs.R3_WINDY:.0f} mph between the "
         f"3-day and 1-day forecasts (gate {fs.R3_MIN_CROSSINGS}): "
         + ("inconclusive." if not r3m["gate"] else
            f"totals consensus moved {ci(r3m['crossed_move'])} vs {ci(r3m['other_move'])} in other games."),
