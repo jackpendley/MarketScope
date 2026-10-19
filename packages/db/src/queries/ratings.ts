@@ -208,6 +208,10 @@ export type StaffMember = {
   toWeek: number;
   offensePlaycaller: boolean;
   defensePlaycaller: boolean;
+  /** Evidence for the play-calling flags ("list", "direct", "shared", "rule", ...); a row that calls
+   * both sides holds "offense basis | defense basis". Null when the row calls neither side. */
+  playcallerBasis: string | null;
+  playcallerSourceUrl: string | null;
 };
 
 /** Coaching staff spans for a franchise-season (HC, coordinators, play-callers). */
@@ -217,7 +221,9 @@ export async function teamStaff(
 ): Promise<StaffMember[]> {
   return db.execute<StaffMember>(sql`
     SELECT role, coach_name AS "coachName", from_week AS "fromWeek", to_week AS "toWeek",
-           offense_playcaller AS "offensePlaycaller", defense_playcaller AS "defensePlaycaller"
+           offense_playcaller AS "offensePlaycaller", defense_playcaller AS "defensePlaycaller",
+           NULLIF(playcaller_basis, '') AS "playcallerBasis",
+           NULLIF(playcaller_source_url, '') AS "playcallerSourceUrl"
     FROM nfl_coaching_staff
     WHERE season = ${season} AND team IN (SELECT abbr FROM nfl_teams WHERE franchise = ${team})
     ORDER BY array_position(ARRAY['HC', 'OC', 'DC', 'STC', 'PC'], role), from_week

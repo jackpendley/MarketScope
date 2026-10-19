@@ -757,3 +757,39 @@ The test is only honest if the model is fixed before it runs and cannot be re-ru
 - **R6:** the blend is worse than the close (Δ Brier +0.0026, +0.0006 to +0.0047). The displayed rating stays market-free (rule 7) and nothing changes in the product.
 - **R7:** no play-caller continuity effect once QB continuity is held fixed; QB continuity matters. This questions ratings-v1's play-caller-keyed reversion. That is a candidate for a future model version, not a change to the frozen one.
 - **Upkeep:** the page has to be edited by hand when R2 or R3 is run.
+
+## ADR-045 — Coaching-data audit: week-by-week coordinator check, sourced defensive play-callers, "assumed" and "shared" labels (2026-10-18)
+
+**Context.** A review prompted by Jack found the coaching CSV wrong in two systematic ways.
+
+1. **Mid-season coordinator changes were missed.** Coordinators came from each season article's latest Wikipedia revision, which shows the end-of-season staff. Mid-season changes were captured only through `coordinator_changes.csv`. Any change missing there was applied to the whole season: for example, 2025 NYJ showed Chris Harris, who only took over with three games left.
+2. **Defensive head coaches who call their own defence were often missed.** 90% of defensive team-weeks rest on the coordinator rule because no season-wide list of defensive play-callers exists, and some defensive head coaches call the defence themselves.
+
+**Decision.**
+
+- **Week-by-week audit.** `coaching_audit.py` compares the CSV's coordinators for every game with the team's Wikipedia staff template as it stood before game day, using the template's revision history.
+  - Disagreements become spans to check against a dated news source.
+  - Explained spans are listed with a reason in `data/coaching_audit_accepted.csv`; the target is 0 unexplained.
+  - The audit needs the network, so it runs on demand, not in CI.
+  - First run: 20 spans. 13 were real coordinator changes, now added to `coordinator_changes.csv`. 7 are explained title differences with no play-calling effect.
+- **Defensive head coaches checked one by one.** 21 sourced overrides were added, including:
+  - Allen (New Orleans 2022–24, through his firing)
+  - Eberflus (Chicago 2024, through his firing)
+  - Quinn (Atlanta 2016 from week 13)
+  - Ryans (Houston 2025 weeks 1–3)
+  - Kuhr (New England 2025 from week 2)
+  - Ulbrich (Jets 2024, all season)
+  - Saleh, Minter and Hafley (2026)
+- **Ambiguity is recorded, not hidden.**
+  - A new basis, `shared`, marks seasons where sources say two coaches split the calls: Buffalo 2016 and 2025, Detroit 2019 and Atlanta 2020. The row names the coach reported as primary, because the engine needs one caller per side.
+  - `rule` rows are shown as "calls defense (assumed)" on team pages, with an explanation. The page no longer presents an inference as a fact.
+- **Corrections flow into the ratings.** ratings-v1's parameters are unchanged. Play-caller continuity is an input, and the daily job rebuilds `rating_snapshots` from it, so corrected data changes the filtered history the way any upstream data fix would.
+  - Stored `model_predictions` stay immutable.
+  - The 2025 test record stays as it was run.
+  - On 2023–24 the corrections move game margins by 0.05 points on average (at most 0.84). Margin MAE goes from 10.268 to 10.259 and Brier from 0.2219 to 0.2216.
+
+**Consequences.**
+
+- **Coverage:** defensive team-weeks resting on the rule fall from 90% to 86%. The rest stay unverified: the coordinator is the likely caller, but no source confirms it.
+- **Studies re-run:** R6 is unchanged. R7 is re-run once production holds the corrected staff.
+- **Upkeep:** re-run the audit before any study that uses play-callers, and after each season.

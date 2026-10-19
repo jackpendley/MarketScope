@@ -162,6 +162,8 @@ async function seed() {
       toWeek: 17,
       offensePlaycaller: true,
       defensePlaycaller: false,
+      playcallerBasis: "list",
+      playcallerSourceUrl: "https://example.com/playcallers",
     },
   ]);
 }
@@ -224,9 +226,12 @@ describe("ratings queries", () => {
   it("lists the staff for the franchise, head coach first", async () => {
     await seed();
     const staff = await teamStaff(db, { team: "LV", season: 2019 });
-    expect(staff.map((s) => [s.role, s.coachName, s.offensePlaycaller])).toEqual([
-      ["HC", "Jon Gruden", true],
-      ["OC", "Greg Olson", false],
-    ]);
+    expect(staff.map((s) => [s.role, s.coachName, s.offensePlaycaller, s.playcallerBasis])).toEqual(
+      [
+        ["HC", "Jon Gruden", true, "list"],
+        ["OC", "Greg Olson", false, null],
+      ],
+    );
+    expect(staff[0]!.playcallerSourceUrl).toBe("https://example.com/playcallers");
   });
 });

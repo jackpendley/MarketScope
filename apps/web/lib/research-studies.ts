@@ -120,7 +120,7 @@ export const STUDIES: Study[] = [
     finding:
       "The blend was slightly less accurate than the close, so the published nfelo result does not replicate for this model. The weight rule, fitted each week on the previous four, mostly chose a weight of 0, meaning the market alone.",
     exploratory: [
-      "A fixed 35% model weight (nfelo's setting) was also worse than the close: +0.0028 (+0.0006 to +0.0049).",
+      "A fixed 35% model weight (nfelo's setting) was also worse than the close: +0.0027 (+0.0005 to +0.0047).",
     ],
     report: `${REPO}/research/reports/r6-model-market-blend.md`,
   },

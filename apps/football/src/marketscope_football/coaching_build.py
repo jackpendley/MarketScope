@@ -462,14 +462,17 @@ def report(rows: list[dict]) -> list[str]:
                "direct": "a source about that coach and season (or the dated change)",
                "bracketed": "same coach and team named in lists before and after, no reported change in between",
                "stint": "a source covering the coach's tenure, not that exact season",
+               "shared": "sources say two coaches split the calls; the row names the one reported as primary",
                "rule": "no source: the coordinator for that side (or the head coach when there is none)"}
     total = len(weeks)
-    for basis in ("list", "direct", "bracketed", "stint", "rule"):
+    for basis in ("list", "direct", "bracketed", "stint", "shared", "rule"):
         o = sum(1 for v in weeks.values() if v["offense"][1] == basis)
         d = sum(1 for v in weeks.values() if v["defense"][1] == basis)
-        lines.append(f"| {basis} | {o / total:.0%} | {d / total:.0%} | {meaning[basis]} |")
+        lines.append(f"| {basis} | {o / total:.1%} | {d / total:.1%} | {meaning[basis]} |")
     lines += ["", "Defensive play-calling is rarely reported team by team, so most defensive weeks rest on the rule. "
-              "Known exceptions (head coaches or untitled assistants calling the defense) are sourced overrides.", "",
+              "Known exceptions (head coaches or untitled assistants calling the defense) are sourced overrides. "
+              "Coordinator titles are audited week by week against Wikipedia's staff-template history "
+              "(`reports/coaching-audit.md`), and defensive head coaches were checked one by one (MS-035c).", "",
               "## Play-caller continuity by season", "",
               "| Season | Teams | New offensive play-caller | New defensive play-caller | Head coach calls offense "
               "| Mid-season offensive changes |", "| --- | --- | --- | --- | --- | --- |"]

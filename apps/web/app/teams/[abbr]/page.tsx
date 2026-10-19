@@ -25,6 +25,7 @@ import {
   resolveWeek,
   signed,
   weekLabel,
+  playcallerTag,
 } from "@/lib/ratings-view";
 import { isConnectionError } from "@/lib/server/api";
 import { DatabaseNotConfiguredError, getDb } from "@/lib/server/db";
@@ -433,12 +434,22 @@ export default async function TeamPage(props: PageProps<"/teams/[abbr]">) {
                     (weeks {s.fromWeek}–{s.toWeek})
                   </span>
                 )}
-                {s.offensePlaycaller && (
-                  <span className="ml-1 rounded bg-surface-raised px-1 text-xs">calls offense</span>
-                )}
-                {s.defensePlaycaller && (
-                  <span className="ml-1 rounded bg-surface-raised px-1 text-xs">calls defense</span>
-                )}
+                {(["offense", "defense"] as const)
+                  .filter((side) =>
+                    side === "offense" ? s.offensePlaycaller : s.defensePlaycaller,
+                  )
+                  .map((side) => {
+                    const tag = playcallerTag(s.playcallerBasis, side);
+                    return (
+                      <span
+                        key={side}
+                        className={`ml-1 rounded bg-surface-raised px-1 text-xs ${tag.note ? "text-muted" : ""}`}
+                        title={tag.note ?? undefined}
+                      >
+                        {tag.label}
+                      </span>
+                    );
+                  })}
               </li>
             ))}
           </ul>
