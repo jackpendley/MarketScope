@@ -1,6 +1,6 @@
 # ratings-v2: QB-keyed offensive reversion (MS-039)
 
-_Generated 2026-10-19 15:41 UTC · code `1f9b3ba`. Design pre-registered in `ratings/design_v2.py` (committed before any fit)._
+_Generated 2026-10-19 15:41 UTC · code `e7a5372` on `main`. Design pre-registered in `ratings/design_v2.py` (committed before any fit)._
 
 ## Result
 

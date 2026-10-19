@@ -176,8 +176,8 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-18 (sessio
 - **MS-040 (#51): ML Lab page and chart text alternatives.**
   - `/ml-lab` shows the market-movement experiments with verdicts checked against the claim rule.
   - Line-history charts get screen-reader summaries, and the rating trend gets a data-bearing label.
-- **MS-039 (this PR, rebase-merge): ratings-v2, not adopted (ADR-050).**
-  - Design `ratings/design_v2.py` (bae64e9) plus a clarification (1f9b3ba), both pushed before the fit.
+- **MS-039 (#52, rebase-merged): ratings-v2, not adopted (ADR-050).**
+  - Design `ratings/design_v2.py` (adc7fdf on `main`) plus a clarification (e7a5372), both pushed before the fit (as bae64e9 and 1f9b3ba).
   - QB-keyed offensive reversion: 2016–22 likelihood 38.4 vs 38.6 for v1's structure refitted on the same data, so the rule fails. 2023–24: Δ MAE −0.005 (−0.035 to +0.026).
   - Fitted carryover is higher when the QB changes, because the game layer's QB term already models the new starter.
   - Report `apps/football/reports/ratings-v2.md`; no `params_v2.json`.
