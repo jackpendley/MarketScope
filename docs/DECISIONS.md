@@ -908,7 +908,7 @@ The test is only honest if the model is fixed before it runs and cannot be re-ru
 
 **Decision.**
 
-- **Pre-registered** in `ratings/design_v2.py` before any fit (bae64e9 and 1f9b3ba on the branch, see PR #52).
+- **Pre-registered** in `ratings/design_v2.py` before any fit (adc7fdf and e7a5372 on `main`, first pushed as bae64e9 and 1f9b3ba in PR #52).
   - **Variants:** two candidates, chosen by 2016–22 likelihood.
   - **Adoption rule:** the likelihood must be at least that of v1's structure refitted on the same data (a clarification committed before the fit, because v1's stored likelihoods predate the ADR-045 coaching corrections), AND the 2023–24 Δ margin MAE ≤ 0, AND the Δ log loss ≤ 0.
   - **Separate files:** v2 parameters would go in `params_v2.json`. v1's `params.json` is never touched.
