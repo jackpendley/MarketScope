@@ -4,8 +4,18 @@ import { STUDIES } from "./research-studies";
 const num = (s: string) => Number(s.replace("−", "-"));
 
 describe("research studies", () => {
-  it("lists R1 to R7 once each", () => {
-    expect(STUDIES.map((s) => s.id)).toEqual(["R1", "R2", "R3", "R4", "R5", "R6", "R7"]);
+  it("lists every study once, in order", () => {
+    expect(STUDIES.map((s) => s.id)).toEqual([
+      "R1",
+      "R2",
+      "R2h",
+      "R2w",
+      "R3",
+      "R4",
+      "R5",
+      "R6",
+      "R7",
+    ]);
   });
 
   it("gives every completed study a primary estimate inside its interval and a report", () => {

@@ -121,3 +121,27 @@ def test_scheme_movers_follow_the_coach_to_a_new_team():
     m = fs.scheme_movers(traits, callers)
     assert len(m) == 1 and m.iloc[0]["to"] == "B"
     assert (m.iloc[0]["proe_caller"], m.iloc[0]["proe_prior"], m.iloc[0]["proe_new"]) == (5.0, -3.0, 4.0)
+
+
+def test_injury_events_need_a_recent_starter_who_played_last_game():
+    snaps = pd.DataFrame({"season": 2026, "team": "KC", "gsis_id": ["a", "a", "a", "b", "b", "c"],
+                          "week": [1, 2, 3, 1, 2, 3], "offense_pct": [0.9, 0.8, 0.95, 0.9, 0.9, 0.2],
+                          "defense_pct": 0.0})
+    final = pd.DataFrame({"season": 2026, "week": 4, "team": "KC", "gsis_id": ["a", "b", "c", "a"],
+                          "position": ["QB", "WR", "WR", "QB"], "report_status": ["Out", "Out", "Out", "Questionable"]})
+    ev = fs.injury_events(final, snaps)
+    # a: starter who played week 3 -> event; b: missed week 3 (already out) -> not news; c: not a starter.
+    assert ev["gsis_id"].tolist() == ["a"] and bool(ev["qb"].iloc[0])
+
+
+def test_r2w_slope_recovers_a_planted_move_per_event():
+    rng = np.random.default_rng(7)
+    n = 300
+    games = pd.DataFrame({"season": 2026, "week": rng.integers(2, 7, n), "home": [f"H{i}" for i in range(n)],
+                          "away": [f"A{i}" for i in range(n)]})
+    away_n = rng.poisson(0.6, n)
+    events = pd.DataFrame([{"season": 2026, "week": w, "team": a, "gsis_id": f"{a}{k}", "qb": False}
+                           for w, a, c in zip(games["week"], games["away"], away_n) for k in range(c)])
+    games["move"] = 0.8 * away_n + rng.normal(scale=0.5, size=n)
+    r = fs.r2w(games, events, resamples=400)
+    assert r["gate"] and r["slope"].low < 0.8 < r["slope"].high and not r["qb_gate"]

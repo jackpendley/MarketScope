@@ -17,7 +17,7 @@ from . import football_studies as fs
 from .data import _frame, connect
 from .run_football_studies import ci, table
 
-TRAITS = {"proe": "Pass rate over expected (pts of %)", "neutral_seconds_per_play": "Neutral seconds per play"}
+TRAITS = {"proe": "Pass rate over expected (share of plays)", "neutral_seconds_per_play": "Neutral seconds per play"}
 
 
 def load(conn):

@@ -359,3 +359,54 @@ def r7_scheme(movers: pd.DataFrame, trait: str, resamples: int = RESAMPLES) -> d
     X = movers[[f"{trait}_caller", f"{trait}_prior"]].to_numpy(float)
     y = movers[f"{trait}_new"].to_numpy(float)
     return {"movers": len(movers), "caller": coef_ci(y, X, 1, resamples), "prior": coef_ci(y, X, 2, resamples)}
+
+
+# --- R2w: market moves on newly confirmed absences (addendum B) ------------------------------
+
+R2W_MIN_EVENTS, R2W_MIN_QB = 30, 10
+R2W_SNAP_SHARE = 0.5
+
+
+def injury_events(final_status: pd.DataFrame, snaps: pd.DataFrame) -> pd.DataFrame:
+    """Starters newly out: listed Out on the final report for (season, week, team), averaged at least
+    50% of offensive or defensive snaps over their snap rows in the team's previous three game weeks,
+    and played in the team's previous game.
+    final_status: season, week, team, gsis_id, position, report_status (one row per player-week).
+    snaps: season, week, team, gsis_id, offense_pct, defense_pct."""
+    s = snaps.assign(share=np.maximum(snaps["offense_pct"].fillna(0), snaps["defense_pct"].fillna(0)))
+    team_weeks = s.groupby(["season", "team"])["week"].apply(lambda w: sorted(set(w))).to_dict()
+    share = s.set_index(["season", "team", "gsis_id", "week"])["share"]
+    rows = []
+    for r in final_status[final_status["report_status"] == "Out"].itertuples(index=False):
+        prior = [w for w in team_weeks.get((r.season, r.team), []) if w < r.week][-3:]
+        if not prior:
+            continue
+        mine = [share.get((r.season, r.team, r.gsis_id, w)) for w in prior]
+        played = [x for x in mine if x is not None]
+        last = mine[-1]
+        if played and last is not None and last > 0 and float(np.mean(played)) >= R2W_SNAP_SHARE:
+            rows.append({"season": r.season, "week": r.week, "team": r.team, "gsis_id": r.gsis_id,
+                         "qb": r.position == "QB"})
+    return pd.DataFrame(rows, columns=["season", "week", "team", "gsis_id", "qb"])
+
+
+def r2w(games: pd.DataFrame, events: pd.DataFrame, resamples: int = RESAMPLES) -> dict:
+    """games: season, week, home, away, move (consensus margin, close - 6 days), one row per game."""
+    cnt = events.groupby(["season", "week", "team"]).agg(n=("gsis_id", "size"), q=("qb", "sum"))
+    def count(side: str, col: str) -> np.ndarray:
+        idx = pd.MultiIndex.from_frame(games[["season", "week", side]])
+        return cnt[col].reindex(idx).fillna(0).to_numpy(float)
+    g = games.assign(home_n=count("home", "n"), away_n=count("away", "n"),
+                     home_q=count("home", "q"), away_q=count("away", "q"))
+    g["N"] = g["away_n"] - g["home_n"]
+    g["Q"] = g["away_q"] - g["home_q"]
+    n_events, n_qb = int(g["home_n"].sum() + g["away_n"].sum()), int(g["home_q"].sum() + g["away_q"].sum())
+    out = {"games": len(g), "events": n_events, "qb_events": n_qb, "gate": n_events >= R2W_MIN_EVENTS,
+           "qb_gate": n_qb >= R2W_MIN_QB, "games_with_events": int(((g["home_n"] + g["away_n"]) > 0).sum())}
+    if out["gate"]:
+        out["slope"] = slope(g["move"].to_numpy(), g["N"].to_numpy(), resamples)
+        # Robustness, added after seeing the primary result (labelled as such in the report).
+        out["slope_non_qb"] = slope(g["move"].to_numpy(), (g["N"] - g["Q"]).to_numpy(), resamples)
+    qb_games = g[g["Q"] != 0]
+    out["qb_moves"] = (np.sign(qb_games["Q"]) * qb_games["move"]).round(1).tolist()
+    return out

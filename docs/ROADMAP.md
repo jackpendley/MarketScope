@@ -261,7 +261,10 @@ New Python app `apps/football/` (nflreadpy, polars, psycopg). The schema stays i
   - **035b done:**
     - R6 (the blend is worse than the close) and R7 (no play-caller continuity effect once the QB is held fixed), under addendum A.
     - The `/research` page.
-  - **Remaining:** R2 and the R3 re-run, once their gates are met.
+  - **035c done:**
+    - Coaching-data audit (ADR-045). R6 and R7 re-run on the corrected data, both unchanged.
+    - Historical injury studies R2h (no claim) and R2w (claim met: about 0.4 pts per newly-out starter), ADR-046.
+  - **Remaining:** the live R2 and the R3 re-run, once their gates are met.
   - R1: market accuracy over time.
   - R2: injury-news event study.
   - R3: weather → totals.

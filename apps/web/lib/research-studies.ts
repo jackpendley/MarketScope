@@ -47,9 +47,48 @@ export const STUDIES: Study[] = [
     status: "waiting for data",
     primary: null,
     finding:
-      "Needs at least 30 qualifying injury events from the daily injury snapshots, which began on 2026-10-18.",
+      "Needs at least 30 qualifying injury events from the daily injury snapshots, which began on 2026-10-18. R2h and R2w answer the question with historical data in the meantime.",
     exploratory: [],
     report: null,
+  },
+  {
+    id: "R2h",
+    title: "Are injuries priced? (history)",
+    question:
+      "Does the injury part of the model's estimate, from final injury reports, predict results against the closing line?",
+    window: "2016–24 regular seasons, 2,367 games",
+    status: "no claim",
+    primary: {
+      label: "Result vs the close, per point of the model's injury adjustment",
+      estimate: "+0.11",
+      interval: "−0.27 to +0.50",
+    },
+    finding:
+      "Not distinguishable from zero: by kickoff the closing line already carries what the final injury report says, as valued by the model.",
+    exploratory: [
+      "Neither the QB part (−0.16) nor the non-QB part (+0.41) is distinguishable from zero on its own.",
+    ],
+    report: `${REPO}/research/reports/r2h-injuries-priced.md`,
+  },
+  {
+    id: "R2w",
+    title: "Injury news during the week",
+    question:
+      "Does the consensus move between six days out and kickoff when a starter who played last week is ruled Out?",
+    window: "2026 weeks 1–6, 77 games, 80 events",
+    status: "claim",
+    primary: {
+      label: "Line move toward the opponent, per newly-out starter (points)",
+      estimate: "+0.40",
+      interval: "+0.14 to +0.73",
+    },
+    finding:
+      "Yes: the consensus moved about 0.4 points toward the opponent for each starter newly ruled Out. With R2h, the picture is that the market absorbs absences during the week and has priced them by kickoff.",
+    exploratory: [
+      "Counting non-QB starters only, a check added after seeing the result: +0.30 (+0.12 to +0.51).",
+      "Only 5 QB events, short of the 10 a QB claim needs.",
+    ],
+    report: `${REPO}/research/reports/r2w-injury-moves.md`,
   },
   {
     id: "R3",
@@ -134,13 +173,13 @@ export const STUDIES: Study[] = [
     primary: {
       label: "Extra carryover with the same play-caller",
       estimate: "+0.02",
-      interval: "−0.22 to +0.25",
+      interval: "−0.23 to +0.25",
     },
     finding:
-      "Once QB continuity is accounted for, keeping the play-caller adds no measurable carryover. Keeping the main QB does (+0.33, 0.04 to 0.61).",
+      "Once QB continuity is accounted for, keeping the play-caller adds no measurable carryover. Keeping the main QB does (+0.33, 0.04 to 0.60). Re-run after the MS-035c coaching corrections: unchanged.",
     exploratory: [
-      "Defense: no continuity effect for the defensive play-caller (−0.04, −0.28 to +0.21).",
-      "Scheme: across 19 play-callers who moved teams, neither pass rate over expected nor pace clearly followed them.",
+      "Defense: no continuity effect for the defensive play-caller (+0.01, −0.24 to +0.27).",
+      "Scheme: across 20 play-callers who moved teams, neither pass rate over expected nor pace clearly followed them.",
     ],
     report: `${REPO}/research/reports/r7-play-caller.md`,
   },
