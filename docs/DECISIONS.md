@@ -800,7 +800,7 @@ The test is only honest if the model is fixed before it runs and cannot be re-ru
 
 **Decision.**
 
-- **Two new studies, live R2 unchanged.** Addendum B was committed before any code (f431f0a on the branch).
+- **Two new studies, live R2 unchanged.** Addendum B was committed before any code (00d778b on `main`, first pushed as f431f0a in PR #44, on the branch).
   - **R2h** tests whether the close already prices the injury part of each ratings-v1 estimate (2016–24, walk-forward in the football harness, as with R6).
   - **R2w** measures the consensus move from 6 days out to the close against starters newly ruled Out on the final report who played the previous game (2026 weeks 1–6, R1's consensus rules).
 - **Robustness added after the result is labelled.** R2w's non-QB-only slope was added after the primary result was seen, and the report and page say so.
