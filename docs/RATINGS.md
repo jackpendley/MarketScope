@@ -386,6 +386,21 @@ Pre-registered studies (`research/PREREGISTRATION.md`, report `research/reports/
   - **Scheme:** across 20 movers, neither PROE nor pace clearly follows the play-caller.
   - **What this means for the model:** ratings-v1 makes its between-season reversion depend on play-caller continuity (points per drive 0.64 same vs 0.46 changed, fitted 2016–22). R7 suggests that difference mostly reflects QB changes, which tend to come with play-caller changes. Keying reversion on QB continuity is a candidate for a future model version, with its own validation; ratings-v1 stays frozen.
 
+### ratings-v2: QB-keyed offensive reversion (MS-039), not adopted
+
+R7 suggested that offensive carryover between seasons follows QB continuity, not play-caller continuity. ratings-v2 tested keying the filter's offensive reversion on a QB change, defined point in time: the team's expected week-1 starter differs from its main QB of the previous regular season. That happened at 34% of 2016–22 team-season boundaries. The design and adoption rule were pre-registered in `ratings/design_v2.py` before any fit; the report is `apps/football/reports/ratings-v2.md`.
+
+| Model                                                 | 2016–22 unit log likelihood | 2023–24 Δ margin MAE vs v1 | Δ log loss                   |
+| ----------------------------------------------------- | --------------------------- | -------------------------- | ---------------------------- |
+| play-caller (v1 structure, refitted on the same data) | 38.6                        | –                          | –                            |
+| QB (chosen variant)                                   | 38.4                        | −0.005 (−0.035 to +0.026)  | −0.0004 (−0.0023 to +0.0014) |
+| QB or play-caller                                     | 37.3                        | –                          | –                            |
+
+- **Verdict:** not adopted. The likelihood rule failed, by 0.2. The 2023–24 point estimates leaned slightly better but were well inside noise.
+- **The finding:** which continuity signal keys the reversion barely matters. Every variant is within about 1 log-likelihood unit, which matches MS-030's test of play-caller continuity (p = 0.66).
+- **The surprise:** the fitted carryover is higher, not lower, when the QB changes (points per drive 0.67 vs 0.51). The game layer's QB term already adjusts the estimate for the new QB, so the filter's rating of the rest of the offence shouldn't also be discounted. R7 measured raw offence, before any QB adjustment, so the two results are consistent.
+- **ratings-v1 stays the only version.**
+
 ### Parameter comparison (fitted values vs published models)
 
 | Parameter                                | MarketScope (fitted 2016–22)               | Published                                                               |
