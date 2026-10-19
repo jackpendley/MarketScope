@@ -109,6 +109,7 @@ The developer (Jack) is building it to move into a backend/full-stack software e
 | `cd research && PYTHONPATH=src STUDY_DATABASE_URL=… .venv/bin/python -m marketscope_research.run_playcaller_study --out reports/r7-play-caller.md`      | R7 play-caller continuity and scheme (read-only)                                                            |
 | `cd apps/football && PYTHONPATH=src .venv/bin/python -m marketscope_football.ratings.run_injury_priced`                                                 | R2h: are final-report absences priced in the close? (walk-forward 2016–24)                                  |
 | `cd research && PYTHONPATH=src STUDY_DATABASE_URL=… .venv/bin/python -m marketscope_research.run_injury_moves --out reports/r2w-injury-moves.md`        | R2w: consensus moves on newly confirmed absences (2026, read-only)                                          |
+| `cd research && PYTHONPATH=src STUDY_DATABASE_URL=… .venv/bin/python -m marketscope_research.run_market_football --out reports/market-football-v1.md`   | MS-036: market-movement model with point-in-time football features vs market-only (read-only)               |
 | `pnpm --filter @marketscope/<pkg> <script>`                                                                                                             | run one package's script                                                                                    |
 
 ## Repo map

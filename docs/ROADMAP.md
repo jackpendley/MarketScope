@@ -272,7 +272,7 @@ New Python app `apps/football/` (nflreadpy, polars, psycopg). The schema stays i
   - R5: luck regression.
   - R6: model + market blend.
   - R7: play-caller impact.
-- [ ] **MS-036** Re-run the Phase 7 pipeline with football features. Report the lift, with CIs.
+- [x] **MS-036** Re-run the Phase 7 pipeline with football features (ADR-047, `research/reports/market-football-v1.md`). No lift on will-it-move, and worse on direction (overfit on a 32-game training set). Forward check pending.
 
 ## Phase 11 — Portfolio release (MS-037+)
 

@@ -1,10 +1,10 @@
 # Project Status
 
-_Rewrite this file at the end of every session. Last updated: 2026-10-18 (session 1, continued; MS-035c)._
+_Rewrite this file at the end of every session. Last updated: 2026-10-18 (session 1, continued; MS-036)._
 
 ## Current milestone
 
-**Phase 9 (MarketScope Ratings): MS-029 (harness), MS-030 (Kalman engine), MS-030b (KenPom contract + `rating_snapshots`) MS-031a (QB layer) and MS-031b (non-QB availability) are done. MS-032a (factor selection, probabilities), MS-032b (ratings-v1 frozen, 2025 test, live forward test), MS-033a (ratings and team pages), MS-033b (matchups, scorecard, game panel) and MS-034 (season simulation) are done: Phase 9 is complete. Phase 10: MS-035a (pre-registration + studies R1, R3, R4, R5) and MS-035b (R6, R7, `/research`) are done; R2 and the R3 re-run wait for their gates. Next: MS-036 (market ML with football features).**
+**Phase 9 (MarketScope Ratings): MS-029 (harness), MS-030 (Kalman engine), MS-030b (KenPom contract + `rating_snapshots`) MS-031a (QB layer) and MS-031b (non-QB availability) are done. MS-032a (factor selection, probabilities), MS-032b (ratings-v1 frozen, 2025 test, live forward test), MS-033a (ratings and team pages), MS-033b (matchups, scorecard, game panel) and MS-034 (season simulation) are done: Phase 9 is complete. Phase 10: MS-035a (pre-registration + studies R1, R3, R4, R5) and MS-035b (R6, R7, `/research`), MS-035c (coaching audit, R2h, R2w) and MS-036 (market ML with football features) are done: Phase 10 is complete apart from the gated live R2 and the R3 re-run. Next: Phase 11 (portfolio release).**
 
 - **Scope extended 2026-10-17 (ADR-028):** football context and MarketScope Ratings, "KenPom for the NFL". The design is frozen in `docs/RATINGS.md`.
 - **Site:** deployed privately at https://marketscope-delta.vercel.app (user `marketscope`; the password is `VERCEL_SITE_PASSWORD` in `apps/web/.env.local`).
@@ -146,10 +146,19 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-18 (sessio
   - **R7 re-run** on the corrected production staff: unchanged (+0.02, −0.23 to +0.25; QB +0.33).
   - **`/research`** now lists 9 studies (R2h and R2w added).
 
+- **MS-036 (this PR, rebase-merged so the design commit stays first): football features in the market-movement model (ADR-047).**
+  - Pre-registered design `ml/design_football.py` (85fd030 on the branch).
+  - Point-in-time features (`ml/football_features.py`, with a leakage test): rating gap, in-game injury signal from snap counts, forecast wind and change, rest and travel.
+  - Same v1 protocol (`ml/experiment_football.py`, `run_market_football.py`, `research/reports/market-football-v1.md`, MODEL_CARD §1b):
+    - **Will it move:** no lift (Δ Brier +0.0011, −0.0015 to +0.0039).
+    - **Direction:** worse (+0.0373, +0.0045 to +0.0776), overfit on 152 training rows.
+    - **Exploratory:** the injury family came closest (−0.0025, −0.0052 to 0.0000).
+    - **Forward check:** pending (13 and 6 live games labelled; needs 15).
+
 ## Tests
 
 - **Football pytest:** 110 (unit tests, plus integration against the migrated test DB; includes validation of the committed coaching CSV and the 2016–24 seeding reproduction).
-- **Research pytest:** 36.
+- **Research pytest:** 40.
 - **TS:** db 47, shared 192, collector 51, web 108, e2e 37.
 
 ## Quotas
@@ -184,13 +193,15 @@ Nothing blocking.
 
 ## Next task
 
-**MS-036: market ML with football features.**
+**Phase 11: portfolio release (MS-037).**
 
-1. **Pre-register first:** the feature list, gate and comparison, before any computation, following the MS-024 pattern.
-2. **Re-run the Phase 7 pipeline** (`research/src/marketscope_research/ml/`, target: |Δ consensus over 24 h| ≥ 0.5) with football features added:
-   - model margin − consensus, and Δ model margin over 24 h (point in time)
-   - newly-out starters since the last snapshot (R2w shows the market moves about 0.4 pts per event, so this is the most promising feature)
-   - Δ forecast wind or precipitation
-   - rest and travel
-3. **Report the lift over the market-only baseline**, with game-clustered CIs and an ablation by feature family. Check the leakage audit covers the new features.
-4. **Gates to check weekly:** the live R2 (30 events, from 2026-10-18 snapshots) and R3 (30 games with wind of at least 15 mph).
+1. **Architecture diagram:** collector → Postgres ← Python football pipeline → Next.js. Add a schema overview to ARCHITECTURE.md.
+2. **Accessibility pass** on every page (headings, table captions, contrast, keyboard), then screenshots at desktop and 390 px.
+3. **Secret audit:** git history, committed reports and fixtures; confirm the redaction paths.
+4. **Case study write-up:** the board, the ratings, the forward test and the pre-registered studies, including the nulls and the R2w claim.
+5. **Ask Jack** before making the deployment public. The Odds API terms keep `/api/*` protected regardless.
+6. **Ongoing, weekly:**
+   - live R2 gate (30 events)
+   - R3 gate (30 games with wind of at least 15 mph)
+   - MS-024/036 forward checks (15 live games), then v2 with rolling-origin evaluation
+   - re-run `coaching_audit` after coaching changes

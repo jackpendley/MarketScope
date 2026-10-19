@@ -93,7 +93,30 @@ The headline "will it move" model uses only features available in both sources, 
 ### Next
 
 - Re-run when the forward check reaches 15 live games, and after more weeks, as v2 with rolling-origin evaluation.
-- Phase 10 (MS-036) adds football features: model margin − consensus, injury news, forecast changes. The lift is measured against this baseline.
+- Phase 10 (MS-036) added football features and measured their lift against this baseline; see section 1b.
+
+## 1b. Market-movement model with football features (MS-036, 2026-10-19)
+
+- **Design:** pre-registered in `research/src/marketscope_research/ml/design_football.py` (85fd030 on the branch), committed before any feature was built. Same target, split, C grid, bootstrap and claim rule as v1.
+- **Report:** `research/reports/market-football-v1.md`.
+- **Features, point in time at each snapshot t** (a unit test perturbs every input usable after t and checks that nothing changes):
+  - **Ratings:** gap between the rating margin and the consensus margin, from the latest ratings-v1 snapshot usable at t. Rating terms only: injury and QB terms come from reports published during the week.
+  - **Injuries:** starters (≥ 50% share over recent games) who played < 25% of snaps in their team's latest game, from snap counts at least 36 h old. Live injury statuses only start in week 6, so they can't train a model on weeks 1–4.
+  - **Weather:** wind at the shortest usable forecast lead, the change since the previous lead, and an outdoor flag.
+  - **Schedule:** rest difference, away travel, short week.
+
+**Results** (test week 5, football model minus the v1 market-only model, paired by game):
+
+| Target                           | Δ Brier                      | Δ log loss                | Verdict |
+| -------------------------------- | ---------------------------- | ------------------------- | ------- |
+| Will it move (≥ 0.5 pts in 24 h) | +0.0011 (−0.0015 to +0.0039) | +0.002 (−0.007 to +0.011) | no lift |
+| Direction, given a move          | +0.0373 (+0.0045 to +0.0776) | +0.081 (+0.010 to +0.172) | worse   |
+
+- **Direction:** 152 training rows from 32 games; the signed injury and rest features overfit.
+- **Exploratory:** the injury family alone in the will-it-move model came closest to helping, Δ Brier −0.0025 (−0.0052 to 0.0000).
+- **Forward check:** pending, with 13 and 6 labelled live games (needs 15).
+
+**What it means:** with one season of odds history (a 15-game test week), football features do not detectably improve line-move prediction. This matches R4 and R2h, which found the closing market already prices this information. Re-run as v2 with rolling-origin evaluation when more live weeks exist; the live injury snapshots can then be used directly.
 
 ---
 
