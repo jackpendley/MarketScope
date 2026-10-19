@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { ChangePasswordForm } from "@/components/change-password-form";
 import { SignOutButton } from "@/components/sign-out-button";
-import { MIN_PASSWORD_LENGTH, SESSION_DAYS } from "@/lib/auth-config";
+import { SESSION_DAYS } from "@/lib/auth-config";
 import { getAuth } from "@/lib/server/auth";
 
 export const metadata: Metadata = { title: "Account" };
@@ -38,7 +38,7 @@ export default async function AccountPage() {
         <h2 id="password" className="text-sm font-medium uppercase tracking-wide text-muted">
           Change password
         </h2>
-        <ChangePasswordForm minLength={MIN_PASSWORD_LENGTH} />
+        <ChangePasswordForm />
       </section>
     </div>
   );

@@ -12,7 +12,7 @@ afterAll(() => close());
 
 const ORIGIN = "http://localhost:3200";
 // Credentials are generated per run: nothing credential-shaped is committed (secret scanners).
-const secret = () => `pw-${randomUUID()}`;
+const secret = () => `Pw!-${randomUUID()}`; // meets the rule: capital + special character
 const auth = createAuth(db, {
   BETTER_AUTH_SECRET: randomBytes(32).toString("hex"),
   BETTER_AUTH_URL: ORIGIN,
@@ -133,9 +133,35 @@ describe("site accounts", () => {
   it("refuses short passwords and duplicate emails", async () => {
     await expect(
       createAccount(auth, { username: "x_y", email: "x@example.com", password: "x".repeat(5) }),
-    ).rejects.toThrow(/at least 12/);
+    ).rejects.toThrow(/at least 9/);
     await expect(createAccount(auth, { ...USER, username: "other" })).rejects.toThrow(
       /already has an account/,
     );
+  });
+
+  it("the server enforces the password rule when a signed-in user changes their password", async () => {
+    const signIn = await post("/sign-in/username", { username: "jack_p", password: USER.password });
+    const cookie = (signIn.headers.get("set-cookie") ?? "")
+      .split(/,(?=\s*[\w.-]+=)/)
+      .map((c) => c.split(";")[0])
+      .join("; ");
+    const change = (newPassword: string) =>
+      auth.handler(
+        new Request(`${ORIGIN}/api/auth/change-password`, {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            origin: ORIGIN,
+            cookie,
+            "x-forwarded-for": "192.0.2.50",
+          },
+          body: JSON.stringify({ currentPassword: USER.password, newPassword }),
+        }),
+      );
+    const weak = await change("#".padEnd(12, "x")); // no capital
+    expect(weak.status).toBe(400);
+    expect(((await weak.json()) as { code?: string }).code).toBe("PASSWORD_POLICY");
+    expect((await change("Q".padEnd(12, "x"))).status).toBe(400); // no special character
+    expect((await change(NEW_PASSWORD)).status).toBe(200);
   });
 });

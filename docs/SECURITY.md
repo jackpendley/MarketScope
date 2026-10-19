@@ -11,7 +11,9 @@ How MarketScope protects its secrets, its data and its users, and the results of
   The Odds API terms forbid redistributing its data "through your own API".
 - **Accounts.** [Better Auth](https://www.better-auth.com/) with username or email + password:
   - **Invite-only:** sign-up is disabled; accounts come from `pnpm --filter @marketscope/web users`.
-  - **Passwords:** at least 12 characters, stored only as salted scrypt hashes. Hidden-prompt input in the CLI.
+  - **Passwords:** at least 9 characters with a capital letter and a special character (Jack's rule,
+    `lib/password-policy.ts`, enforced by a server hook, the CLI and the form). Stored only as
+    salted scrypt hashes. Hidden-prompt input in the CLI.
   - **Sessions:** a random token in an httpOnly, SameSite=Lax cookie (Secure over HTTPS), stored
     in `auth_sessions`, 30 days with a sliding expiry. A signed 5-minute cookie cache saves
     database lookups, so a revoked session can keep working for up to 5 minutes.

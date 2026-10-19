@@ -892,3 +892,12 @@ The test is only honest if the model is fixed before it runs and cannot be re-ru
 - **Vercel environment:** needs `BETTER_AUTH_SECRET` (Production and Preview). `BASIC_AUTH_USER` and `BASIC_AUTH_PASSWORD` can be deleted after the switch. Rotating the secret signs everyone out.
 - **No self-service reset:** a forgotten password is reset by the owner with the CLI. Email reset is a later, approved addition (a provider account and an API key).
 - **Opening the site to sign-ups** remains Jack's decision. `/api/*` stays session-only under the Odds API terms either way.
+
+**Amendment (2026-10-19, MS-038b): password rule.**
+
+- **The rule:** at Jack's request, passwords now need at least 9 characters, including a capital letter and a special character. The original rule was 12 characters with no composition requirement.
+- **One source:** the rule lives in `lib/password-policy.ts`. Three places use it:
+  - a Better Auth `before` hook on `/change-password` and `/reset-password`, so direct API calls can't bypass the form
+  - the account CLI
+  - the change-password form
+- **Trade-off, noted when the change was made:** NIST SP 800-63B prefers length over composition rules. The remaining protections are rate-limited sign-in, scrypt hashing and invite-only accounts.

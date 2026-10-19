@@ -1,3 +1,5 @@
+import { passwordProblem } from "./password-policy";
+
 /** What a person sees when sign-in fails. Wrong username and wrong password read the same, so the
  * page never reveals which accounts exist. */
 export function signInErrorMessage(status: number | undefined): string {
@@ -8,13 +10,9 @@ export function signInErrorMessage(status: number | undefined): string {
 }
 
 /** Client-side checks before asking the server to change a password. Null when it looks fine. */
-export function newPasswordProblem(
-  next: string,
-  confirm: string,
-  current: string,
-  min: number,
-): string | null {
-  if (next.length < min) return `Use at least ${min} characters.`;
+export function newPasswordProblem(next: string, confirm: string, current: string): string | null {
+  const problem = passwordProblem(next);
+  if (problem) return problem;
   if (next !== confirm) return "The two new passwords don't match.";
   if (next === current) return "Choose a password different from the current one.";
   return null;

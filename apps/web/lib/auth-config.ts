@@ -4,6 +4,7 @@
 // app goes through lib/server/auth.ts.
 
 import { betterAuth } from "better-auth";
+import { APIError, createAuthMiddleware } from "better-auth/api";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
 import { username } from "better-auth/plugins";
@@ -15,9 +16,9 @@ import {
   authVerifications,
   type Database,
 } from "@marketscope/db";
+import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH, passwordProblem } from "./password-policy";
 
 export const SESSION_DAYS = 30;
-export const MIN_PASSWORD_LENGTH = 12;
 /** Failed and successful sign-ins share this budget per IP address. */
 export const SIGN_IN_LIMIT = { window: 60, max: 5 };
 
@@ -55,7 +56,8 @@ export function createAuth(db: Database, env: Record<string, string | undefined>
     emailAndPassword: {
       enabled: true,
       disableSignUp: true, // invite-only: accounts come from scripts/users.ts
-      minPasswordLength: MIN_PASSWORD_LENGTH,
+      minPasswordLength: PASSWORD_MIN_LENGTH,
+      maxPasswordLength: PASSWORD_MAX_LENGTH,
       revokeSessionsOnPasswordReset: true,
     },
     session: {
@@ -69,6 +71,18 @@ export function createAuth(db: Database, env: Record<string, string | undefined>
       enabled: true,
       storage: "database", // shared by every serverless instance
       customRules: { "/sign-in/email": SIGN_IN_LIMIT, "/sign-in/username": SIGN_IN_LIMIT },
+    },
+    // Better Auth only checks length; the capital/special-character rule is enforced here for
+    // every endpoint that sets a password (the CLI checks it before calling the adapter).
+    hooks: {
+      before: createAuthMiddleware(async (ctx) => {
+        if (ctx.path !== "/change-password" && ctx.path !== "/reset-password") return;
+        const problem = passwordProblem(
+          String((ctx.body as { newPassword?: unknown })?.newPassword ?? ""),
+        );
+        if (problem)
+          throw new APIError("BAD_REQUEST", { message: problem, code: "PASSWORD_POLICY" });
+      }),
     },
     // Better Auth skips its origin (CSRF) check when NODE_ENV is "test"; state it explicitly so
     // the check runs everywhere, including the integration tests that prove it.
@@ -88,8 +102,8 @@ export async function createAccount(
   input: { username: string; email: string; name?: string; password: string },
 ): Promise<string> {
   const ctx = await auth.$context;
-  if (input.password.length < MIN_PASSWORD_LENGTH)
-    throw new Error(`Passwords must be at least ${MIN_PASSWORD_LENGTH} characters.`);
+  const problem = passwordProblem(input.password);
+  if (problem) throw new Error(problem);
   const email = input.email.trim().toLowerCase();
   if (await ctx.internalAdapter.findUserByEmail(email))
     throw new Error(`${email} already has an account.`);
@@ -115,8 +129,8 @@ export async function createAccount(
 /** Set a new password and sign the user out everywhere. */
 export async function resetPassword(auth: Auth, userId: string, password: string): Promise<void> {
   const ctx = await auth.$context;
-  if (password.length < MIN_PASSWORD_LENGTH)
-    throw new Error(`Passwords must be at least ${MIN_PASSWORD_LENGTH} characters.`);
+  const problem = passwordProblem(password);
+  if (problem) throw new Error(problem);
   await ctx.internalAdapter.updatePassword(userId, await ctx.password.hash(password));
   await ctx.internalAdapter.deleteUserSessions(userId);
 }
