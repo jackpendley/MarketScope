@@ -163,7 +163,8 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-18 (sessio
   - **Secret audit:** clean (SECURITY.md): no secret value or pattern anywhere in history, and no env file ever committed.
   - **Wording:** "password-protected", not "private" (Jack confirmed the site is public behind the password).
 
-- **MS-038 (this PR): invite-only accounts (ADR-049).**
+- **MS-038 (#49): invite-only accounts (ADR-049).** Rolled out 2026-10-19: `BETTER_AUTH_SECRET` added on Vercel (separate values for Production and Preview), migration 0015 applied, and Jack's account created.
+- **MS-038b (this PR): password rule.** At least 9 characters, plus a capital letter and a special character (`lib/password-policy.ts`, server hook plus CLI plus form, tested).
   - **Library:** Better Auth 1.7.7 (username or email + password), with the five `auth_*` tables (migration 0015, RLS).
   - **Proxy:** session-checking, failing closed without `BETTER_AUTH_SECRET` on Vercel.
   - **Pages:** `/login` (polished card, show/hide password, generic errors) and `/account` (change password, sign out). The header shows the user and "Sign out".
@@ -175,7 +176,7 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-18 (sessio
 
 - **Football pytest:** 110 (unit tests, plus integration against the migrated test DB; includes validation of the committed coaching CSV and the 2016–24 seeding reproduction).
 - **Research pytest:** 40.
-- **TS:** db 47, shared 192, collector 51, web 115 (unit + integration), e2e 56.
+- **TS:** db 47, shared 192, collector 51, web 118 (unit + integration), e2e 56.
 
 ## Quotas
 

@@ -3,11 +3,12 @@
 import { useState, type FormEvent } from "react";
 import { authClient } from "@/lib/auth-client";
 import { newPasswordProblem } from "@/lib/auth-messages";
+import { PASSWORD_RULE } from "@/lib/password-policy";
 
 const input =
   "w-full rounded-md border border-line bg-canvas px-3 py-2 text-sm text-fg focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/40";
 
-export function ChangePasswordForm({ minLength }: { minLength: number }) {
+export function ChangePasswordForm() {
   const [status, setStatus] = useState<{ ok: boolean; text: string } | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -17,7 +18,7 @@ export function ChangePasswordForm({ minLength }: { minLength: number }) {
     const form = new FormData(formEl);
     const current = String(form.get("current") ?? "");
     const next = String(form.get("next") ?? "");
-    const problem = newPasswordProblem(next, String(form.get("confirm") ?? ""), current, minLength);
+    const problem = newPasswordProblem(next, String(form.get("confirm") ?? ""), current);
     if (problem) return setStatus({ ok: false, text: problem });
     setPending(true);
     const res = await authClient.changePassword({
@@ -32,7 +33,9 @@ export function ChangePasswordForm({ minLength }: { minLength: number }) {
         text:
           res.error.status === 429
             ? "Too many attempts. Wait a minute, then try again."
-            : "Your current password is not correct.",
+            : res.error.code === "PASSWORD_POLICY" && res.error.message
+              ? res.error.message
+              : "Your current password is not correct.",
       });
       return;
     }
@@ -63,9 +66,7 @@ export function ChangePasswordForm({ minLength }: { minLength: number }) {
           />
         </div>
       ))}
-      <p className="text-xs text-muted">
-        At least {minLength} characters. A passphrase works well.
-      </p>
+      <p className="text-xs text-muted">{PASSWORD_RULE}</p>
       {status && (
         <p
           role={status.ok ? "status" : "alert"}

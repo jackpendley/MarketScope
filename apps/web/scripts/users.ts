@@ -12,7 +12,8 @@
 import { createInterface } from "node:readline/promises";
 import { parseArgs } from "node:util";
 import { createDb, deleteAccountSessions, findAccount, listAccounts } from "@marketscope/db";
-import { createAccount, createAuth, MIN_PASSWORD_LENGTH, resetPassword } from "../lib/auth-config";
+import { createAccount, createAuth, resetPassword } from "../lib/auth-config";
+import { PASSWORD_RULE } from "../lib/password-policy";
 
 const { positionals, values } = parseArgs({
   allowPositionals: true,
@@ -51,7 +52,8 @@ async function newPassword(): Promise<string> {
   if (values["password-stdin"]) return readStdin();
   if (!process.stdin.isTTY)
     throw new Error("Run this in a terminal, or pipe the password with --password-stdin.");
-  const first = await askHidden(`New password (at least ${MIN_PASSWORD_LENGTH} characters): `);
+  console.log(PASSWORD_RULE);
+  const first = await askHidden("New password: ");
   const second = await askHidden("Repeat it: ");
   if (first !== second) throw new Error("The passwords don't match.");
   return first;
