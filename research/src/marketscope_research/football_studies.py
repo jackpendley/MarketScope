@@ -226,3 +226,136 @@ def r5_persistence(snaps: pd.DataFrame, last_week: dict[int, int]) -> dict:
     m = a.merge(ends, on=["season", "team"], suffixes=("_early", "_end"))
     m["later"] = m["luck_end"] - m["luck_early"]
     return {"team_seasons": len(m), "slope": slope(m["later"].to_numpy(), m["luck_early"].to_numpy())}
+
+
+# --- R7: play-caller impact (addendum A) -----------------------------------------------------
+
+R7_PAIR_SEASONS = range(2016, 2024)  # pairs (s, s + 1) with s + 1 <= 2024
+R7_MIN_CHANGED = 40
+
+
+def last_regular_week(season: int) -> int:
+    return 18 if season >= 2021 else 17
+
+
+def coef_ci(y: np.ndarray, X: np.ndarray, j: int, resamples: int = RESAMPLES) -> Estimate:
+    """Coefficient j (0 = intercept) of OLS y ~ X with a bootstrap interval resampling rows."""
+    y, X = np.asarray(y, float), np.asarray(X, float)
+    beta, se = ols(y, X)
+    rng = _rng()
+    n = len(y)
+    boots = np.empty(resamples)
+    for b in range(resamples):
+        i = rng.integers(0, n, n)
+        boots[b] = ols(y[i], X[i])[0][j]
+    lo, hi = np.quantile(boots, [0.025, 0.975])
+    return Estimate(float(beta[j]), float(lo), float(hi), n, float(se[j]))
+
+
+def season_units(team_games: pd.DataFrame) -> pd.DataFrame:
+    """Per (season, team): offensive points per drive and points per drive allowed, each centred on
+    the season's league mean. team_games: season, team, opponent, drives, drive_points (regular season)."""
+    off = team_games.groupby(["season", "team"])[["drives", "drive_points"]].sum()
+    allowed = team_games.groupby(["season", "opponent"])[["drives", "drive_points"]].sum()
+    allowed.index = allowed.index.set_names(["season", "team"])
+    league = team_games.groupby("season")[["drives", "drive_points"]].sum()
+    mean = league["drive_points"] / league["drives"]
+    out = pd.DataFrame({"off": off["drive_points"] / off["drives"], "def": allowed["drive_points"] / allowed["drives"]})
+    seasons = out.index.get_level_values("season")
+    out["off"] -= mean.loc[seasons].to_numpy()
+    out["def"] -= mean.loc[seasons].to_numpy()
+    return out.reset_index()
+
+
+def caller_at(staff: pd.DataFrame, side: str, week_of: dict[int, int]) -> pd.Series:
+    """The {side} play-caller's coach_id per (season, team) at week week_of[season].
+    staff: season, team, coach_id, from_week, to_week, offense_playcaller, defense_playcaller."""
+    s = staff[staff[f"{side}_playcaller"]]
+    wk = s["season"].map(week_of)
+    s = s[(s["from_week"] <= wk) & (s["to_week"] >= wk)]
+    dup = s.duplicated(["season", "team"], keep=False)
+    if dup.any():
+        raise ValueError(f"more than one {side} play-caller: {s[dup][['season', 'team']].drop_duplicates().values.tolist()}")
+    return s.set_index(["season", "team"])["coach_id"]
+
+
+def main_caller(staff: pd.DataFrame, side: str) -> pd.Series:
+    """The {side} play-caller with the most regular-season weeks per (season, team)."""
+    s = staff[staff[f"{side}_playcaller"]].copy()
+    last = s["season"].map(last_regular_week)
+    s["weeks"] = (np.minimum(s["to_week"], last) - s["from_week"] + 1).clip(lower=0)
+    s = s.sort_values(["season", "team", "weeks", "from_week"], ascending=[True, True, False, False])
+    return s.drop_duplicates(["season", "team"]).set_index(["season", "team"])["coach_id"]
+
+
+def main_qb(starts: pd.DataFrame) -> pd.Series:
+    """The QB with the most regular-season starts per (season, team); ties go to the later starter.
+    starts: season, week, team, qb_id (one row per team-game)."""
+    agg = starts.groupby(["season", "team", "qb_id"]).agg(n=("week", "size"), last=("week", "max")).reset_index()
+    agg = agg.sort_values(["season", "team", "n", "last"], ascending=[True, True, False, False])
+    return agg.drop_duplicates(["season", "team"]).set_index(["season", "team"])["qb_id"]
+
+
+def r7_pairs(units: pd.DataFrame, staff: pd.DataFrame, starts: pd.DataFrame) -> pd.DataFrame:
+    """One row per team and pair (s, s + 1): x/y offence and defence, same_off/same_def caller, same_qb."""
+    u = units.set_index(["season", "team"])
+    end = {s: last_regular_week(s) for s in staff["season"].unique()}
+    first = {s: 1 for s in staff["season"].unique()}
+    off_end, off_first = caller_at(staff, "offense", end), caller_at(staff, "offense", first)
+    def_end, def_first = caller_at(staff, "defense", end), caller_at(staff, "defense", first)
+    qb = main_qb(starts)
+    rows = []
+    for (s, team), r in u.iterrows():
+        if s not in R7_PAIR_SEASONS or (s + 1, team) not in u.index:
+            continue
+        nxt = u.loc[(s + 1, team)]
+        rows.append({"season": s, "team": team, "x_off": r["off"], "y_off": nxt["off"],
+                     "x_def": r["def"], "y_def": nxt["def"],
+                     "same_off": off_end.get((s, team)) == off_first.get((s + 1, team)),
+                     "same_def": def_end.get((s, team)) == def_first.get((s + 1, team)),
+                     "same_qb": qb.get((s, team)) == qb.get((s + 1, team))})
+    return pd.DataFrame(rows)
+
+
+def r7_carryover(p: pd.DataFrame, resamples: int = RESAMPLES) -> dict:
+    C, Q, x = p["same_off"].to_numpy(float), p["same_qb"].to_numpy(float), p["x_off"].to_numpy(float)
+    X = np.column_stack([x, C, Q, x * C, x * Q])
+    changed_c, changed_q = int((C == 0).sum()), int((Q == 0).sum())
+    out = {"pairs": len(p), "changed_caller": changed_c, "changed_qb": changed_q,
+           "gate": changed_c >= R7_MIN_CHANGED and changed_q >= R7_MIN_CHANGED,
+           "interaction": coef_ci(p["y_off"].to_numpy(), X, 4, resamples),
+           "qb_interaction": coef_ci(p["y_off"].to_numpy(), X, 5, resamples),
+           "overall": slope(p["y_off"].to_numpy(), x, resamples), "groups": []}
+    for (c, q), g in p.groupby(["same_off", "same_qb"]):
+        out["groups"].append({"same_caller": bool(c), "same_qb": bool(q), "pairs": len(g),
+                              "slope": slope(g["y_off"].to_numpy(), g["x_off"].to_numpy(), resamples)})
+    d, xd = p["same_def"].to_numpy(float), p["x_def"].to_numpy(float)
+    out["defense"] = {"changed": int((d == 0).sum()),
+                      "interaction": coef_ci(p["y_def"].to_numpy(), np.column_stack([xd, d, xd * d]), 3, resamples),
+                      "same": slope(p.loc[p["same_def"], "y_def"].to_numpy(), p.loc[p["same_def"], "x_def"].to_numpy(), resamples),
+                      "changed_slope": slope(p.loc[~p["same_def"], "y_def"].to_numpy(), p.loc[~p["same_def"], "x_def"].to_numpy(), resamples)}
+    return out
+
+
+def scheme_movers(traits: pd.DataFrame, callers: pd.Series) -> pd.DataFrame:
+    """Play-callers who were the main offensive caller at team A in s and at team B != A in s + 1.
+    traits: season, team and trait columns (team-season means); callers: main_caller(staff, "offense")."""
+    t = traits.set_index(["season", "team"])
+    by = callers.rename("coach_id").reset_index()
+    rows = []
+    for _, a in by.iterrows():
+        nxt = by[(by["season"] == a["season"] + 1) & (by["coach_id"] == a["coach_id"]) & (by["team"] != a["team"])]
+        for _, b in nxt.iterrows():
+            ka, kb_prev, kb = (a["season"], a["team"]), (a["season"], b["team"]), (b["season"], b["team"])
+            if ka in t.index and kb_prev in t.index and kb in t.index:
+                row = {"coach_id": a["coach_id"], "season": int(a["season"]), "from": a["team"], "to": b["team"]}
+                for c in t.columns:
+                    row |= {f"{c}_caller": t.loc[ka, c], f"{c}_prior": t.loc[kb_prev, c], f"{c}_new": t.loc[kb, c]}
+                rows.append(row)
+    return pd.DataFrame(rows)
+
+
+def r7_scheme(movers: pd.DataFrame, trait: str, resamples: int = RESAMPLES) -> dict:
+    X = movers[[f"{trait}_caller", f"{trait}_prior"]].to_numpy(float)
+    y = movers[f"{trait}_new"].to_numpy(float)
+    return {"movers": len(movers), "caller": coef_ci(y, X, 1, resamples), "prior": coef_ci(y, X, 2, resamples)}

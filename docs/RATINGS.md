@@ -373,6 +373,13 @@ Pre-registered studies (`research/PREREGISTRATION.md`, report `research/reports/
 
 - **R4, is performance priced?** ATS residual per point of gap between the rating margin and the close: +0.12 (−0.05 to +0.29), positive in 6 of 9 seasons but negative on 2023–24 (−0.11). Claim not met: the ratings carry no information beyond the close. Exploratory: in 2026 the consensus moved toward the ratings between 6 days out and the close (+0.10 per point of gap, 77 games).
 - **R5, luck:** the market does not overrate lucky teams (−0.02 ATS points per win of luck, −0.50 to +0.47), and luck does not persist (+0.08 per win, interval includes 0).
+- **R6, model + market blend (2023–24, 570 games, `research/reports/r6-model-market-blend.md`):** blending ratings-v1's win probability into the no-vig close made it worse. The blend's weight is refitted each week on the previous four weeks, with the model weight capped at 0.60. Δ Brier vs the close is +0.0026 (+0.0006 to +0.0047). The weight was 0 in 30 of 44 weeks (mean 0.15). A fixed 35% model weight (nfelo) was also worse: +0.0028. nfelo's published gain does not replicate for this model, which is 0.012 Brier behind the close on its own.
+- **R7, play-caller continuity (2016–24, 256 team-season pairs, `research/reports/r7-play-caller.md`):** observed offensive points per drive carries over at 0.45 overall.
+  - **The play-caller:** holding QB continuity fixed, keeping him adds +0.02 (−0.22 to +0.25), so no claim.
+  - **The QB:** keeping the main QB adds +0.33 (+0.04 to +0.61).
+  - **Defence:** no play-caller continuity effect.
+  - **Scheme:** across 19 movers, neither PROE nor pace clearly follows the play-caller.
+  - **What this means for the model:** ratings-v1 makes its between-season reversion depend on play-caller continuity (points per drive 0.64 same vs 0.46 changed, fitted 2016–22). R7 suggests that difference mostly reflects QB changes, which tend to come with play-caller changes. Keying reversion on QB continuity is a candidate for a future model version, with its own validation; ratings-v1 stays frozen.
 
 ### Parameter comparison (fitted values vs published models)
 
@@ -391,7 +398,7 @@ Pre-registered studies (`research/PREREGISTRATION.md`, report `research/reports/
 | Missing starter, non-QB (points)         | OL 0.73, WR/TE 0.90, front 7 0.59, DB 0.58 | ELWAY 0.5–1 typical, max ≈ 2                                            |
 | Pythagorean exponent                     | 2.79                                       | classic NFL 2.37                                                        |
 | Margin of exactly 3 vs a smooth curve    | 2.9×                                       | (key number)                                                            |
-| Model + market blend                     | not tested (research R6)                   | nfelo: ≈ 65% market weight optimal                                      |
+| Model + market blend                     | worse than the close (R6: Δ Brier +0.0026) | nfelo: ≈ 65% market weight optimal                                      |
 
 ## Changelog
 

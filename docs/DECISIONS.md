@@ -738,3 +738,22 @@ The test is only honest if the model is fixed before it runs and cannot be re-ru
 
 - **v1 results (R1, R3, R4, R5):** no primary claim met. The consensus 6 days out was as accurate as the close (77 games, 2026). The wind study missed its gate by one windy game. Ratings carry no information beyond the close, and the market does not overrate lucky teams.
 - **Re-runs.** R2 (injury news) waits for live injury history; R3 is re-run when the windy-game gate is met. A re-run reuses the frozen design; any change to the design is a new pre-registration.
+
+## ADR-044 — R6 and R7 operational rules (pre-registration addendum A); a static /research page (2026-10-18)
+
+**Context.** The R6 and R7 entries in the pre-registration left details open: the blend's weight rule, which seasons warm it up, how to define "same play-caller" and "same QB". R7 also named a measure (the end-of-season points-per-drive rating) that would build in the effect it tests: ratings-v1 reverts less between seasons when the play-caller stays.
+
+**Decision.**
+
+- **Addendum before code.** Addendum A to `research/PREREGISTRATION.md` (9314b78 on the MS-035b branch, before any R6 or R7 code) fixes the rules and says what was already known.
+  - **R6 weight:** the Brier-optimal weight on the previous four week slots, clipped to [0, 0.60].
+  - **R7 measure:** observed season points per drive instead of the filtered rating.
+  - **R7 continuity definitions:** the engine's play-caller boundary rule, and the QB with the most starts.
+- **R6 runs in the football eval harness**, a stated exception to "studies read the database only": the walk-forward predictions exist only there. Its pure functions and tests live in `apps/football/.../ratings/blend.py`, and the report goes to `research/reports/`.
+- **The `/research` page is static.** `apps/web/lib/research-studies.ts` copies each headline number from a committed report. There is no database table, because results change only when a study is re-run. A unit test checks the shape: every completed study has an estimate inside its interval, a claim needs an interval that excludes zero, and there is no wagering language.
+
+**Consequences.**
+
+- **R6:** the blend is worse than the close (Δ Brier +0.0026, +0.0006 to +0.0047). The displayed rating stays market-free (rule 7) and nothing changes in the product.
+- **R7:** no play-caller continuity effect once QB continuity is held fixed; QB continuity matters. This questions ratings-v1's play-caller-keyed reversion. That is a candidate for a future model version, not a change to the frozen one.
+- **Upkeep:** the page has to be edited by hand when R2 or R3 is run.

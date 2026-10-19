@@ -221,3 +221,22 @@ test.describe("data coverage", () => {
     await expect(page.getByRole("heading", { name: /Market replay/ })).toBeVisible();
   });
 });
+
+test.describe("research", () => {
+  test("lists the pre-registered studies with their status", async ({ page }) => {
+    await page.goto("/nfl");
+    await page
+      .getByRole("navigation", { name: "Primary" })
+      .getByRole("link", { name: "Research" })
+      .click();
+    await expect(page.getByRole("heading", { name: "Research", level: 1 })).toBeVisible();
+    await expect(page.locator("article[aria-labelledby^='study-']")).toHaveCount(7);
+    await expect(page.getByRole("link", { name: "pre-registered" })).toHaveAttribute(
+      "href",
+      /PREREGISTRATION\.md$/,
+    );
+    await expect(page.getByRole("article", { name: /R2 Injury news/ })).toContainText(
+      "waiting for data",
+    );
+  });
+});

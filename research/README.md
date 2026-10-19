@@ -12,11 +12,13 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 
 ## Studies
 
-| Study                                                                         | Code                                              | Report                              |
-| ----------------------------------------------------------------------------- | ------------------------------------------------- | ----------------------------------- |
-| Does an outlier book predict consensus convergence within 24 h? (spec §15)    | `src/marketscope_research/outlier_convergence.py` | `reports/outlier-convergence-v1.md` |
-| Market-movement model: data gate (MS-024, spec §16)                           | `src/marketscope_research/ml/`                    | `reports/market-ml-gate-v1.md`      |
-| Football studies R1/R3/R4/R5 (MS-035; pre-registered in `PREREGISTRATION.md`) | `src/marketscope_research/football_studies.py`    | `reports/football-studies-v1.md`    |
+| Study                                                                            | Code                                                                      | Report                              |
+| -------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ----------------------------------- |
+| Does an outlier book predict consensus convergence within 24 h? (spec §15)       | `src/marketscope_research/outlier_convergence.py`                         | `reports/outlier-convergence-v1.md` |
+| Market-movement model: data gate (MS-024, spec §16)                              | `src/marketscope_research/ml/`                                            | `reports/market-ml-gate-v1.md`      |
+| Football studies R1/R3/R4/R5 (MS-035; pre-registered in `PREREGISTRATION.md`)    | `src/marketscope_research/football_studies.py`                            | `reports/football-studies-v1.md`    |
+| R6 model + market blend (MS-035b; addendum A; runs in the football eval harness) | `apps/football/.../ratings/blend.py`, `run_blend.py`                      | `reports/r6-model-market-blend.md`  |
+| R7 play-caller impact (MS-035b; addendum A)                                      | `src/marketscope_research/football_studies.py`, `run_playcaller_study.py` | `reports/r7-play-caller.md`         |
 
 Run against a database (production via Jack's local `SUPABASE_DATABASE_URL`, or a local demo/e2e DB with `--sources synthetic`):
 
