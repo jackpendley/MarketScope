@@ -200,3 +200,56 @@ writing this:
     means, weighted by plays.
   - A coefficient on the caller's old value that is above 0 means the trait follows the coach.
   - Coach and roster effects are confounded, so this is descriptive.
+
+## Addendum B (2026-10-19): historical injury studies R2h and R2w
+
+Committed before any R2h or R2w code was written or any outcome computed. The live R2 above is
+unchanged; it still waits for its gate. These two studies answer the same question with historical
+data, which has no record of when a status was first published. Looked at before writing this:
+
+- **Counts for R2w, weeks 2–6 of 2026:** 97 players on a final report as Out who had averaged at
+  least 50% of snaps and played the team's previous game. They cover 67 team-games; 6 are QBs.
+- **Already known:**
+  - R4: rating gaps carry no information beyond the close.
+  - MS-031: the QB and availability layers improve the model's margin error.
+  - Line moves after the report have never been computed.
+- **Coaching data:** these studies come after the MS-035c coaching corrections (ADR-045).
+
+### R2h: are final-report absences priced in the close? (2016–24)
+
+- **Predictions:**
+  - Frozen ratings-v1, walk-forward through the football eval harness, scored on 2016–24 regular
+    seasons. The runner never sees 2025.
+  - This is the same stated exception as R6: the predictions exist only in the harness.
+- **Availability adjustment A** (points, home-oriented): the game layer's QB term plus its non-QB
+  availability terms (weight × feature) for each game.
+  - It is computed from the final weekly injury report and reserve lists. Both are published before
+    kickoff, so the close had the same information.
+- **Primary:** OLS of the ATS residual (actual margin − close margin) on A. Game bootstrap with
+  5,000 resamples (seed 2026).
+  - "Absences are under-priced" if the slope's interval lies above 0.
+  - "Over-priced" if it lies below 0.
+- **Exploratory:**
+  - The QB part and the non-QB part as separate regressors.
+  - Games with |A| ≥ 2: mean ATS residual in the direction of A.
+- **Gate:** at least 1,000 games with A ≠ 0.
+
+### R2w: does the market move on absences during the week? (2026, weeks 1–6)
+
+- **Games:** final 2026 regular-season games with a board consensus 6 days out and at the close.
+  These use R1's rules and sources (live collection or the OddsPapi backfill).
+- **Event:** a player listed Out on his team's final injury report for the game who:
+  - averaged at least 50% of offensive or defensive snaps over his snap rows in the team's previous
+    three game weeks, and
+  - played (snaps > 0) in the team's previous game, so the absence is news since that game.
+  - QB events are those with position QB.
+- **Primary:**
+  - Game-level OLS of the consensus margin move on N.
+  - The move is close − 6 days, home-oriented, in points.
+  - N is the away team's event count minus the home team's.
+  - Game bootstrap with 5,000 resamples (seed 2026). "The market moves on newly confirmed absences
+    during the week" if the slope (points per event) lies above 0.
+- **What it can't see:** information already priced 6 days out, such as injuries obvious on the
+  previous Sunday.
+- **Exploratory:** QB events described separately; a QB claim needs at least 10 QB events.
+- **Gate:** at least 30 events in qualifying games.
