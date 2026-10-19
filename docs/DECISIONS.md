@@ -745,7 +745,7 @@ The test is only honest if the model is fixed before it runs and cannot be re-ru
 
 **Decision.**
 
-- **Addendum before code.** Addendum A to `research/PREREGISTRATION.md` (9314b78 on the MS-035b branch, before any R6 or R7 code) fixes the rules and says what was already known.
+- **Addendum before code.** Addendum A to `research/PREREGISTRATION.md` (145a5de on `main`, first pushed as 9314b78 in PR #41, before any R6 or R7 code) fixes the rules and says what was already known.
   - **R6 weight:** the Brier-optimal weight on the previous four week slots, clipped to [0, 0.60].
   - **R7 measure:** observed season points per drive instead of the filtered rating.
   - **R7 continuity definitions:** the engine's play-caller boundary rule, and the QB with the most starts.
