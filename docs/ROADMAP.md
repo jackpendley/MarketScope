@@ -288,7 +288,7 @@ New Python app `apps/football/` (nflreadpy, polars, psycopg). The schema stays i
 ## Post-release projects
 
 - [x] **MS-038** Invite-only accounts (ADR-049). Better Auth (username or email + password), a login page, `/account` (change password), the account CLI, a rate-limited and CSRF-guarded sign-in. Replaces the shared Basic-auth password.
-- [ ] ratings-v2: between-season reversion keyed on QB continuity (R7), as a new version with its own validation.
+- [x] **MS-039** ratings-v2 (QB-keyed offensive reversion, ADR-050). Pre-registered, tested and **not adopted**: the likelihood was 38.4 vs 38.6, and the 2023–24 changes were within noise. ratings-v1 stays.
 - [x] **MS-040** ML Lab page (`/ml-lab`): the market-movement experiments, their verdicts and the model's main features.
 - [x] **MS-040** Chart text alternatives for screen readers (line history, rating trend). A live VoiceOver walkthrough is still to do.
 
