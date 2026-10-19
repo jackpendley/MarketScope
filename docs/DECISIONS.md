@@ -901,3 +901,20 @@ The test is only honest if the model is fixed before it runs and cannot be re-ru
   - the account CLI
   - the change-password form
 - **Trade-off, noted when the change was made:** NIST SP 800-63B prefers length over composition rules. The remaining protections are rate-limited sign-in, scrypt hashing and invite-only accounts.
+
+## ADR-050 — ratings-v2 (QB-keyed offensive reversion) tested and not adopted (2026-10-19)
+
+**Context.** R7 found that QB continuity, not play-caller continuity, carries an offence's level into the next season. ratings-v1 keys reversion on play-caller continuity, which MS-030 never supported (p = 0.66).
+
+**Decision.**
+
+- **Pre-registered** in `ratings/design_v2.py` before any fit (bae64e9 and 1f9b3ba on the branch, see PR #52).
+  - **Variants:** two candidates, chosen by 2016–22 likelihood.
+  - **Adoption rule:** the likelihood must be at least that of v1's structure refitted on the same data (a clarification committed before the fit, because v1's stored likelihoods predate the ADR-045 coaching corrections), AND the 2023–24 Δ margin MAE ≤ 0, AND the Δ log loss ≤ 0.
+  - **Separate files:** v2 parameters would go in `params_v2.json`. v1's `params.json` is never touched.
+
+**Consequences.**
+
+- **Not adopted.** The QB variant's likelihood was 38.4 against 38.6. The 2023–24 point estimates leaned better but were within noise (Δ MAE −0.005, −0.035 to +0.026).
+- **No v2 artifacts:** no `params_v2.json` is written, and ratings-v1 stays the only deployed and forward-tested version.
+- **What we learned:** continuity keys barely matter to the filter. Fitted carryover is higher when the QB changes, because the game layer's QB term already models the new starter.

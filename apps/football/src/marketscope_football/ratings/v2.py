@@ -236,7 +236,7 @@ def main() -> None:
          *[f"| {v}{' (chosen)' if v == chosen else ''} | {'QB' if v == 'qb' else 'QB or play-caller'} | {lls[v]:.1f} |" for v in VARIANTS], "",
          f"QB changed at {int(fl.sum())} of {len(fl)} team-season boundaries in 2016–22 ({fl.mean():.0%}).", "",
          "Fitted offensive carryover (ρ same / changed):", "",
-         "| Channel | v1 (play-caller) | v2 ({}) |".format(chosen), "|---|---|---|",
+         "| Channel | v1 frozen (play-caller) | v2 ({}) |".format(chosen), "|---|---|---|",
          *[f"| {ch} | {rho1[ch][0]:.2f} / {rho1[ch][1]:.2f} | {rho[ch][0]:.2f} / {rho[ch][1]:.2f} |" for ch in UNIT_CHANNELS], "",
          "## Validation, 2023–24 (walk-forward, paired by game; v2 minus v1, negative = better)", "",
          f"Games: {int(paired['games'])}. Δ margin MAE {fmt(paired, 'margin_mae', 3)}; Δ Brier {fmt(paired, 'brier', 4)}; "
