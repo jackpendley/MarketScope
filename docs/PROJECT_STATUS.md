@@ -146,8 +146,8 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-18 (sessio
   - **R7 re-run** on the corrected production staff: unchanged (+0.02, −0.23 to +0.25; QB +0.33).
   - **`/research`** now lists 9 studies (R2h and R2w added).
 
-- **MS-036 (this PR, rebase-merged so the design commit stays first): football features in the market-movement model (ADR-047).**
-  - Pre-registered design `ml/design_football.py` (85fd030 on the branch).
+- **MS-036 (#46, rebase-merged so the design commit stays first): football features in the market-movement model (ADR-047).**
+  - Pre-registered design `ml/design_football.py` (9c3ef34 on `main`; first pushed as 85fd030 in PR #46).
   - Point-in-time features (`ml/football_features.py`, with a leakage test): rating gap, in-game injury signal from snap counts, forecast wind and change, rest and travel.
   - Same v1 protocol (`ml/experiment_football.py`, `run_market_football.py`, `research/reports/market-football-v1.md`, MODEL_CARD §1b):
     - **Will it move:** no lift (Δ Brier +0.0011, −0.0015 to +0.0039).

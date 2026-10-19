@@ -821,7 +821,7 @@ The test is only honest if the model is fixed before it runs and cannot be re-ru
 
 **Decision.**
 
-- **Substitutes, fixed in `ml/design_football.py` before any feature code** (85fd030 on the branch):
+- **Substitutes, fixed in `ml/design_football.py` before any feature code** (9c3ef34 on `main`; first pushed as 85fd030 in PR #46):
   - **Rating-only margin** from the latest usable ratings-v1 snapshot, 16 h after its week's last kickoff.
   - **In-game injury signal:** starters who barely played in their team's latest game, from snap counts at least 36 h old.
   - **Weather:** forecast leads used only once issued.
