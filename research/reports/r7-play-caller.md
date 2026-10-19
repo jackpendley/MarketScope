@@ -1,6 +1,6 @@
 # R7: play-caller impact, 2016–24 (MS-035b)
 
-_Generated 2026-10-19 01:28 UTC · commit `9314b78` · reproduce with `research/src/marketscope_research/run_playcaller_study.py`._
+_Generated 2026-10-19 01:28 UTC · commit `72a85ec` on `main` · reproduce with `research/src/marketscope_research/run_playcaller_study.py`._
 
 Design pre-registered in `research/PREREGISTRATION.md` (R7 and addendum A, committed before this code). Measure: observed offensive points per drive for the regular season, centred on the league mean (not the filtered ratings, whose between-season reversion already depends on play-caller continuity). 95% intervals resample team-season pairs (5,000 draws). Descriptive research; coach and roster effects are confounded.
 

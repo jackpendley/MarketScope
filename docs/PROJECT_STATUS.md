@@ -115,8 +115,8 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-18 (sessio
     - **R4:** ratings carry no information beyond the close (claim not met; 2023–24 slope −0.11). Exploratory: 2026 consensus moves toward the ratings (+0.10 per pt of gap).
     - **R5:** market does not overrate lucky teams; luck does not persist.
 
-- **MS-035b (this PR, rebase-merged so the addendum stays first):** R6, R7 and the `/research` page (ADR-044).
-  - **Addendum A** to `research/PREREGISTRATION.md` (9314b78 on the branch), committed before any R6 or R7 code. It fixes:
+- **MS-035b (#41, rebase-merged so the addendum stays first):** R6, R7 and the `/research` page (ADR-044).
+  - **Addendum A** to `research/PREREGISTRATION.md` (145a5de on `main`; first pushed as 9314b78 in PR #41), committed before any R6 or R7 code. It fixes:
     - R6's weight rule: the Brier-optimal weight on the previous 4 week slots, model weight capped at 0.60.
     - R7's measure: observed points per drive, because filtered ratings already embed play-caller continuity in their reversion.
     - The continuity definitions.
