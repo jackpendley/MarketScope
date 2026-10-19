@@ -1,6 +1,6 @@
 # R2w: market moves on newly confirmed absences, 2026 weeks 1–6 (MS-035c)
 
-_Generated 2026-10-19 02:20 UTC · commit `f431f0a` · reproduce with `research/src/marketscope_research/run_injury_moves.py`._
+_Generated 2026-10-19 02:20 UTC · commit `9678b20` on `main` · reproduce with `research/src/marketscope_research/run_injury_moves.py`._
 
 Design pre-registered in `research/PREREGISTRATION.md` (addendum B, committed before this code). Event: a starter (≥ 50% of snaps over his recent games) listed Out on the final injury report who played the team's previous game. Outcome: board-consensus margin move from 6 days out to the close. 95% intervals resample games (5,000 draws). Information already priced 6 days out is not visible here. Market data; not betting advice.
 

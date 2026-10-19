@@ -139,8 +139,8 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-18 (sessio
   - **New basis `shared`:** BUF 2016 and 2025, DET 2019, ATL 2020. Team pages now show "calls defense (assumed)" for rule-only rows and "(shared)" for split calling.
   - **Effect:** defensive rule-only weeks drop from 90% to 86%. On 2023–24, margins move 0.05 pts on average; MAE goes from 10.268 to 10.259. R6 is unchanged (+0.0026).
 
-- **MS-035c, part 2 (this PR, rebase-merged so addendum B stays first): historical injury studies (ADR-046).**
-  - **Addendum B** (f431f0a on the branch), committed before any code.
+- **MS-035c, part 2 (#44, rebase-merged so addendum B stays first): historical injury studies (ADR-046).**
+  - **Addendum B** (00d778b on `main`; first pushed as f431f0a in PR #44), committed before any code.
   - **R2h** (`ratings/injury_priced.py`, `run_injury_priced.py`; 2016–24 walk-forward, 2,367 games): ATS residual per point of the model's availability adjustment is +0.11 (−0.27 to +0.50), so no claim. The close has priced injuries by kickoff.
   - **R2w** (`football_studies.injury_events`/`r2w`, `run_injury_moves.py`; 2026 weeks 1–6, 77 games, 80 events): the consensus moved **+0.40 pts toward the opponent per newly-out starter** (+0.14 to +0.73). **Claim met**, the first in MS-035. Non-QB only: +0.30 (added after the result, labelled). Only 5 QB events.
   - **R7 re-run** on the corrected production staff: unchanged (+0.02, −0.23 to +0.25; QB +0.33).
