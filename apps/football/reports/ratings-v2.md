@@ -24,11 +24,11 @@ QB changed at 77 of 224 team-season boundaries in 2016–22 (34%).
 Fitted offensive carryover (ρ same / changed):
 
 | Channel | v1 frozen (play-caller) | v2 (qb)     |
-| ------- | ---------------- | ----------- |
-| pass    | 0.72 / 0.58      | 0.59 / 0.73 |
-| rush    | 0.58 / 0.58      | 0.56 / 0.65 |
-| succ    | 0.59 / 0.58      | 0.53 / 0.68 |
-| ppd     | 0.64 / 0.46      | 0.51 / 0.67 |
+| ------- | ----------------------- | ----------- |
+| pass    | 0.72 / 0.58             | 0.59 / 0.73 |
+| rush    | 0.58 / 0.58             | 0.56 / 0.65 |
+| succ    | 0.59 / 0.58             | 0.53 / 0.68 |
+| ppd     | 0.64 / 0.46             | 0.51 / 0.67 |
 
 ## Validation, 2023–24 (walk-forward, paired by game; v2 minus v1, negative = better)
 
