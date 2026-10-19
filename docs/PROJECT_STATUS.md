@@ -1,12 +1,13 @@
 # Project Status
 
-_Rewrite this file at the end of every session. Last updated: 2026-10-18 (session 1, continued; MS-039/040)._
+_Rewrite this file at the end of every session. Last updated: 2026-10-18 (session 1, continued; MS-041)._
 
 ## Current milestone
 
-**Phase 9 (MarketScope Ratings): MS-029 (harness), MS-030 (Kalman engine), MS-030b (KenPom contract + `rating_snapshots`) MS-031a (QB layer) and MS-031b (non-QB availability) are done. MS-032a (factor selection, probabilities), MS-032b (ratings-v1 frozen, 2025 test, live forward test), MS-033a (ratings and team pages), MS-033b (matchups, scorecard, game panel) and MS-034 (season simulation) are done: Phase 9 is complete. Phase 10: MS-035a (pre-registration + studies R1, R3, R4, R5) and MS-035b (R6, R7, `/research`), MS-035c (coaching audit, R2h, R2w) and MS-036 (market ML with football features) are done: Phase 10 is complete apart from the gated live R2 and the R3 re-run. Phase 11: MS-037 (portfolio release) is done. Next: ongoing weekly checks and v2 work as data accumulates.**
+**Phases 0–11 and the post-release projects are done. Phase 12, the Sharp-Market Lab (ADR-051), has started: MS-041 (data sources) is done. Next: MS-042, the line-move event store.**
 
-- **Scope extended 2026-10-17 (ADR-028):** football context and MarketScope Ratings, "KenPom for the NFL". The design is frozen in `docs/RATINGS.md`.
+The goal is to study the market for moves that indicate sharp betting and test whether any signals or systems are profitable. CLV is the yardstick; the ratings are context.
+
 - **Site:** live at https://marketscope-delta.vercel.app behind invite-only accounts (ADR-049). Jack's account is `jackpendley` / jackpendley9@gmail.com. Manage accounts with `pnpm --filter @marketscope/web users …` (DEPLOYMENT.md).
 
 ## Done so far
@@ -182,6 +183,14 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-18 (sessio
   - Fitted carryover is higher when the QB changes, because the game layer's QB term already models the new starter.
   - Report `apps/football/reports/ratings-v2.md`; no `params_v2.json`.
 
+- **MS-041 (this PR): data-source evaluation (`docs/DATA_SOURCES.md`, ADR-051).**
+  - **OddsPapi** (free, tested): minute-level history with limits for Pinnacle, Circa, Bookmaker.eu/BetCRIS, Kalshi, Novig, ProphetX and SBOBet, plus the US retail books. No WebSocket on the free plan.
+  - **The Odds API:** plans run $30/$59/$119/$249. Historical data goes back to 2020 in 5-minute snapshots since September 2022 (paid only). Pinnacle is in `eu`, with a delay; no Circa.
+  - **SportsGameOdds Pro** ($299): sub-minute, with Pinnacle and Circa.
+  - **Splits:** Sportradar (licensed, quote) or SharpAPI ($229, DraftKings/Circa, 48 h history, terms to confirm).
+  - **Recommendation:** stay free for MS-042/043; then The Odds API at $59/month for live 5–10-minute snapshots, and optionally one month at $119 for a 2022–25 backfill.
+  - **Security:** the OddsPapi account endpoint echoed the API key into the session, so the key should be rotated.
+
 ## Tests
 
 - **Football pytest:** 114 (unit tests, plus integration against the migrated test DB; includes validation of the committed coaching CSV and the 2016–24 seeding reproduction).
@@ -220,15 +229,18 @@ Nothing blocking.
 
 ## Next task
 
-All planned and post-release projects are done. Ongoing, roughly weekly:
+**MS-042: line-move event store.**
 
-1. **Gates:** the live R2 (30 injury events from the 2026-10-18 snapshots) and R3 (30 games with wind of at least 15 mph). When either is met, run it under the frozen design and update `/research`.
-2. **Forward checks:** MS-024/036 need 15 labelled live games, then v2 of the market ML with rolling-origin evaluation (pre-register first). Update `/ml-lab` (`lib/ml-lab.ts`).
-3. **Scorecard:** summarise the live forward test after about 50 scored games.
-4. **Upkeep:**
-   - re-run `coaching_audit` after coaching changes
-   - regenerate screenshots after visible UI changes
-5. **Possible next steps** (ask Jack):
-   - email password reset (needs an email provider account and key)
-   - a live VoiceOver walkthrough
-   - opening sign-ups (needs his approval)
+1. **Measure first:** import one game's OddsPapi history into a scratch table (main lines, value changes only, exchange top-of-book), count rows and bytes for sharp and retail books, and project a season against Supabase's 500 MB (currently about 109 MB). Bring an upgrade decision to Jack if needed.
+2. **Build:**
+   - `line_moves` (Drizzle, RLS, migration); the importer reuses `apps/collector/src/providers/oddspapi/{client,transform}.ts`, emits events, and is idempotent per fixture.
+   - Backfill every completed 2026 game; add a nightly job for new games.
+   - A cross-check test: the events reproduce the stored 6-hourly snapshots.
+3. **Show it:** a minute-level timeline with the sharp books on the replay page.
+4. **Then MS-043:** the pre-registered sharp-market study.
+
+**Waiting on Jack:**
+
+- Rotate the OddsPapi API key.
+- Optionally request a Sportradar Betting Splits quote, or email SharpAPI about terms.
+- Approve any data purchase.
