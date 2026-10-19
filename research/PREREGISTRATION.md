@@ -117,3 +117,86 @@ model's probability of covering the closing line scored worse than a coin flip o
 - **Scheme (exploratory):** whether a play-caller's pass rate over expected and neutral pace follow
   him to a new team (his previous team's values vs the new team's prior values). Coach and roster
   effects are confounded; reported as descriptive.
+
+## Addendum A (2026-10-18): R6 and R7 operational rules
+
+Committed before any R6 or R7 code was written or any outcome computed. These rules fix details the
+entries above leave open, and change one thing (the R7 measure, explained below). Looked at before
+writing this:
+
+- **Coverage counts:** 2,367 regular-season games 2016–24, all with both starting QBs and 2,366 with
+  closing moneylines. 4,734 team-games with drive counts. Play-callers for all 288 team-seasons.
+- **Gate re-check:** R2 has one day of live injury snapshots, and R3 has 29 windy games of the 30
+  required. Both stay inconclusive.
+- **Already known about R6:** on 2023–24 the model alone is less accurate than the close.
+  benchmarks.md and factor-selection.md report its Brier and log loss against the close. The blend
+  has never been computed.
+- **Already known about R7:** the fitted ratings-v1 reversion between seasons is higher when the
+  offensive play-caller stays than when he changes: points per drive 0.64 vs 0.46, pass offense
+  0.72 vs 0.58 (params.json, fitted 2016–22).
+
+### R6: model + market blend
+
+- **Predictions:**
+  - Frozen ratings-v1 (the params hash is checked).
+  - Run walk-forward through the eval harness for 2022–24. The runner stops after 2024, so it never
+    sees 2025.
+  - 2022 is used only to fill the trailing window for early 2023. Scored: every 2023–24 game
+    (regular season and playoffs, as in the benchmark table) with a no-vig closing moneyline.
+  - **Deviation from the common rules:** R6 reads through the football eval harness, not the
+    database. The walk-forward predictions exist only there. The closing moneylines are the same
+    nflverse values that `nfl_games` holds.
+- **Market probability:** p_close is the no-vig home probability from the nflverse closing
+  moneylines. y = 1 for a home win, 0 for a loss, 0.5 for a tie.
+- **Weight rule:**
+  - Set w for each week slot (season, week) from the games of the previous four slots, taken in
+    kickoff order across season boundaries.
+  - w is the weight that would have minimised the blend's Brier on those games:
+    w = Σ(p_close − y)(p_close − p_model) / Σ(p_model − p_close)²,
+    clipped to [0, 0.60] (market weight at least 0.40). w = 0 if the denominator is 0.
+  - The slot being predicted never enters its own weight.
+- **Primary:** mean over the scored games of (p_blend − y)² − (p_close − y)². Game bootstrap with
+  5,000 resamples (seed 2026). Claim "the blend beats the close" if the interval lies below 0.
+- **Exploratory:**
+  - a fixed w = 0.35 (nfelo's ≈ 65% market weight)
+  - the model alone vs the close
+  - log loss for all three
+  - the path of w by week
+
+### R7: play-caller impact
+
+- **Pairs:** team-seasons (s, s + 1) for s = 2016–23, so s + 1 ≤ 2024. Regular season only.
+- **Measure (changed from "end-of-season offensive points-per-drive unit"):** the team's observed
+  offensive points per drive for the season (Σ drive points / Σ drives), centred on that season's
+  league mean.
+  - **Why the change:** the filtered ratings cannot be used. The Kalman filter already reverts a
+    rating less between seasons when the play-caller stays (the ρ values above). So next season's
+    filtered rating partly carries this season's rating through a continuity-dependent prior, and a
+    continuity effect would appear by construction. The observed season figure has no prior in it.
+  - **Still not adjusted:** opponents and luck. Both add noise, not bias, with respect to
+    continuity.
+- **Same play-caller:** the offensive play-caller at the team's last regular-season week of s is
+  also the play-caller at week 1 of s + 1 (from `nfl_coaching_staff`; the same definition the
+  engine uses).
+- **Same QB:**
+  - The QB with the most regular-season starts in s also has the most in s + 1.
+  - Starts come from `nfl_games` starting QB ids.
+  - Ties go to the QB who started later in the season.
+- **Model:** y(s+1) = a + b·x(s) + c·C + d·Q + e·x(s)·C + f·x(s)·Q, where C means same play-caller
+  and Q means same QB.
+- **Primary:** e, the extra carryover when the play-caller stays, holding the QB interaction fixed.
+  Claim a continuity effect if its interval (bootstrap over team-season pairs, 5,000, seed 2026)
+  excludes 0. Positive means more carryover when the play-caller stays.
+- **Gate:** at least 40 pairs with a changed play-caller and at least 40 with a changed QB.
+- **Exploratory:**
+  - Carryover slopes in the four caller × QB groups (descriptive).
+  - The same model for defence: points per drive allowed, and same defensive play-caller, with no
+    QB term.
+- **Scheme (exploratory):**
+  - Movers are play-callers who were the primary offensive caller at team A in s and at a different
+    team B in s + 1.
+  - For pass rate over expected (PROE) and neutral seconds per play, regress team B's value in
+    s + 1 on the caller's team-A value in s and on team B's own value in s. Both are team-season
+    means, weighted by plays.
+  - A coefficient on the caller's old value that is above 0 means the trait follows the coach.
+  - Coach and roster effects are confounded, so this is descriptive.
