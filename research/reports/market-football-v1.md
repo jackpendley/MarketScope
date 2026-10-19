@@ -1,6 +1,6 @@
 # Market-movement model with football features (MS-036, v1)
 
-_Generated 2026-10-19 02:45 UTC · commit `85fd030` · sources `the-odds-api, oddspapi` ·
+_Generated 2026-10-19 02:45 UTC · commit `ec4c490` on `main` · sources `the-odds-api, oddspapi` ·
 reproduce with `research/src/marketscope_research/run_market_football.py`. Design pre-registered in
 `ml/design_football.py` (committed before any football feature was built); the target, split and scoring are v1's
 (`market-baseline-v1.md`)._

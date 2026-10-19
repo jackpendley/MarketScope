@@ -97,7 +97,7 @@ The headline "will it move" model uses only features available in both sources, 
 
 ## 1b. Market-movement model with football features (MS-036, 2026-10-19)
 
-- **Design:** pre-registered in `research/src/marketscope_research/ml/design_football.py` (85fd030 on the branch), committed before any feature was built. Same target, split, C grid, bootstrap and claim rule as v1.
+- **Design:** pre-registered in `research/src/marketscope_research/ml/design_football.py` (9c3ef34 on `main`; first pushed as 85fd030 in PR #46), committed before any feature was built. Same target, split, C grid, bootstrap and claim rule as v1.
 - **Report:** `research/reports/market-football-v1.md`.
 - **Features, point in time at each snapshot t** (a unit test perturbs every input usable after t and checks that nothing changes):
   - **Ratings:** gap between the rating margin and the consensus margin, from the latest ratings-v1 snapshot usable at t. Rating terms only: injury and QB terms come from reports published during the week.
