@@ -15,6 +15,7 @@ const STATIC_PAGES = [
   "/model",
   "/projections",
   "/research",
+  "/ml-lab",
 ];
 
 async function expectNoViolations(page: Page) {

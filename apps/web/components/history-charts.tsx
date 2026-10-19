@@ -19,6 +19,7 @@ import {
   buildChartRows,
   FEED_COLORS,
   formatScaledAmerican,
+  seriesSummary,
   type ChartField,
   type ChartRow,
 } from "@/lib/history-chart";
@@ -157,82 +158,86 @@ function ChartPanel({
       {rows.length === 0 ? (
         <p className="px-1 pb-3 text-sm text-muted">No observations in this range.</p>
       ) : (
-        <div className="h-64 w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={rows} margin={{ top: 8, right: 16, bottom: 4, left: 4 }}>
-              <CartesianGrid stroke="#263041" strokeDasharray="0" vertical={false} />
-              <XAxis
-                dataKey="t"
-                type="number"
-                scale="time"
-                domain={["dataMin", "dataMax"]}
-                tickFormatter={(t: number) => timeFormat.format(t)}
-                stroke="#5d6b7d"
-                tick={{ fill: "#8b98a9", fontSize: 11 }}
-                minTickGap={40}
-              />
-              <YAxis
-                domain={axis?.domain ?? ["auto", "auto"]}
-                ticks={axis?.ticks}
-                interval={0}
-                allowDecimals
-                tickFormatter={format}
-                stroke="#5d6b7d"
-                tick={{ fill: "#8b98a9", fontSize: 11 }}
-                width={52}
-              />
-              {cursor !== undefined && (
-                <ReferenceLine
-                  x={cursor}
-                  stroke="#e6edf3"
-                  strokeDasharray="4 3"
-                  strokeWidth={1}
-                  label={{
-                    value: "replay",
-                    position: "insideTopRight",
-                    fill: "#8b98a9",
-                    fontSize: 10,
-                  }}
+        <>
+          {/* Screen readers hear this summary first; the chart stays keyboard-explorable (Recharts' accessibility layer). */}
+          <p className="sr-only">{seriesSummary(series, field, format)}</p>
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={rows} margin={{ top: 8, right: 16, bottom: 4, left: 4 }}>
+                <CartesianGrid stroke="#263041" strokeDasharray="0" vertical={false} />
+                <XAxis
+                  dataKey="t"
+                  type="number"
+                  scale="time"
+                  domain={["dataMin", "dataMax"]}
+                  tickFormatter={(t: number) => timeFormat.format(t)}
+                  stroke="#5d6b7d"
+                  tick={{ fill: "#8b98a9", fontSize: 11 }}
+                  minTickGap={40}
                 />
-              )}
-              <Tooltip
-                cursor={{ stroke: "#8b98a9", strokeWidth: 1 }}
-                content={(props) => <HistoryTooltip {...props} series={series} format={format} />}
-              />
-              {series.map((s) => (
-                <Line
-                  key={s.bookmakerKey}
-                  dataKey={s.bookmakerKey}
-                  name={s.displayName}
-                  type="stepAfter"
-                  stroke={FEED_COLORS[s.bookmakerKey] ?? "#8b98a9"}
-                  strokeWidth={2}
-                  connectNulls={false}
-                  isAnimationActive={false}
-                  activeDot={{ r: 4, strokeWidth: 2, stroke: "#121821" }}
-                  dot={(props: DotItemDotProps) => {
-                    const { cx, cy } = props;
-                    const payload = props.payload as ChartRow;
-                    const key = `${s.bookmakerKey}-${payload.t}`;
-                    const isChange = changeTimes.get(s.bookmakerKey)?.has(payload.t);
-                    if (!isChange || cx === undefined || cy === undefined) return <g key={key} />;
-                    return (
-                      <circle
-                        key={key}
-                        cx={cx}
-                        cy={cy}
-                        r={4}
-                        fill={FEED_COLORS[s.bookmakerKey] ?? "#8b98a9"}
-                        stroke="#121821"
-                        strokeWidth={2}
-                      />
-                    );
-                  }}
+                <YAxis
+                  domain={axis?.domain ?? ["auto", "auto"]}
+                  ticks={axis?.ticks}
+                  interval={0}
+                  allowDecimals
+                  tickFormatter={format}
+                  stroke="#5d6b7d"
+                  tick={{ fill: "#8b98a9", fontSize: 11 }}
+                  width={52}
                 />
-              ))}
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+                {cursor !== undefined && (
+                  <ReferenceLine
+                    x={cursor}
+                    stroke="#e6edf3"
+                    strokeDasharray="4 3"
+                    strokeWidth={1}
+                    label={{
+                      value: "replay",
+                      position: "insideTopRight",
+                      fill: "#8b98a9",
+                      fontSize: 10,
+                    }}
+                  />
+                )}
+                <Tooltip
+                  cursor={{ stroke: "#8b98a9", strokeWidth: 1 }}
+                  content={(props) => <HistoryTooltip {...props} series={series} format={format} />}
+                />
+                {series.map((s) => (
+                  <Line
+                    key={s.bookmakerKey}
+                    dataKey={s.bookmakerKey}
+                    name={s.displayName}
+                    type="stepAfter"
+                    stroke={FEED_COLORS[s.bookmakerKey] ?? "#8b98a9"}
+                    strokeWidth={2}
+                    connectNulls={false}
+                    isAnimationActive={false}
+                    activeDot={{ r: 4, strokeWidth: 2, stroke: "#121821" }}
+                    dot={(props: DotItemDotProps) => {
+                      const { cx, cy } = props;
+                      const payload = props.payload as ChartRow;
+                      const key = `${s.bookmakerKey}-${payload.t}`;
+                      const isChange = changeTimes.get(s.bookmakerKey)?.has(payload.t);
+                      if (!isChange || cx === undefined || cy === undefined) return <g key={key} />;
+                      return (
+                        <circle
+                          key={key}
+                          cx={cx}
+                          cy={cy}
+                          r={4}
+                          fill={FEED_COLORS[s.bookmakerKey] ?? "#8b98a9"}
+                          stroke="#121821"
+                          strokeWidth={2}
+                        />
+                      );
+                    }}
+                  />
+                ))}
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </>
       )}
     </figure>
   );
