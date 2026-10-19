@@ -20,7 +20,7 @@ const NAV: { label: string; href?: string }[] = [
   { label: "Signal Lab", href: "/signals" },
   { label: "Data", href: "/data" },
   { label: "Research", href: "/research" },
-  { label: "ML Lab" },
+  { label: "ML Lab", href: "/ml-lab" },
 ];
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {

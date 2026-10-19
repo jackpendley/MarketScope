@@ -240,3 +240,17 @@ test.describe("research", () => {
     );
   });
 });
+
+test.describe("ml lab", () => {
+  test("lists the experiments with their verdicts", async ({ page }) => {
+    await page.goto("/nfl");
+    await page
+      .getByRole("navigation", { name: "Primary" })
+      .getByRole("link", { name: "ML Lab" })
+      .click();
+    await expect(page.getByRole("heading", { name: "ML Lab", level: 1 })).toBeVisible();
+    await expect(page.locator("article[aria-labelledby^='exp-']")).toHaveCount(4);
+    await expect(page.getByRole("article", { name: /MS-036b/ })).toContainText("worse");
+    await expect(page.getByRole("table", { name: "Largest model coefficients" })).toBeVisible();
+  });
+});

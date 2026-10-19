@@ -1,6 +1,7 @@
 import { buildBookSeries, type HistoryObservation } from "@marketscope/shared";
 import { describe, expect, it } from "vitest";
 import {
+  seriesSummary,
   americanToScale,
   axisTicks,
   buildChartRows,
@@ -120,5 +121,44 @@ describe("axisTicks", () => {
   });
   it("returns null with no values", () => {
     expect(axisTicks([{ t: 1, dk: null }], ["dk"], 0.5)).toBeNull();
+  });
+});
+
+describe("seriesSummary", () => {
+  const point = (observedAt: string, p: number | null, americanPrice = -110) => ({
+    observedAt,
+    point: p,
+    americanPrice,
+  });
+  const book = (displayName: string, points: ReturnType<typeof point>[]) =>
+    ({
+      bookmakerKey: displayName.toLowerCase(),
+      displayName,
+      observations: points.length,
+      firstObservedAt: null,
+      lastObservedAt: null,
+      points,
+      changes: [],
+      gaps: [],
+    }) as never;
+
+  it("describes each book's first and last value and its number of changes", () => {
+    const s = seriesSummary(
+      [
+        book("DraftKings", [
+          point("2026-10-01T00:00:00Z", -3),
+          point("2026-10-02T00:00:00Z", -3.5),
+        ]),
+        book("FanDuel", [point("2026-10-01T00:00:00Z", -3), point("2026-10-02T00:00:00Z", -3)]),
+        book("Caesars", []),
+      ],
+      "point",
+      (v) => String(v),
+    );
+    expect(s).toBe("DraftKings -3 to -3.5 (1 change); FanDuel -3 throughout.");
+  });
+
+  it("says when there is nothing to describe", () => {
+    expect(seriesSummary([], "price", String)).toBe("No observations.");
   });
 });

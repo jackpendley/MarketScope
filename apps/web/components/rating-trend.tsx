@@ -42,7 +42,7 @@ export function RatingTrend({ season, points }: { season: number; points: TrendP
       viewBox={`0 0 ${W} ${H}`}
       className="h-auto w-full max-w-2xl"
       role="img"
-      aria-label={`AdjEM by week, ${season}, with a one standard error band`}
+      aria-label={trendLabel(season, points)}
     >
       {ticks.map((v) => (
         <g key={v}>
@@ -81,4 +81,12 @@ export function RatingTrend({ season, points }: { season: number; points: TrendP
       ))}
     </svg>
   );
+}
+
+/** Text alternative: where the rating started this season and where it is now, with its ± range. */
+export function trendLabel(season: number, points: TrendPoint[]): string {
+  if (points.length === 0) return `AdjEM by week, ${season}: no ratings yet`;
+  const first = points[0]!;
+  const last = points[points.length - 1]!;
+  return `AdjEM by week, ${season}: ${signed(first.adjEm)} at ${weekLabel(season, first.week)}, now ${signed(last.adjEm)} ± ${last.adjEmSe.toFixed(1)} at ${weekLabel(season, last.week)}`;
 }

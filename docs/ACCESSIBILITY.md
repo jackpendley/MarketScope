@@ -30,10 +30,13 @@ The first run found two problems, both now fixed:
   - Sections are labelled by their `h2` (`aria-labelledby`).
   - Tables have an `aria-label` and `scope` on their header cells.
   - `<html lang="en">`.
-- **Charts:** charts are SVG figures with captions.
-  - The rating-trend and season-outlook charts give each point's value in a `<title>` (for example
-    "12 wins: 19%").
-  - The line-history charts have only a caption.
+- **Charts:** every chart has a text alternative (MS-040).
+  - Line-history charts carry a screen-reader summary of each book's first and last value and how
+    often it changed (`seriesSummary` in `lib/history-chart.ts`), read before the chart. The chart
+    itself stays keyboard-explorable: Recharts' accessibility layer steps the tooltip with the
+    arrow keys.
+  - The rating trend's label gives the starting and current AdjEM with its ± range (`trendLabel`).
+  - The season-outlook charts label the most likely win total, the middle 80% and the current odds.
   - The underlying numbers are also shown in tables or text on the same page.
 - **Responsive:** every page fits a 390 px phone screen without horizontal page scrolling. Wide
   tables scroll inside their card (e2e `mobile.spec.ts`).
@@ -44,7 +47,8 @@ The first run found two problems, both now fixed:
 
 ## Not yet done
 
-- **No full screen-reader pass.** No VoiceOver or NVDA walkthrough has been done. The charts have
-  no summary sentence each, and the line-history points have no per-point text.
+- **No live screen-reader walkthrough.** No one has yet walked through the site with VoiceOver or
+  NVDA. The structure (landmarks, labelled sections and tables, chart text alternatives, form
+  labels and live error messages) was reviewed in code and by axe.
 - **Reduced motion:** there are no animations, so nothing to reduce.
 - **No light theme:** the site is dark-only, and contrast was checked for the dark theme.
