@@ -96,6 +96,12 @@ export function rankTone(rank: number | null, n: number): string {
   return "";
 }
 
+/** Secondary text on a rank cell: muted grey fails contrast on the tinted tones, so tinted cells
+ * use the foreground at 85% (WCAG AA, checked by e2e/a11y.spec.ts). */
+export function rankText(rank: number | null, n: number): string {
+  return rankTone(rank, n) ? "text-fg/85" : "text-muted";
+}
+
 export const signed = (v: number | null, digits = 1) =>
   v === null || !Number.isFinite(v)
     ? "–"

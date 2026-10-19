@@ -1,13 +1,13 @@
 # Project Status
 
-_Rewrite this file at the end of every session. Last updated: 2026-10-18 (session 1, continued; MS-036)._
+_Rewrite this file at the end of every session. Last updated: 2026-10-18 (session 1, continued; MS-037)._
 
 ## Current milestone
 
-**Phase 9 (MarketScope Ratings): MS-029 (harness), MS-030 (Kalman engine), MS-030b (KenPom contract + `rating_snapshots`) MS-031a (QB layer) and MS-031b (non-QB availability) are done. MS-032a (factor selection, probabilities), MS-032b (ratings-v1 frozen, 2025 test, live forward test), MS-033a (ratings and team pages), MS-033b (matchups, scorecard, game panel) and MS-034 (season simulation) are done: Phase 9 is complete. Phase 10: MS-035a (pre-registration + studies R1, R3, R4, R5) and MS-035b (R6, R7, `/research`), MS-035c (coaching audit, R2h, R2w) and MS-036 (market ML with football features) are done: Phase 10 is complete apart from the gated live R2 and the R3 re-run. Next: Phase 11 (portfolio release).**
+**Phase 9 (MarketScope Ratings): MS-029 (harness), MS-030 (Kalman engine), MS-030b (KenPom contract + `rating_snapshots`) MS-031a (QB layer) and MS-031b (non-QB availability) are done. MS-032a (factor selection, probabilities), MS-032b (ratings-v1 frozen, 2025 test, live forward test), MS-033a (ratings and team pages), MS-033b (matchups, scorecard, game panel) and MS-034 (season simulation) are done: Phase 9 is complete. Phase 10: MS-035a (pre-registration + studies R1, R3, R4, R5) and MS-035b (R6, R7, `/research`), MS-035c (coaching audit, R2h, R2w) and MS-036 (market ML with football features) are done: Phase 10 is complete apart from the gated live R2 and the R3 re-run. Phase 11: MS-037 (portfolio release) is done. Next: ongoing weekly checks and v2 work as data accumulates.**
 
 - **Scope extended 2026-10-17 (ADR-028):** football context and MarketScope Ratings, "KenPom for the NFL". The design is frozen in `docs/RATINGS.md`.
-- **Site:** deployed privately at https://marketscope-delta.vercel.app (user `marketscope`; the password is `VERCEL_SITE_PASSWORD` in `apps/web/.env.local`).
+- **Site:** live at https://marketscope-delta.vercel.app, password-protected (HTTP Basic auth) (user `marketscope`; the password is `VERCEL_SITE_PASSWORD` in `apps/web/.env.local`).
 
 ## Done so far
 
@@ -155,11 +155,19 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-18 (sessio
     - **Exploratory:** the injury family came closest (−0.0025, −0.0052 to 0.0000).
     - **Forward check:** pending (13 and 6 live games labelled; needs 15).
 
+- **MS-037 (this PR): portfolio release (ADR-048).**
+  - **Architecture:** ARCHITECTURE.md rewritten (Mermaid system diagram, pipeline, schema overview, boundaries, security model).
+  - **README and case study:** README rewritten with screenshots; new `docs/CASE_STUDY.md`.
+  - **Accessibility:** `e2e/a11y.spec.ts` runs axe-core WCAG 2.1 AA checks on every page. Fixed `--color-subtle` contrast, secondary text on rank cells (`rankText`) and colour-only links, and added a skip link (ACCESSIBILITY.md).
+  - **Screenshots:** `e2e/screenshots.spec.ts` (opt-in) captures the synthetic database into `docs/screenshots/` (14 images, 3.9 MB).
+  - **Secret audit:** clean (SECURITY.md): no secret value or pattern anywhere in history, and no env file ever committed.
+  - **Wording:** "password-protected", not "private" (Jack confirmed the site is public behind the password).
+
 ## Tests
 
 - **Football pytest:** 110 (unit tests, plus integration against the migrated test DB; includes validation of the committed coaching CSV and the 2016–24 seeding reproduction).
 - **Research pytest:** 40.
-- **TS:** db 47, shared 192, collector 51, web 108, e2e 37.
+- **TS:** db 47, shared 192, collector 51, web 108, e2e 49.
 
 ## Quotas
 
@@ -193,15 +201,14 @@ Nothing blocking.
 
 ## Next task
 
-**Phase 11: portfolio release (MS-037).**
+All planned phases are done. Ongoing work, roughly weekly:
 
-1. **Architecture diagram:** collector → Postgres ← Python football pipeline → Next.js. Add a schema overview to ARCHITECTURE.md.
-2. **Accessibility pass** on every page (headings, table captions, contrast, keyboard), then screenshots at desktop and 390 px.
-3. **Secret audit:** git history, committed reports and fixtures; confirm the redaction paths.
-4. **Case study write-up:** the board, the ratings, the forward test and the pre-registered studies, including the nulls and the R2w claim.
-5. **Ask Jack** before making the deployment public. The Odds API terms keep `/api/*` protected regardless.
-6. **Ongoing, weekly:**
-   - live R2 gate (30 events)
-   - R3 gate (30 games with wind of at least 15 mph)
-   - MS-024/036 forward checks (15 live games), then v2 with rolling-origin evaluation
-   - re-run `coaching_audit` after coaching changes
+1. **Gates:** the live R2 (30 injury events from the 2026-10-18 snapshots) and R3 (30 games with wind of at least 15 mph). When one is met, run it under the frozen design and update `/research` (`apps/web/lib/research-studies.ts`).
+2. **Forward checks:** the MS-024 and MS-036 checks need 15 labelled live games. Then plan v2 with rolling-origin evaluation and the live injury snapshots as a feature (pre-register first).
+3. **Live forward test:** the `/model` scorecard fills in as games finish. Summarise it after about 50 scored games.
+4. **Coaching:** re-run `coaching_audit` after any coaching change.
+5. **Possible next projects** (ask Jack):
+   - ratings-v2 with QB-keyed reversion (R7), as a new version
+   - the "ML Lab" page (the nav placeholder)
+   - a screen-reader pass
+   - opening the site, which needs his approval

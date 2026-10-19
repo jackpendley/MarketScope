@@ -8,6 +8,7 @@ import {
   isSyntheticVersion,
   parseRatingsQuery,
   rankTone,
+  rankText,
   record,
   resolveWeek,
   signed,
@@ -45,7 +46,9 @@ function Ranked({ value, rank, n }: { value: string; rank: number | null; n: num
   return (
     <td className="whitespace-nowrap px-2 py-1 text-right tabular-nums">
       <span>{value}</span>{" "}
-      <span className={`inline-block min-w-7 rounded px-1 text-xs text-muted ${rankTone(rank, n)}`}>
+      <span
+        className={`inline-block min-w-7 rounded px-1 text-xs ${rankText(rank, n)} ${rankTone(rank, n)}`}
+      >
         {rank ?? "–"}
       </span>
     </td>
@@ -230,7 +233,9 @@ export default async function RatingsPage(props: PageProps<"/ratings">) {
                   title={`± ${r.adjEmSe.toFixed(1)} (1 SE)`}
                 >
                   {signed(r.adjEm)}{" "}
-                  <span className="text-xs font-normal text-muted">±{r.adjEmSe.toFixed(1)}</span>
+                  <span className={`text-xs font-normal ${rankText(r.adjEmRank, n)}`}>
+                    ±{r.adjEmSe.toFixed(1)}
+                  </span>
                 </td>
                 <Ranked value={fixed(r.adjO)} rank={r.adjORank} n={n} />
                 <Ranked value={fixed(r.adjD)} rank={r.adjDRank} n={n} />

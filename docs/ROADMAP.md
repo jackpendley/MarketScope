@@ -276,7 +276,12 @@ New Python app `apps/football/` (nflreadpy, polars, psycopg). The schema stays i
 
 ## Phase 11 — Portfolio release (MS-037+)
 
-- [ ] Architecture diagram (including the Python pipeline), schema docs, screenshots, accessibility pass, secret audit, case-study write-up.
+- [x] **MS-037** Portfolio release (ADR-048):
+  - Architecture diagram and schema overview (ARCHITECTURE.md).
+  - Screenshots from the synthetic database (`docs/screenshots/`).
+  - Accessibility pass: axe-core WCAG 2.1 AA on every page in CI, contrast and link fixes, a skip link (ACCESSIBILITY.md).
+  - Secret audit: clean (SECURITY.md).
+  - README rewrite and case study (CASE_STUDY.md).
 
 ---
 
@@ -292,7 +297,7 @@ New Python app `apps/football/` (nflreadpy, polars, psycopg). The schema stays i
 - Adding repo secrets.
 - Creating any cloud resource.
 - Buying any paid plan or raising the credit budget.
-- Making a deployment public.
+- Removing the site password (opening the pages to anyone).
 
 Managed DB: **Supabase**, used as Postgres only (ADR-018). Its session-pooler URL is stored locally as `SUPABASE_DATABASE_URL` in `apps/collector/.env.local`, and in GitHub as the `DATABASE_URL` secret.
 

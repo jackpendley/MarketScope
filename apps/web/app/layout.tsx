@@ -24,6 +24,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en">
       <body className="min-h-screen antialiased">
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-2 focus:z-50 focus:rounded focus:bg-surface-raised focus:px-3 focus:py-2 focus:text-fg"
+        >
+          Skip to main content
+        </a>
         <header className="border-b border-line bg-surface">
           <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-8 gap-y-2 px-4 py-3">
             <Link href="/nfl" className="font-semibold tracking-tight">
@@ -48,7 +54,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             </nav>
           </div>
         </header>
-        <main className="mx-auto max-w-7xl px-4 py-6">{children}</main>
+        <main id="main" tabIndex={-1} className="mx-auto max-w-7xl px-4 py-6 outline-none">
+          {children}
+        </main>
         <footer className="mx-auto max-w-7xl space-y-1 px-4 pb-8 pt-4 text-xs text-subtle">
           <p>
             MarketScope is an analytics and education project. It is not betting advice and does not

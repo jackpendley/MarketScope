@@ -8,7 +8,7 @@
   --color-line: #263041;
   --color-fg: #e6edf3;
   --color-muted: #8b98a9;
-  --color-subtle: #5d6b7d;
+  --color-subtle: #808d9f; /* >= 4.5:1 on canvas, surfaces and accent/10 tints (WCAG AA) */
   --color-accent: #6aa8ff;
   --color-best: #4cc38a;
   --color-warn: #e5a50a;
@@ -26,4 +26,11 @@ body {
   background: var(--color-canvas);
   color: var(--color-fg);
   font-family: var(--font-sans);
+}
+
+/* Links inside running text are underlined, not told apart by colour alone (WCAG 1.4.1). */
+p a,
+li a {
+  text-decoration-line: underline;
+  text-underline-offset: 2px;
 }

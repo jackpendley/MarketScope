@@ -24,7 +24,7 @@ The developer (Jack) is building it to move into a backend/full-stack software e
 - Build vertical slices in small, tested increments. No new frameworks or infrastructure without a stated reason.
 - **Git:** one branch per milestone and a PR via `gh pr create`. **Claude squash-merges once CI is green** (standing approval, 2026-10-16). `main` stays deployable. The repo is **public**: `git@github.com:jackpendley/MarketScope.git`.
 - **Odds API credits:** standing approval to spend within the collector's guards (`MONTHLY_CREDIT_BUDGET=400`, `MIN_CREDITS_REMAINING=25`). Report usage in each summary.
-- **Still requires approval:** adding or changing repo secrets, creating any cloud resource (Vercel, AWS, new DBs), buying any plan, raising the credit budget, and making a deployment public.
+- **Still requires approval:** adding or changing repo secrets, creating any cloud resource (Vercel, AWS, new DBs), buying any plan, raising the credit budget, and removing the site password.
 - **Supabase = managed Postgres only** (ADR-018). Don't add `supabase-js` or the shadcn Supabase blocks without a feature that needs them. Every table must keep RLS enabled (`.enableRLS()` in `schema.ts`). Project skills for Supabase live in `.claude/skills/`.
 - **Production data:** GitHub Actions collects 4×/day into Supabase (ADR-019). Locally, `SUPABASE_DATABASE_URL` in `apps/collector/.env.local` points at it. Never print it.
 
@@ -124,7 +124,7 @@ The developer (Jack) is building it to move into a backend/full-stack software e
 - `packages/db`: Drizzle schema (`src/schema.ts`), committed SQL migrations (`drizzle/`), client, and test helpers (`@marketscope/db/testing`).
 - Local Postgres: Homebrew `postgresql@17`, with DBs `marketscope_dev` and `marketscope_test`. Tests use `TEST_DATABASE_URL` (default: local test DB). Root `pnpm test` runs packages sequentially because they share the test DB.
 - `docs/`: ROADMAP, PROJECT_STATUS, DECISIONS, ARCHITECTURE, API, DEPLOYMENT, DATA_DICTIONARY, PROVIDER_COVERAGE, PERFORMANCE, SIGNAL_DEFINITIONS, RATINGS (ratings design + results), MODEL_CARD (Phase 7+), PRODUCT_SPEC (with a 2026-10-17 scope addendum).
-- **Deployed site is private** (Basic auth via `apps/web/proxy.ts`, ADR-022). The Odds API terms forbid exposing our JSON API publicly; keep `/api/*` protected even if the UI is opened up later.
+- **The deployed site is password-protected:** it is on the public internet behind HTTP Basic auth (`apps/web/proxy.ts`, ADR-022). "Making it public" means removing that password, which needs Jack's approval. The Odds API terms forbid exposing our JSON API publicly; keep `/api/*` protected even if the UI is opened up later.
 
 Workspace packages export TypeScript source directly. There's no build step: Next uses `transpilePackages`, and the collector uses `tsx`.
 

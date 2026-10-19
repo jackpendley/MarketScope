@@ -836,3 +836,22 @@ The test is only honest if the model is fixed before it runs and cannot be re-ru
 - **Exploratory:** the injury family came closest to helping on will-it-move (−0.0025, −0.0052 to 0.0000).
 - **Forward check:** pending.
 - **v2 waits for more live weeks:** rolling-origin evaluation, plus the live injury snapshots as a direct feature.
+
+## ADR-048 — Portfolio release: automated accessibility checks, synthetic screenshots, documented security audit (2026-10-19)
+
+**Context.** Phase 11 prepares the repository for reviewers: an accurate architecture, a README and case study, screenshots, an accessibility pass and a secret audit. The repo is public, and the site stays password-protected (ADR-022).
+
+**Decision.**
+
+- **Accessibility in CI.** axe-core runs the WCAG 2.1 A and AA rules on every page in the Playwright suite (`@axe-core/playwright` 4.13.0, pinned two months old). Any violation fails the build.
+  - The first run found low-contrast "subtle" text, low-contrast secondary text on tinted rank cells, and colour-only links. These were fixed at the token level (`--color-subtle`, `rankText`, underlined links in running text).
+  - A skip link was added for keyboard users.
+  - Manual checks and known gaps are recorded in `ACCESSIBILITY.md`.
+- **Screenshots only from the synthetic e2e database.** An opt-in spec (`SCREENSHOTS=1`) captures them, so no real odds appear in the public repo, and every image shows its synthetic-data banner. Desktop captures are capped at 2,200 px and phone captures are limited to three pages, which keeps the set under 4 MB.
+- **Secret audit by value, not only by pattern.** Each real secret was searched for in the full git history, printing counts only, alongside pattern scans. The method and the results are in `SECURITY.md`, so it can be repeated.
+- **Wording.** The docs now say "password-protected", not "private". Opening the site means removing the password, which still needs Jack's approval.
+
+**Consequences.**
+
+- **Clean results:** 0 axe violations on all pages and 0 secret matches in the history.
+- **Upkeep:** screenshots need regenerating after visible UI changes (`SCREENSHOTS=1 pnpm exec playwright test e2e/screenshots.spec.ts`).

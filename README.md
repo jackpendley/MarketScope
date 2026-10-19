@@ -1,33 +1,70 @@
 # MarketScope
 
-**NFL sportsbook market intelligence.** Compare the market. Replay its history. Investigate the signals. Test the evidence.
+**NFL sportsbook market intelligence, and "KenPom for the NFL".** Compare the market. Replay its history. Understand the matchup. Investigate the signals. Test the evidence.
 
-MarketScope compares NFL odds across five sportsbooks (DraftKings, FanDuel, BetMGM, Caesars, Hard Rock Bet AZ). Each collection is stored as an append-only observation, so the app can reconstruct how lines moved. The goal is a research tool that keeps observable evidence separate from speculation. It is not a picks service.
+MarketScope collects NFL odds from five sportsbooks four times a day and stores every observation, so line history can be replayed exactly. Next to the market it builds its own football model:
 
-> **Status:** Phase 3 complete. Real NFL odds snapshots are collected 4× a day into PostgreSQL; the odds board and line-history charts are deployed privately on Vercel. See [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md) and [`docs/ROADMAP.md`](docs/ROADMAP.md).
+- opponent-adjusted offense, defense and special-teams ratings with uncertainty
+- a labelled model line and win probability for every game
+- simulated playoff odds
+- an immutable live forward test
+- pre-registered research that publishes its null results
+
+It is an analytics and education project, not a picks service.
+
+> **Status:** Phases 0–10 are complete. Odds and football data update automatically on a schedule, and the site is deployed on Vercel behind a password. Start with the [case study](docs/CASE_STUDY.md), then [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md) and [`docs/ROADMAP.md`](docs/ROADMAP.md).
+
+![MarketScope Ratings: the KenPom-style table (synthetic demo data)](docs/screenshots/ratings-desktop.png)
+
+_All screenshots show the synthetic demo database used by the end-to-end tests (each page says so). Real odds are never committed._
+
+## What's in it
+
+- **Odds board and replay.** Compares five books at identical lines only, marks the best price, and shows missing books as missing. Line history can be replayed snapshot by snapshot, with the moves between observations.
+- **MarketScope Ratings.**
+  - **Engine:** a Kalman filter over offense, defense and special-teams strength, built from luck-adjusted, opponent-adjusted EPA. Parameters were fitted on 2016–22 and frozen.
+  - **Columns:** AdjEM, AdjO, AdjD, AdjST and AdjPace with ranks and ± ranges, luck, strength of schedule and Five Factors. Every week since 2016 is available as of that week.
+- **Model estimates.** A predicted score and win probability for every game, explained term by term, with the injury and QB adjustments.
+  - **2025 test, run once:** margin error 10.06 points per game, against 9.67 for the closing line, 10.19 for 538-style Elo and 11.02 for home field alone.
+  - **2026:** a live forward test with estimates stored before kickoff.
+- **Season projections.** 10,000 simulated seasons with NFL tiebreakers, giving playoff, division, #1 seed and Super Bowl odds. The tiebreakers reproduce every 2016–24 playoff field.
+- **Research.** Nine pre-registered studies plus two ML experiments. The questions and decision rules were committed before the code. Most results are nulls, all are published, and one claim met its bar: the consensus moves about 0.4 points per starter newly ruled Out during the week.
+
+| Ratings and team pages                            | Matchups (FanMatch-style)                          | Research                                                 |
+| ------------------------------------------------- | -------------------------------------------------- | -------------------------------------------------------- |
+| ![Team page](docs/screenshots/team-desktop.png)   | ![Matchups](docs/screenshots/matchups-desktop.png) | ![Research](docs/screenshots/research-desktop.png)       |
+| **Odds board**                                    | **Game page**                                      | **Season projections**                                   |
+| ![Odds board](docs/screenshots/board-desktop.png) | ![Game page](docs/screenshots/game-desktop.png)    | ![Projections](docs/screenshots/projections-desktop.png) |
 
 ## Stack
 
-- **Web:** Next.js 16 (App Router, server components), React 19, TypeScript (strict), Tailwind CSS 4
-- **Collector:** Node.js 22 worker (TypeScript via `tsx`), Zod-validated config and provider responses
-- **Shared:** pure-TypeScript domain logic (odds math, normalization, exact-line price comparison)
-- **Data:** PostgreSQL 17, Drizzle ORM, committed SQL migrations
-- **Quality:** Vitest, ESLint, Prettier, GitHub Actions CI
-- **Data source:** [The Odds API](https://the-odds-api.com/) v4
+- **Web:** Next.js 16 (App Router, server components), React 19, TypeScript 5.9 strict, Tailwind CSS 4
+- **Odds collector:** Node.js 22 worker in TypeScript, with Zod-validated config and provider responses
+- **Football pipeline and research:** Python 3.11 with pandas, polars, numpy, scipy, scikit-learn and nflreadpy
+- **Data:** PostgreSQL 17 on Supabase, Drizzle ORM, committed SQL migrations, row-level security on every table
+- **Jobs and CI:** GitHub Actions. Odds 4 times a day, football data daily. CI runs lint, types, unit, integration, pytest, Playwright e2e and axe-core accessibility checks.
+- **Data sources:**
+  - [The Odds API](https://the-odds-api.com/) and OddsPapi (history)
+  - [nflverse](https://github.com/nflverse) (CC-BY 4.0)
+  - [Open-Meteo](https://open-meteo.com/) (CC-BY 4.0)
+
+The full system diagram is in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## Repository layout
 
 ```
-apps/web          Next.js app (odds board at /nfl)
-apps/collector    ingestion worker (collect:nfl) + provider verification
-packages/db       Drizzle schema, migrations, client
-packages/shared   domain types, odds math, normalizer, comparison, synthetic fixture
-docs/             roadmap, status, decisions, architecture, data dictionary, provider coverage
+apps/web          Next.js site: board, replay, ratings, teams, matchups, projections, model, research
+apps/collector    odds collector (The Odds API), OddsPapi importer, synthetic seed
+apps/football     nflverse ingest, team-game stats, coaching staff, weather, ratings, simulation, forward test
+packages/db       Drizzle schema, migrations, every SQL query, test helpers
+packages/shared   pure domain logic: odds math, normalization, consensus, replay, signals
+research/         read-only studies and the market-movement ML (pre-registered)
+docs/             roadmap, status, decisions (ADRs), architecture, data dictionary, ratings, model card
 ```
 
 ## Getting started
 
-Requirements: Node ≥ 22.12 (`nvm use`), pnpm 10 (`corepack enable`), and PostgreSQL 17.
+Requirements: Node ≥ 22.12 (`nvm use`), pnpm 10 (`corepack enable`), PostgreSQL 17, and Python 3.11 for the football pipeline and research.
 
 ```bash
 pnpm install
@@ -39,54 +76,41 @@ cp packages/db/.env.example packages/db/.env.local
 cp apps/web/.env.example apps/web/.env.local
 pnpm db:migrate
 
-pnpm dev            # http://localhost:3000/nfl
+# Synthetic demo data in its own database (no API key needed; the seed refuses non-demo databases)
+createdb marketscope_demo
+DATABASE_URL=postgres://localhost:5432/marketscope_demo pnpm db:migrate
+DATABASE_URL=postgres://localhost:5432/marketscope_demo pnpm --filter @marketscope/collector seed:synthetic --reset
+
+DATABASE_URL=postgres://localhost:5432/marketscope_demo pnpm dev   # http://localhost:3000/nfl
 ```
 
 Quality checks (CI runs all of these):
 
 ```bash
 pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build
-```
-
-End-to-end browser tests (Playwright, against a database seeded with **synthetic** history):
-
-```bash
-createdb marketscope_e2e_test
+createdb marketscope_e2e_test   # once
 pnpm --filter @marketscope/web exec playwright install chromium   # once
 pnpm --filter @marketscope/web build && pnpm --filter @marketscope/web test:e2e
+(cd apps/football && python3 -m venv .venv && .venv/bin/pip install -r requirements.txt && PYTHONPATH=src .venv/bin/python -m pytest -q)
+(cd research && python3 -m venv .venv && .venv/bin/pip install -r requirements.txt && PYTHONPATH=src .venv/bin/python -m pytest -q)
 ```
 
-## Provider verification
-
-The collector needs a key from The Odds API (the free Starter plan works; Caesars requires a paid plan).
-
-```bash
-cp apps/collector/.env.example apps/collector/.env.local
-# edit apps/collector/.env.local and set ODDS_API_KEY (never commit it or paste it anywhere)
-pnpm verify:provider           # free: /sports + /events, 0 credits
-pnpm verify:provider --spend   # one /odds call, ~3 credits
-pnpm collect:nfl               # store a snapshot in Postgres (~3 credits)
-```
-
-The collector is idempotent per job key (`--scheduled` uses one key per 6-hour slot) and refuses to run past the configured credit budget. Every run is recorded in `ingestion_runs`.
-
-In production, a GitHub Actions workflow (`collect-odds.yml`) collects 4× a day into a Supabase-hosted Postgres. Migrations are applied automatically when they merge to `main`. Supabase's public REST API is locked out of every table via row-level security.
-
-Raw responses are saved to `fixtures/the-odds-api/local/`, which is gitignored. A price-free coverage summary is appended to [`docs/PROVIDER_COVERAGE.md`](docs/PROVIDER_COVERAGE.md).
+Collecting real odds needs a key from The Odds API in `apps/collector/.env.local`; never commit it. See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for production. Every command is listed in [`CLAUDE.md`](CLAUDE.md#commands-run-from-repo-root).
 
 ## Principles
 
 - Prices are compared only at an **identical line**. Home −3.5 at −110 and home −3 at −115 are different bets.
 - Missing data is shown as missing. Nothing is invented or carried forward.
 - "First observed" is not the opening line, and "last observed" is not the closing line.
-- Odds data is labeled as timestamped snapshots, never implied to be real-time.
-- Market signals describe evidence. They don't claim to detect sharp money or recommend bets.
+- **Point in time everywhere.** Ratings, features and estimates use only data available before the moment they describe, and tests check this.
+- Model output is labelled "model estimate" and shown with its measured error. Predictions are never edited after the fact.
+- The displayed rating uses no market inputs. Research is pre-registered, and nulls are published.
 
 ## Documentation
 
-- [Roadmap](docs/ROADMAP.md) · [Project status](docs/PROJECT_STATUS.md) · [Architecture](docs/ARCHITECTURE.md) · [API](docs/API.md)
-- [Decisions](docs/DECISIONS.md) · [Data dictionary](docs/DATA_DICTIONARY.md) · [Provider coverage](docs/PROVIDER_COVERAGE.md)
-- [Signal definitions](docs/SIGNAL_DEFINITIONS.md) · [Research](research/README.md)
-- [Original product specification](docs/PRODUCT_SPEC.md)
+- [Case study](docs/CASE_STUDY.md) · [Roadmap](docs/ROADMAP.md) · [Project status](docs/PROJECT_STATUS.md) · [Decisions](docs/DECISIONS.md)
+- [Architecture](docs/ARCHITECTURE.md) · [Data dictionary](docs/DATA_DICTIONARY.md) · [API](docs/API.md) · [Performance](docs/PERFORMANCE.md)
+- [Ratings design and results](docs/RATINGS.md) · [Model card](docs/MODEL_CARD.md) · [Research](research/README.md) · [Pre-registration](research/PREREGISTRATION.md)
+- [Security](docs/SECURITY.md) · [Accessibility](docs/ACCESSIBILITY.md) · [Provider coverage](docs/PROVIDER_COVERAGE.md) · [Signal definitions](docs/SIGNAL_DEFINITIONS.md)
 
-MarketScope is an analytics and education project. It doesn't place bets or give betting advice.
+MarketScope is an analytics and education project. It doesn't place bets or give betting advice. Sportsbook names identify data sources only.
