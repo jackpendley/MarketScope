@@ -793,3 +793,21 @@ The test is only honest if the model is fixed before it runs and cannot be re-ru
 - **Coverage:** defensive team-weeks resting on the rule fall from 90% to 86%. The rest stay unverified: the coordinator is the likely caller, but no source confirms it.
 - **Studies re-run:** R6 is unchanged. R7 is re-run once production holds the corrected staff.
 - **Upkeep:** re-run the audit before any study that uses play-callers, and after each season.
+
+## ADR-046 — Historical injury studies R2h and R2w (pre-registration addendum B) (2026-10-19)
+
+**Context.** The live R2 event study needs a timestamp for when a player was first listed Out. Only the daily injury snapshots (from 2026-10-18) record that time, so R2 will wait weeks for its gate. Jack asked whether the historical injury reports could be used. They can, but they carry no publication time, and odds history with movement exists only from August 2026.
+
+**Decision.**
+
+- **Two new studies, live R2 unchanged.** Addendum B was committed before any code (f431f0a on the branch).
+  - **R2h** tests whether the close already prices the injury part of each ratings-v1 estimate (2016–24, walk-forward in the football harness, as with R6).
+  - **R2w** measures the consensus move from 6 days out to the close against starters newly ruled Out on the final report who played the previous game (2026 weeks 1–6, R1's consensus rules).
+- **Robustness added after the result is labelled.** R2w's non-QB-only slope was added after the primary result was seen, and the report and page say so.
+
+**Consequences.**
+
+- **R2h:** no claim (+0.11, −0.27 to +0.50).
+- **R2w:** claim met (+0.40 per event, +0.14 to +0.73), robust to excluding QBs (+0.30). This is the first primary claim met in MS-035.
+- **Together:** the market moves on confirmed absences during the week and has priced them by kickoff.
+- **Live R2 still runs once its gate is met,** with exact first-seen times.

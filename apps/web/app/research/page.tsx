@@ -65,7 +65,7 @@ export default function ResearchPage() {
       <div className="space-y-2">
         <h1 className="text-xl font-semibold tracking-tight">Research</h1>
         <p className="max-w-3xl text-sm text-muted">
-          Seven football studies, each with one primary question. The questions, data windows,
+          Nine football studies, each with one primary question. The questions, data windows,
           decision rules and minimum sample sizes were{" "}
           <a href={PREREGISTRATION} className="text-accent hover:underline">
             pre-registered
@@ -76,9 +76,10 @@ export default function ResearchPage() {
           betting advice.
         </p>
         <p className="text-sm text-muted">
-          {STUDIES.length} studies: {counts["claim"] ?? 0} claims, {counts["no claim"] ?? 0} no
-          claim, {counts["inconclusive"] ?? 0} inconclusive, {counts["waiting for data"] ?? 0}{" "}
-          waiting for data.
+          {STUDIES.length} studies: {counts["claim"] ?? 0} claim
+          {(counts["claim"] ?? 0) === 1 ? "" : "s"} met, {counts["no claim"] ?? 0} no claim,{" "}
+          {counts["inconclusive"] ?? 0} inconclusive, {counts["waiting for data"] ?? 0} waiting for
+          data.
         </p>
       </div>
       <section className="grid gap-4 lg:grid-cols-2" aria-label="Studies">
@@ -88,8 +89,10 @@ export default function ResearchPage() {
       </section>
       <p className="max-w-3xl text-sm text-muted">
         What the studies say together: the closing line already prices what MarketScope Ratings
-        measure. Disagreements between the ratings and the close do not predict results (R4), and
-        blending the model into the market makes the forecast worse (R6). That is why the{" "}
+        measure, including injuries by kickoff (R2h), though the consensus is still moving on injury
+        news during the week (R2w). Disagreements between the ratings and the close do not predict
+        results (R4), and blending the model into the market makes the forecast worse (R6). That is
+        why the{" "}
         <Link href="/model" className="text-accent hover:underline">
           model scorecard
         </Link>{" "}

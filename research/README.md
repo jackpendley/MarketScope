@@ -19,6 +19,8 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 | Football studies R1/R3/R4/R5 (MS-035; pre-registered in `PREREGISTRATION.md`)    | `src/marketscope_research/football_studies.py`                            | `reports/football-studies-v1.md`    |
 | R6 model + market blend (MS-035b; addendum A; runs in the football eval harness) | `apps/football/.../ratings/blend.py`, `run_blend.py`                      | `reports/r6-model-market-blend.md`  |
 | R7 play-caller impact (MS-035b; addendum A)                                      | `src/marketscope_research/football_studies.py`, `run_playcaller_study.py` | `reports/r7-play-caller.md`         |
+| R2h injuries priced? (MS-035c; addendum B; football eval harness)                | `apps/football/.../ratings/injury_priced.py`, `run_injury_priced.py`      | `reports/r2h-injuries-priced.md`    |
+| R2w injury news during the week (MS-035c; addendum B)                            | `src/marketscope_research/football_studies.py`, `run_injury_moves.py`     | `reports/r2w-injury-moves.md`       |
 
 Run against a database (production via Jack's local `SUPABASE_DATABASE_URL`, or a local demo/e2e DB with `--sources synthetic`):
 
