@@ -918,3 +918,33 @@ The test is only honest if the model is fixed before it runs and cannot be re-ru
 - **Not adopted.** The QB variant's likelihood was 38.4 against 38.6. The 2023–24 point estimates leaned better but were within noise (Δ MAE −0.005, −0.035 to +0.026).
 - **No v2 artifacts:** no `params_v2.json` is written, and ratings-v1 stays the only deployed and forward-tested version.
 - **What we learned:** continuity keys barely matter to the filter. Fitted carryover is higher when the QB changes, because the game layer's QB term already models the new starter.
+
+## ADR-051 — Phase 12: the Sharp-Market Lab; CLV as the yardstick; research language (2026-10-19)
+
+**Context.** Jack restated the project's goal. MarketScope is not trying to out-predict sportsbooks. It studies the market to find moves that indicate sharp betting, to learn from them, and to test whether any signals or systems are profitable. The ratings are internal context. The current data and signals can't answer that:
+
+- **Coarse data:** 4 snapshots a day is far coarser than sharp action.
+- **No sharp reference:** the live feed has no market-maker book.
+- **No profitability test:** the v1 signals aren't scored on whether they beat the close.
+
+**Decision.**
+
+- **Phase 12 order** (Jack's choice):
+  1. **MS-041:** data-source evaluation (`docs/DATA_SOURCES.md`).
+  2. **MS-042:** a minute-level line-move event store, sharp books included.
+  3. **MS-043:** a pre-registered sharp-market study, covering lead-lag, steam, stale retail lines, limits and key numbers.
+  4. **MS-044:** a system backtester, starting with Wong teasers.
+  5. **MS-045:** a paper portfolio.
+  6. **Conditional on data purchases:** MS-046 (a real-time collector and alerts) and MS-047 (reverse line movement with licensed splits).
+- **Closing-line value is the primary yardstick.** A signal or system is "sharp" if its side beats the close, measured against Pinnacle's no-vig close or the sharp-book consensus. Win/loss and ROI are reported too, but over NFL samples they are noisy.
+- **Pre-registration and holdouts continue** (ADR-043). Every system or signal states its rule before it is scored. Historical systems keep holdout seasons, and 2026 is the live forward test. Mining many systems produces false positives, so the number of systems tested is published.
+- **Language (supersedes part of ADR-028 rule 4 and the signal wording rule).** Research pages may describe sharp-book-led moves, steam, backtests, ROI and CLV as analysis.
+  - Still no picks, recommendations, "locks" or advice.
+  - Paper results are always labelled hypothetical, with the responsible-gambling disclaimers.
+  - The site stays invite-only.
+  - Signals may say "a sharp book moved first", but not "sharp money" as a claim about who bet.
+
+**Consequences.**
+
+- **Data:** MS-042 builds on OddsPapi's free minute-level history, which was tested and includes Pinnacle, Circa, Bookmaker.eu and the exchanges, with limits. Paid feeds (The Odds API at $59/month for live 5–10-minute snapshots; one month at $119 for a 2022–25 historical backfill) and licensed splits (Sportradar, SharpAPI) each need Jack's approval and come after MS-043 shows what matters.
+- **Supabase storage** may become the constraint (minute-level exchange data is large). MS-042 measures it before committing.

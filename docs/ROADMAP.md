@@ -294,6 +294,20 @@ New Python app `apps/football/` (nflreadpy, polars, psycopg). The schema stays i
 
 ---
 
+## Phase 12 — Sharp-Market Lab (MS-041+, ADR-051)
+
+The goal is to study the market for moves that indicate sharp betting, learn from them, and test whether any signals or systems are profitable. CLV is the yardstick.
+
+- [x] **MS-041** Data-source evaluation (`docs/DATA_SOURCES.md`). OddsPapi's free history has Pinnacle, Circa, Bookmaker.eu and the exchanges at minute level, with limits (tested). Paid options are costed; licensed splits come from Sportradar (quote) or SharpAPI (terms to confirm).
+- [ ] **MS-042** Line-move event store (`line_moves`), minute-level for sharp and retail books, every 2026 game, with a nightly job. Storage is measured first.
+- [ ] **MS-043** Sharp-market study, pre-registered: lead-lag, steam, stale retail lines, limits and key numbers, each scored by CLV. New versioned signals.
+- [ ] **MS-044** System backtester and Wong teasers (2016–25 nflverse closes, plus 2026 from our lines).
+- [ ] **MS-045** Paper portfolio (immutable pre-kickoff paper bets, graded, with CLV).
+- [ ] **MS-046** (needs a paid feed) Real-time collector and alerts.
+- [ ] **MS-047** (needs licensed splits) Reverse line movement.
+
+---
+
 ## Approval checkpoints
 
 **Standing approvals (2026-10-16):**

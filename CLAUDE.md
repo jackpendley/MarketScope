@@ -43,7 +43,7 @@ The developer (Jack) is building it to move into a backend/full-stack software e
 
 - "First observed" is not the opening line, and "last observed pregame" is not the closing line. A line change happened somewhere in the interval `(prev_observed_at, observed_at]`, not at an exact moment.
 - Missing data is shown as missing. Never carry prices forward across gaps or treat missing as unchanged.
-- Signals describe observable evidence. They never claim "sharp action" or recommend bets.
+- Signals describe observable evidence. They may say a sharp book (Pinnacle or Circa) moved first, but never claim "sharp money" as a statement about who bet, and they never recommend bets. Research pages may report backtests, ROI and closing-line value (CLV) as analysis; paper results are always labelled hypothetical (ADR-051).
 
 **Football and model rules (ADR-028):**
 
@@ -58,7 +58,7 @@ The developer (Jack) is building it to move into a backend/full-stack software e
 3. **The nflverse closing line is a labeled benchmark.**
    - It never goes into `odds_observations`, because it has no observation timestamp.
    - Convert it to home orientation on ingest. Verify the sign against our last-pregame consensus.
-4. **Model output is always labeled "model estimate"** and shown with its measured error. Never use bet, pick, value, edge, or lock language.
+4. **Model output is always labeled "model estimate"** and shown with its measured error. Never use pick, lock or advice language. Research may discuss backtests, ROI and CLV as analysis, clearly labelled as such (ADR-051).
 5. **Attribution:**
    - Credit nflverse (CC-BY 4.0), PFR snap counts via nflverse, and Open-Meteo (CC-BY 4.0).
    - **FTN data (participation 2023+, charting) is CC-BY-SA 4.0.** It stays local research only and never feeds the product.

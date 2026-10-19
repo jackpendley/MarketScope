@@ -1,0 +1,99 @@
+# Data sources for the Sharp-Market Lab (MS-041, 2026-10-19)
+
+Phase 12 needs to see the market at the resolution sharp action happens: minutes, not hours. It also needs a sharp-book reference, ideally Pinnacle and Circa, the main market makers. This page compares free and paid sources.
+
+**How claims were checked:**
+
+- **Vendors' own pages and docs:** confirmed on 2026-10-19, with sources at the bottom.
+- **Live API calls:** marked **tested**, made with our existing keys.
+- **Third-party comparisons:** marked _reported_, because several of them are competitors.
+
+## What we use today
+
+- **The Odds API, free plan** (500 credits a month): live snapshots 4 times a day, 3 credits each, about 360 credits a month. It covers the US books but not Pinnacle, because Pinnacle is only in the `eu` region.
+- **OddsPapi, free plan** (250 billable requests a month; 9 used): the 2026 weeks 1–6 backfill, which we stored only as 6-hourly snapshots (ADR-026).
+
+## Odds feeds compared
+
+| Source                 | Plan / price                                                                                                                                                                                      | Sharp books                                                                                                                                                                                                                                                                 | Resolution                                                                                           | History                                  | Real-time                                                                                   | Notes                                                                                                                                                                                                                                                            |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **OddsPapi**           | **Free**: 250 billable requests a month, and `/v4/historical-odds` free and unmetered (5 s cooldown, at most 3 books per call). Paid prices aren't shown publicly (the page renders client-side). | **Tested**: Pinnacle, Circa (`circasports`), Bookmaker.eu, BetCRIS (the same feed as Bookmaker.eu), Kalshi, Novig, ProphetX and SBOBet all carry NFL history. The free subscription lists 348 books, also including Betfair Exchange, Matchbook, 3et, BetOnline and LowVig. | **Every price change**, with a timestamp and a `limit`                                               | Since Jan 2026, so one NFL season        | No: `websocket_access: 0` on the free plan. WebSocket is reported to be paid or enterprise. | **Tested** on one 2026 NFL game. Pinnacle: 41,406 changes, all with limits. Bookmaker.eu: 30,867 with limits. Circa: 906, no limits. Kalshi: about 2.0M and Novig about 0.95M (exchange depth). Singbet has no NFL. Betfair Exchange needs one call per outcome. |
+| **The Odds API**       | Free: 500 credits. **$30**: 20K. **$59**: 100K. **$119**: 5M. **$249**: 15M a month.                                                                                                              | Pinnacle (`eu` region, "odds are from public website which may incur a delay"), Betfair Exchange, BetOnline, LowVig, Bovada. **No Circa.**                                                                                                                                  | Live: whenever we poll. **Historical: 5-minute snapshots since Sep 2022** (10-minute from Jun 2020). | Back to **2020-06-06** (paid plans only) | Polling only                                                                                | Live cost is 1 credit per market per region. Historical costs 10 per market per region. The docs' example shows one call returning every game in the sport at that timestamp; confirm on the first paid call.                                                    |
+| **SportsGameOdds**     | Free: 2,500 objects, 10-minute updates. **$99**: 3-minute updates. **$299 Pro**: sub-minute, with historical data. Custom tiers above that.                                                       | Pro lists Pinnacle and Circa                                                                                                                                                                                                                                                | Pro: sub-minute                                                                                      | Pro: "historical data", depth not stated | Pro and above                                                                               | Pricing taken from the vendor's page. Worth a trial if we want one sub-minute feed with both sharp books.                                                                                                                                                        |
+| **SharpAPI**           | Free: DraftKings and FanDuel, 60 s delay. **$79** / **$229 Pro** / **$399 Sharp**. Streaming is a $99 add-on.                                                                                     | "Sharp sportsbooks" on the $399 tier; Circa not named                                                                                                                                                                                                                       | Real-time on paid tiers                                                                              | Enterprise only                          | Add-on                                                                                      | Mostly interesting for its splits (below).                                                                                                                                                                                                                       |
+| **Unabated**           | _Reported_ from $20 a month up to about $3,000 a month for API access; no official public pricing                                                                                                 | Blends market-makers (Bookmaker, Circa, 3et) into a no-vig "Unabated Line"                                                                                                                                                                                                  | –                                                                                                    | –                                        | –                                                                                           | Its strength is a ready-made sharp consensus price. Ask for a quote only if our own sharp consensus turns out to be insufficient.                                                                                                                                |
+| **OpticOdds**          | Quote-only (enterprise)                                                                                                                                                                           | Broad                                                                                                                                                                                                                                                                       | Real-time                                                                                            | Yes                                      | Yes                                                                                         | Enterprise pricing; not justified at this stage.                                                                                                                                                                                                                 |
+| **Pinnacle's own API** | Closed to the public in July 2025 (_reported_). Re-servers such as PinnWire exist.                                                                                                                | –                                                                                                                                                                                                                                                                           | –                                                                                                    | –                                        | –                                                                                           | Pinnacle through OddsPapi history (free) or The Odds API (`eu`) covers us.                                                                                                                                                                                       |
+
+## Public betting splits (for reverse line movement)
+
+| Source                               | Access                                                         | What you get                                                                                                                  | Terms                                                                                                     | Verdict                                                                  |
+| ------------------------------------ | -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| **Sportradar Betting Splits**        | Licensed, through **sales**; trial access via a representative | Ticket % and money % aggregated from 150+ books, real-time, NFL included                                                      | Percentages may be shown to users; raw bet counts may not                                                 | **Best licensed option.** Likely enterprise pricing: request a quote.    |
+| **SharpAPI splits**                  | **$229 Pro** tier and up                                       | Bet % and handle % from **DraftKings and Circa** (the only books that publish both), bet % from BetMGM, about every 5 minutes | Redistribution terms not stated; history kept for only **48 h**, so we would have to archive it ourselves | **Affordable path**, if their terms allow our use (to confirm by email). |
+| SportsDataIO                         | –                                                              | No splits endpoint found in their docs during this search                                                                     | –                                                                                                         | Unconfirmed; not a lead.                                                 |
+| Action Network PRO, VSIN, SportsLine | Consumer subscriptions, no API                                 | –                                                                                                                             | Access would mean scraping, which conflicts with their terms                                              | **Ruled out** (Jack's choice: licensed only).                            |
+
+## Credit maths for the paid options
+
+- **Live sharp-move detection with The Odds API.** Assume 3 markets (moneyline, spread, total) and the `us`, `us2` and `eu` regions (Pinnacle is in `eu`, Hard Rock in `us2`), which is 9 credits a call.
+  - **Every 10 minutes**, Thursday 00:00 to Tuesday 06:00 UTC: about 756 calls a week, so about 6.8K credits a week and **about 27K a month**. The **$59 (100K) plan** covers it, and so does every 5 minutes (about 54K a month).
+- **Historical backfill 2022–25 with The Odds API.** Assume 3 markets × 2 regions (`us`, `eu`) at 10× cost, which is 60 credits a call, assuming every game comes back in one call, as the docs' example shows.
+  - **Cadence:** 10-minute snapshots in the 48 h before each game slot, hourly otherwise. That's about 450 calls a week, about 0.6M credits a season, and **about 2.4M for four seasons**.
+  - **Cost:** one month of the **$119 (5M) plan**, then downgrade.
+  - Pinnacle comes from its public website "with a possible delay", which is fine for 5–10-minute research but not for second-level timing.
+
+## Recommendation
+
+**Free first (now):**
+
+- **MS-042:** build the event store from OddsPapi's free history, covering the sharp books (Pinnacle, Circa, Bookmaker.eu, and the Kalshi/Novig/ProphetX exchanges) plus the US retail books, for every completed 2026 game.
+  - It is minute-level and includes limits.
+  - At most 3 books per call with a 5 s cooldown: about 6 calls per game, under an hour for the season to date.
+  - The open question is **storage**: exchange books produce millions of updates per game. MS-042 measures this first and keeps only main lines, value changes and the top of each exchange's book.
+- **Live collection** stays at 4 times a day for the board.
+
+**Paid, when it pays for itself** (each needs Jack's go-ahead before signup):
+
+1. **The Odds API $59/month (100K credits)** once MS-043 shows which signals matter. It means 5–10-minute live snapshots in game windows, with Pinnacle (`eu`), for near-real-time steam and stale-line detection, live CLV, and paper bets at fresh prices (MS-045/046). **Recommended first purchase.**
+2. **One month of The Odds API $119 (5M credits)** to backfill 2022–25 at 5–10-minute resolution, so systems and lead-lag can be tested over four more seasons (MS-044 and later), then drop back to $59.
+3. **Licensed splits for reverse line movement (MS-047):**
+   - First, ask **Sportradar** for a trial and quote, and ask **SharpAPI** to confirm their terms.
+   - SharpAPI Pro ($229 a month) is the affordable path, but we would have to archive the data ourselves, because history is kept for only 48 h.
+   - Decide after MS-043.
+4. **SportsGameOdds Pro ($299 a month)** only if sub-minute timing proves necessary: one feed with Pinnacle and Circa.
+
+## Signup steps for Jack (when approved)
+
+- **The Odds API:**
+  1. Sign in at the-odds-api.com and pick the plan (the key stays the same).
+  2. Tell Claude. The collector's credit guard (`MONTHLY_CREDIT_BUDGET`) and schedule are then raised in one PR.
+  3. No new secret is needed: the existing `ODDS_API_KEY` repo secret is reused.
+- **Sportradar:** use the contact form on developer.sportradar.com (Betting Splits), giving the use case: invite-only research site, percentages only, no redistribution.
+- **SharpAPI:** email to confirm whether DraftKings/Circa splits may be stored for research and shown as percentages on an invite-only site.
+
+## Security note
+
+The OddsPapi `/v4/account` endpoint **returns the API key in its response body**. MS-041's probe printed that response once into a working session, so the key should be rotated in the OddsPapi dashboard. Any future account check must print selected fields only.
+
+## Sources (checked 2026-10-19)
+
+- **The Odds API:**
+  - plans: https://the-odds-api.com/
+  - API guide (historical endpoint, costs): https://the-odds-api.com/liveapi/guides/v4/
+  - bookmakers by region: https://the-odds-api.com/sports-odds-data/bookmaker-apis.html
+- **OddsPapi:**
+  - pricing (client-side): https://oddspapi.io/us/pricing
+  - about (sharp books): https://oddspapi.io/us/about
+  - WebSocket: https://oddspapi.io/blog/websocket-odds-api-real-time-betting-data/
+  - live API tests: `/v4/account`, `/v4/historical-odds` (fixture `id1400003171515898`)
+- **SportsGameOdds** pricing: https://sportsgameodds.com/pricing
+- **SharpAPI:**
+  - pricing: https://sharpapi.io/pricing
+  - splits docs: https://docs.sharpapi.io/en/api-reference/splits/
+- **Sportradar Betting Splits:**
+  - overview: https://developer.sportradar.com/insights/reference/betting-splits-overview
+  - NFL: https://developer.sportradar.com/insights/reference/betting-splits-nfl
+  - FAQ: https://developer.sportradar.com/insights/reference/betting-splits-faq
+- **Unabated (reported):** https://sportsapis.dev/apis/unabated and https://sportsgameodds.com/compare/unabated
+- **Pinnacle API closure (reported):** https://odds-api.io/blog/pinnacle-api-shutdown-alternatives
