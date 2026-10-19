@@ -811,3 +811,28 @@ The test is only honest if the model is fixed before it runs and cannot be re-ru
 - **R2w:** claim met (+0.40 per event, +0.14 to +0.73), robust to excluding QBs (+0.30). This is the first primary claim met in MS-035.
 - **Together:** the market moves on confirmed absences during the week and has priced them by kickoff.
 - **Live R2 still runs once its gate is met,** with exact first-seen times.
+
+## ADR-047 — Football features in the market-movement model: point-in-time substitutes, v1 split kept (2026-10-19)
+
+**Context.** MS-036 planned four kinds of football feature. Two can't be built point in time for the training weeks (2026 weeks 1–4):
+
+- The full model margin uses the final injury report, published late in the week.
+- Live injury statuses with timestamps start in week 6.
+
+**Decision.**
+
+- **Substitutes, fixed in `ml/design_football.py` before any feature code** (85fd030 on the branch):
+  - **Rating-only margin** from the latest usable ratings-v1 snapshot, 16 h after its week's last kickoff.
+  - **In-game injury signal:** starters who barely played in their team's latest game, from snap counts at least 36 h old.
+  - **Weather:** forecast leads used only once issued.
+  - **Schedule:** context features.
+  - A unit test perturbs every input usable after t and asserts that no feature changes.
+- **Same protocol as v1.** The split, C grid, bootstrap and claim rule are unchanged, so the comparison with the market-only model is paired and like for like. Family ablations are exploratory.
+
+**Consequences.**
+
+- **Will it move:** no lift (Δ Brier +0.0011, −0.0015 to +0.0039).
+- **Direction:** worse (Δ Brier +0.0373, +0.0045 to +0.0776). The extra signed features overfit 152 training rows.
+- **Exploratory:** the injury family came closest to helping on will-it-move (−0.0025, −0.0052 to 0.0000).
+- **Forward check:** pending.
+- **v2 waits for more live weeks:** rolling-origin evaluation, plus the live injury snapshots as a direct feature.
