@@ -14,7 +14,7 @@ Sportsbook odds change constantly. Public sites show only the current price, and
 
 - **Writers:** a TypeScript collector (GitHub Actions, 4 times a day) writes append-only odds observations to PostgreSQL. A Python pipeline (daily) ingests nflverse play-by-play, injuries, snaps and Open-Meteo forecasts, then rebuilds the ratings, the forward-test estimates and 10,000-season playoff simulations.
 - **Readers:** a Next.js 16 site on Vercel reads the same database through one query layer. A read-only Python research package runs the studies.
-- **Database:** one schema (Drizzle migrations, RLS on all 19 tables) serves both languages. Every job is idempotent per job key.
+- **Database:** one schema (Drizzle migrations, RLS on all 24 tables) serves both languages. Every job is idempotent per job key.
 
 Details and diagram: [ARCHITECTURE.md](ARCHITECTURE.md).
 
@@ -34,7 +34,7 @@ Details and diagram: [ARCHITECTURE.md](ARCHITECTURE.md).
   - The ML feature builders are checked by perturbing everything after each prediction time.
 - **One query layer.** Every SQL query the site runs lives in `packages/db`, has integration tests against a migrated database, and is reviewed with EXPLAIN ANALYZE against production. The hot queries take under 3 ms.
 - **Security as a default.**
-  - RLS everywhere, Basic auth on the site, `/api/*` protected because of the provider's terms.
+  - RLS everywhere, invite-only accounts (hashed passwords, rate-limited sign-in, CSRF and open-redirect guards), `/api/*` protected because of the provider's terms.
   - API keys stripped from logged errors.
   - A history scan shows no secret was ever committed ([SECURITY.md](SECURITY.md)).
 - **Testing at every layer:**

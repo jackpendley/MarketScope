@@ -5,20 +5,33 @@ How MarketScope protects its secrets, its data and its users, and the results of
 
 ## Controls
 
-- **Site access.** The site is reachable on the public internet, but every page and `/api/*` route
-  requires HTTP Basic auth. It is implemented in `apps/web/proxy.ts` (ADR-022): one shared user,
-  and the password is a Vercel environment variable. `/api/health/live` is open for uptime checks.
-  The JSON API stays protected even if the pages are opened up, because The Odds API terms forbid
-  redistributing its data "through your own API".
+- **Site access (ADR-049).** The site is reachable on the public internet, but every page and
+  `/api/*` route requires a signed-in account. `apps/web/proxy.ts` checks the session on every
+  request; `/api/health/live` is open for uptime checks. The JSON API needs a session too, because
+  The Odds API terms forbid redistributing its data "through your own API".
+- **Accounts.** [Better Auth](https://www.better-auth.com/) with username or email + password:
+  - **Invite-only:** sign-up is disabled; accounts come from `pnpm --filter @marketscope/web users`.
+  - **Passwords:** at least 12 characters, stored only as salted scrypt hashes. Hidden-prompt input in the CLI.
+  - **Sessions:** a random token in an httpOnly, SameSite=Lax cookie (Secure over HTTPS), stored
+    in `auth_sessions`, 30 days with a sliding expiry. A signed 5-minute cookie cache saves
+    database lookups, so a revoked session can keep working for up to 5 minutes.
+  - **Brute force:** sign-in is limited to 5 attempts a minute per IP address, counted in Postgres
+    so every serverless instance shares the limit.
+  - **No account enumeration:** a wrong username and a wrong password get the same answer.
+  - **Login CSRF and open redirects:** the proxy refuses `/api/auth/*` writes whose Origin isn't
+    this site, and the post-login `next` parameter only accepts same-site paths.
+  - **Resets:** a password reset (CLI) or change (`/account`) signs out the other sessions.
+  - **Secret:** `BETTER_AUTH_SECRET` signs cookies. On Vercel, a missing secret makes the site
+    answer 503 rather than run with a default.
 - **Database.**
-  - Supabase Postgres, with row-level security enabled on all 19 tables (`.enableRLS()` in
+  - Supabase Postgres, with row-level security enabled on all 24 tables (`.enableRLS()` in
     `schema.ts`, checked by an integration test). This locks the public REST API out.
   - The site and the jobs connect through the pooler with credentials held as secrets.
   - Research uses a read-only session.
 - **Secrets.**
   - Kept only in gitignored `.env.local` files (locally), in Vercel environment variables
-    (`DATABASE_URL`, the site password), and in one GitHub Actions secret (`DATABASE_URL`) plus the
-    Odds API key.
+    (`DATABASE_URL`, `BETTER_AUTH_SECRET`), and in GitHub Actions secrets (`DATABASE_URL`, the
+    Odds API key).
   - Never logged and never sent to the browser.
 - **API key handling.** The Odds API key travels in the query string, so request URLs are never
   logged. Provider error bodies pass through `redact()`, which replaces the key with `[REDACTED]`

@@ -855,3 +855,40 @@ The test is only honest if the model is fixed before it runs and cannot be re-ru
 
 - **Clean results:** 0 axe violations on all pages and 0 secret matches in the history.
 - **Upkeep:** screenshots need regenerating after visible UI changes (`SCREENSHOTS=1 pnpm exec playwright test e2e/screenshots.spec.ts`).
+
+## ADR-049 — Invite-only accounts with Better Auth replace the shared Basic-auth password (2026-10-19)
+
+**Context.** The site was protected by one shared HTTP Basic-auth password (ADR-022). Jack asked for proper accounts: sign in with a username or email and a password, on a well-designed login page. He chose (2026-10-19) invite-only accounts, the Better Auth library rather than our own session code or Supabase Auth, and no email for now.
+
+**Decision.**
+
+- **Library:** Better Auth 1.7.7, pinned 19 days old. It handles email + password plus the username plugin.
+  - **Storage:** sessions live in our own Postgres through the Drizzle adapter. The five `auth_*` tables are in `schema.ts` with RLS (migration 0015), so there is no new cloud service and `supabase-js` stays out (ADR-018).
+  - **Why a library:** password hashing (scrypt), session rotation and cookie signing are security-critical code better taken from a maintained library than written by hand.
+- **Invite-only:** sign-up is disabled. Accounts are created, listed, reset and signed out from `pnpm --filter @marketscope/web users …`.
+  - Passwords come from a hidden prompt or stdin, never from arguments.
+  - The CLI shows the target database host and asks before changing a non-local database.
+  - Users can change their own password on `/account`; that signs out their other sessions.
+- **Enforcement in the proxy** (Node.js runtime in Next 16):
+  - Every request except `/login`, `/api/auth/*`, `/api/health/live` and static assets needs a valid session.
+  - Pages redirect to `/login?next=…`; API routes answer `401 UNAUTHENTICATED` in the standard error envelope.
+  - **Fails closed:** on Vercel, a missing or short `BETTER_AUTH_SECRET` returns 503.
+- **Hardening, each with a test:**
+  - **Rate limit:** 5 sign-in attempts a minute per IP, stored in Postgres so all serverless instances share it.
+  - **No account enumeration:** a wrong user and a wrong password get the same message.
+  - **Same-origin guard on `/api/auth/*` writes.** Better Auth checks the Origin header only for some endpoints, not the username sign-in.
+  - **Origin check forced on:** Better Auth skips its origin check when `NODE_ENV` is "test", so it is set explicitly on.
+  - **Open redirects:** the post-login `next` only accepts same-site paths.
+  - **Allowed hosts** for the base URL: production, previews and localhost.
+  - **Cookies:** httpOnly, SameSite=Lax, and Secure over HTTPS.
+- **Sessions last 30 days**, sliding daily, with a 5-minute signed cookie cache.
+  - Most requests need no database lookup.
+  - Trade-off: a revoked session keeps working for up to 5 minutes.
+- **Login page:** a centred card with username-or-email and password (show/hide), plus inline errors. It is covered by the axe accessibility check. The site header and navigation appear only when signed in.
+- **e2e:** the global setup creates a synthetic account through the real CLI. A Playwright setup project signs in once and shares the session; the auth specs run signed out.
+
+**Consequences.**
+
+- **Vercel environment:** needs `BETTER_AUTH_SECRET` (Production and Preview). `BASIC_AUTH_USER` and `BASIC_AUTH_PASSWORD` can be deleted after the switch. Rotating the secret signs everyone out.
+- **No self-service reset:** a forgotten password is reset by the owner with the CLI. Email reset is a later, approved addition (a provider account and an API key).
+- **Opening the site to sign-ups** remains Jack's decision. `/api/*` stays session-only under the Odds API terms either way.

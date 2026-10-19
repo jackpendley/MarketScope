@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import Link from "next/link";
+import { SignOutButton } from "@/components/sign-out-button";
+import { getAuth } from "@/lib/server/auth";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -20,7 +23,13 @@ const NAV: { label: string; href?: string }[] = [
   { label: "ML Lab" },
 ];
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  // The proxy already requires a session for every page except /login; here it only decides
+  // whether to show the navigation and who is signed in.
+  const requestHeaders = await headers(); // first: marks the page dynamic before any auth code runs
+  const session = await getAuth().api.getSession({ headers: requestHeaders });
+  const user = session?.user as
+    { username?: string; displayUsername?: string; email: string } | undefined;
   return (
     <html lang="en">
       <body className="min-h-screen antialiased">
@@ -30,30 +39,42 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         >
           Skip to main content
         </a>
-        <header className="border-b border-line bg-surface">
-          <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-8 gap-y-2 px-4 py-3">
-            <Link href="/nfl" className="font-semibold tracking-tight">
-              Market<span className="text-accent">Scope</span>
-            </Link>
-            <nav aria-label="Primary" className="flex flex-wrap gap-x-5 gap-y-1 text-sm">
-              {NAV.map((item) =>
-                item.href ? (
-                  <Link key={item.label} href={item.href} className="text-fg hover:text-accent">
-                    {item.label}
-                  </Link>
-                ) : (
-                  <span
-                    key={item.label}
-                    className="cursor-default text-subtle"
-                    title="Planned, not built yet"
-                  >
-                    {item.label} <span className="text-xs">(soon)</span>
-                  </span>
-                ),
+        {user && (
+          <header className="border-b border-line bg-surface">
+            <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-8 gap-y-2 px-4 py-3">
+              <Link href="/nfl" className="font-semibold tracking-tight">
+                Market<span className="text-accent">Scope</span>
+              </Link>
+              {user && (
+                <nav aria-label="Primary" className="flex flex-wrap gap-x-5 gap-y-1 text-sm">
+                  {NAV.map((item) =>
+                    item.href ? (
+                      <Link key={item.label} href={item.href} className="text-fg hover:text-accent">
+                        {item.label}
+                      </Link>
+                    ) : (
+                      <span
+                        key={item.label}
+                        className="cursor-default text-subtle"
+                        title="Planned, not built yet"
+                      >
+                        {item.label} <span className="text-xs">(soon)</span>
+                      </span>
+                    ),
+                  )}
+                </nav>
               )}
-            </nav>
-          </div>
-        </header>
+              {user && (
+                <div className="ml-auto flex items-center gap-4 text-sm">
+                  <Link href="/account" className="text-fg hover:text-accent">
+                    {user.displayUsername ?? user.username ?? user.email}
+                  </Link>
+                  <SignOutButton />
+                </div>
+              )}
+            </div>
+          </header>
+        )}
         <main id="main" tabIndex={-1} className="mx-auto max-w-7xl px-4 py-6 outline-none">
           {children}
         </main>

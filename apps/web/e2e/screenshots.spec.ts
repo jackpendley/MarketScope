@@ -47,3 +47,12 @@ test("screenshot game page", async ({ page }, info) => {
   await expect(page.getByRole("heading", { name: "Feed coverage" })).toBeVisible();
   await shoot(page, `${OUT}/game-${info.project.name}.png`, info.project.name === "desktop");
 });
+
+test.describe("signed out", () => {
+  test.use({ storageState: { cookies: [], origins: [] } });
+  test("screenshot login page", async ({ page }, info) => {
+    await page.goto("/login");
+    await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
+    await page.screenshot({ path: `${OUT}/login-${info.project.name}.png` });
+  });
+});

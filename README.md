@@ -12,7 +12,7 @@ MarketScope collects NFL odds from five sportsbooks four times a day and stores 
 
 It is an analytics and education project, not a picks service.
 
-> **Status:** Phases 0–10 are complete. Odds and football data update automatically on a schedule, and the site is deployed on Vercel behind a password. Start with the [case study](docs/CASE_STUDY.md), then [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md) and [`docs/ROADMAP.md`](docs/ROADMAP.md).
+> **Status:** Phases 0–10 are complete. Odds and football data update automatically on a schedule, and the site is deployed on Vercel behind invite-only accounts. Start with the [case study](docs/CASE_STUDY.md), then [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md) and [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 ![MarketScope Ratings: the KenPom-style table (synthetic demo data)](docs/screenshots/ratings-desktop.png)
 
@@ -41,7 +41,7 @@ _All screenshots show the synthetic demo database used by the end-to-end tests (
 - **Web:** Next.js 16 (App Router, server components), React 19, TypeScript 5.9 strict, Tailwind CSS 4
 - **Odds collector:** Node.js 22 worker in TypeScript, with Zod-validated config and provider responses
 - **Football pipeline and research:** Python 3.11 with pandas, polars, numpy, scipy, scikit-learn and nflreadpy
-- **Data:** PostgreSQL 17 on Supabase, Drizzle ORM, committed SQL migrations, row-level security on every table
+- **Data:** PostgreSQL 17 on Supabase, Drizzle ORM, committed SQL migrations, row-level security on every table; invite-only accounts via Better Auth
 - **Jobs and CI:** GitHub Actions. Odds 4 times a day, football data daily. CI runs lint, types, unit, integration, pytest, Playwright e2e and axe-core accessibility checks.
 - **Data sources:**
   - [The Odds API](https://the-odds-api.com/) and OddsPapi (history)
@@ -81,7 +81,10 @@ createdb marketscope_demo
 DATABASE_URL=postgres://localhost:5432/marketscope_demo pnpm db:migrate
 DATABASE_URL=postgres://localhost:5432/marketscope_demo pnpm --filter @marketscope/collector seed:synthetic --reset
 
-DATABASE_URL=postgres://localhost:5432/marketscope_demo pnpm dev   # http://localhost:3000/nfl
+# The site is invite-only, so create a local account (hidden password prompt)
+DATABASE_URL=postgres://localhost:5432/marketscope_demo pnpm --filter @marketscope/web users create --username demo --email demo@example.com
+
+DATABASE_URL=postgres://localhost:5432/marketscope_demo pnpm dev   # http://localhost:3000 → sign in
 ```
 
 Quality checks (CI runs all of these):

@@ -10,11 +10,13 @@
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "users": "node --env-file-if-exists=.env.local --import tsx scripts/users.ts"
   },
   "dependencies": {
     "@marketscope/db": "workspace:*",
     "@marketscope/shared": "workspace:*",
+    "better-auth": "1.7.7",
     "next": "16.4.2",
     "react": "19.3.0",
     "react-dom": "19.3.0",
@@ -32,6 +34,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.4.2",
     "tailwindcss": "^4",
+    "tsx": "^4.23.0",
     "typescript": "^5",
     "vitest": "^5.0.0"
   }
