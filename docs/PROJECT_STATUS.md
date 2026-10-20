@@ -4,7 +4,7 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-20 (sessio
 
 ## Current milestone
 
-**Phases 0–11 and the post-release projects are done. Phase 12, the Sharp-Market Lab (ADR-051): MS-041 (data sources) and MS-042 (minute-level line moves) are done; MS-043's discovery run is done and its confirmation waits for weeks 7–14. Next: MS-044, the system backtester and Wong teasers.**
+**Phases 0–11 and the post-release projects are done. Phase 12, the Sharp-Market Lab (ADR-051): MS-041 (data sources) and MS-042 (minute-level line moves) are done; MS-043's discovery run is done (confirmation waits for weeks 7–14); MS-044 (Wong-teaser backtest, `/systems`) is done. Next: MS-045, the paper portfolio.**
 
 The goal is to study the market for moves that indicate sharp betting and test whether any signals or systems are profitable. CLV is the yardstick; the ratings are context.
 
@@ -207,11 +207,17 @@ The goal is to study the market for moves that indicate sharp betting and test w
     - **S3:** steam continues +0.17 (+0.01–+0.34) points.
   - All three are "discovery claims" on `/research`; signals wait for confirmation.
 
+- **MS-044 (this PR, ADR-054): Wong teasers.**
+  - Addendum E (`c47c71f`) before code; code (`60b023e`) before the first run. Rebase-merge, then fix the SHAs.
+  - Primary (V0, 2016–25): 75.7% (72.5–78.9%) of 687 legs vs the −125 break-even of 74.5%: **no claim**. V1 (total ≤ 49) 76.8%; V2 (also road teams) 80.2% but weaker in 2024–25.
+  - 2026 to date at −125: +0.2 units at the nflverse close, −1.6 at Caesars' own lines (16 teasers).
+  - Engine `research/backtest.py`, systems `systems.py`, runner `run_systems.py`; `/systems` page from a generated JSON.
+
 ## Tests
 
 - **Football pytest:** 114 (unit tests, plus integration against the migrated test DB; includes validation of the committed coaching CSV and the 2016–24 seeding reproduction).
-- **Research pytest:** 54.
-- **TS:** db 49, shared 192, collector 66, web 134 (unit + integration), e2e 59.
+- **Research pytest:** 64.
+- **TS:** db 49, shared 192, collector 66, web 141 (unit + integration), e2e 61.
 
 ## Quotas
 
@@ -245,21 +251,17 @@ Nothing blocking.
 
 ## Next task
 
-**MS-044: system backtester and Wong teasers.**
+**MS-045: paper portfolio (live, hypothetical forward test).**
 
-1. **Pre-register first** (definitions before any result):
-   - **Wong teaser legs:** 6-point two-team teasers; favourites −7.5 to −8.5 and underdogs +1.5 to +2.5, crossing 3 and 7.
-   - **Variants:** a total filter (e.g. ≤ 49); home/road.
-   - **Prices:** −120, −130 and −140 (break-even leg win rate ≈ 73.9% at −120).
-   - **Pairing:** chronological and all-pairs.
-   - **Holdouts:** 2016–23 to explore, 2024–25 held out, 2026 to date as the forward look Jack asked for.
-2. **Engine** (`research/`, pure and tested):
-   - grading of spreads, totals, moneylines and teaser legs, with push rules;
-   - vig and teaser prices as parameters;
-   - ROI with game-bootstrap intervals, drawdown, season tables and an equity curve.
-3. **Data:** nflverse closes for 2016–25 (`nfl_games`); 2026 from our lines (Pinnacle and the board at the close, via `line_moves` and snapshots).
-4. **Web:** a `/systems` page in the `/research` style, static from committed reports, with hypothetical labels.
+1. **Table `paper_bets`** (Drizzle, RLS, migration):
+   - **Columns:** strategy, game, market, side, line, price, book, units, close, CLV, result, graded_at.
+   - **`placed_at`** must be before kickoff and the row is immutable, like `model_predictions`; a DB check enforces it.
+2. **Strategies:**
+   - Wong teaser legs V0/V1 at Caesars' line and −125, paired chronologically each week.
+   - Optionally the S2 standard-price stale-number cases, as their own strategy, labelled discovery-only.
+3. **Jobs:** a scheduled job places paper positions before kickoff from the latest lines; another grades them after finals (nightly).
+4. **`/portfolio` page:** units, return and CLV by strategy, every row labelled hypothetical.
 
-**Later:** the MS-043 confirmation run after 2026-12-16 (`run_sharp_market --phase confirmation`), then signals for what holds; MS-045 paper portfolio.
+**Later:** the MS-043 confirmation run after 2026-12-16; MS-046/047 if data is purchased.
 
-**Waiting on Jack (optional):** a Sportradar Betting Splits quote or SharpAPI terms; approval of any data purchase (The Odds API at $59/month is the recommended first one).
+**Waiting on Jack (optional):** a Sportradar Betting Splits quote or SharpAPI terms; approval of any data purchase (The Odds API at $59/month recommended first).

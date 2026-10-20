@@ -15,6 +15,7 @@ const STATIC_PAGES = [
   "/model",
   "/projections",
   "/research",
+  "/systems",
   "/ml-lab",
 ];
 
