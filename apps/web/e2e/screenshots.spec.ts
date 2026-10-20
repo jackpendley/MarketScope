@@ -29,6 +29,7 @@ const PAGES: [string, string][] = [
   ["model", "/model"],
   ["research", "/research"],
   ["systems", "/systems"],
+  ["portfolio", "/portfolio"],
   ["data", "/data"],
 ];
 

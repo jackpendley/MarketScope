@@ -51,6 +51,9 @@ test("matchups, the model scorecard and the game panel fit a phone screen", asyn
   await page.goto("/systems");
   await expect(page.getByRole("heading", { name: "Systems", level: 1 })).toBeVisible();
   await expectNoHorizontalScroll(page);
+  await page.goto("/portfolio");
+  await expect(page.getByRole("heading", { name: "Paper Portfolio", level: 1 })).toBeVisible();
+  await expectNoHorizontalScroll(page);
   await page.goto("/ml-lab");
   await expect(page.getByRole("heading", { name: "ML Lab", level: 1 })).toBeVisible();
   await expectNoHorizontalScroll(page);

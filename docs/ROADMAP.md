@@ -305,7 +305,7 @@ The goal is to study the market for moves that indicate sharp betting, learn fro
   - [ ] Confirmation run on weeks 7–14 (after 2026-12-16), then signals only for what holds.
 - [x] **MS-044** System backtester and Wong teasers (2016–25 nflverse closes, plus 2026 from our lines). Primary: no claim at −125 (ADR-054); `/systems`.
 - [x] **MS-045a** System catalogue F1–F10 (pre-registered; 0 of 10 supported; ADR-055).
-- [ ] **MS-045** Paper portfolio (immutable pre-kickoff paper bets, graded, with CLV).
+- [x] **MS-045** Paper portfolio (immutable pre-kickoff paper positions, graded, with CLV; `/portfolio`; ADR-056).
 - [ ] **MS-046** (needs a paid feed) Real-time collector and alerts.
 - [ ] **MS-047** (needs licensed splits) Reverse line movement.
 

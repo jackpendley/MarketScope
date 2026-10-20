@@ -15,6 +15,7 @@ import { jsonLogger } from "../log";
 import { recomputeSignals } from "../signals-job";
 import { assertSyntheticTarget, generateSyntheticHistory } from "../synthetic";
 import { seedSyntheticLineMoves } from "../synthetic-line-moves";
+import { seedSyntheticPaper } from "../synthetic-paper";
 import { seedSyntheticRatings } from "../synthetic-ratings";
 
 const { values } = parseArgs({
@@ -74,6 +75,7 @@ try {
   await sql`TRUNCATE model_predictions, model_runs, season_projections, rating_snapshots, nfl_player_game_snaps, nfl_coaching_staff, nfl_games RESTART IDENTITY CASCADE`;
   const ratings = await seedSyntheticRatings(db, new Date());
   jsonLogger.info("seed.ratings", { snapshots: ratings });
+  jsonLogger.info("seed.paper", { positions: await seedSyntheticPaper(db) });
 } finally {
   await close();
 }

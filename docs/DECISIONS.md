@@ -1041,14 +1041,15 @@ Caesars alone toggled its markets on and off about 900 times, mostly weeks befor
 
 **Consequences.** MS-045 (paper portfolio) can track V0/V1 legs weekly at −125 as a live, hypothetical forward test, graded against Caesars' own lines.
 
-## ADR-055 — System catalogue F1–F10: none supported; the ML system overfits; all tracked forward (MS-045a) (2026-10-20)
+## ADR-055 — System catalogue F1–F10: none supported; all tracked forward (MS-045a) (2026-10-20)
 
 **Context.** Jack asked for other sharp systems beyond Wong teasers. Addendum F (`b41edfb`) pre-registered nine public situational systems and one walk-forward ML system before code (`2c75e7e`). The correction is Holm–Bonferroni across all ten, plus a 2024–25 sign check.
 
 **Result** (`research/reports/systems-catalogue.md`, 2016–25 at the close, −110): **0 of 10 supported.**
 
-- **Best:** F8 primetime unders, 54.5% (50.3–58.5%), p = 0.17, falling to 50.8% in 2024–25.
-- **Worst:** F10, the ML logistic regression on rest, travel, body-clock and line features. It won 47.1% (42.7–51.5%), with a return of −9.8% (−18.1 to −1.8), significantly worse than chance. Refitting each season on earlier seasons learned patterns that did not carry forward.
+- **Best:** F8 primetime unders, 54.7% (50.5–58.7%), p = 0.14, falling to 51.2% in 2024–25.
+- **F10,** the ML logistic regression on rest, travel, body-clock and line features: 48.6% (44.2–52.9%), with a return of −7.0% (−15.2 to +1.0). No better than the simple rules; refitting each season on earlier seasons found nothing that carried forward.
+- **Correction (2026-10-20, MS-045b).** The first run joined game context on the `is_home` flag, which is false for both teams at neutral sites. That duplicated the 66 neutral-site games and could give the away side the wrong team's context. Context is now matched on the team (`attach_context`, with a regression test) and the catalogue was re-run with the unchanged pre-registered rules. Still 0 of 10. The first run had reported F10 at 47.1% with a return interval below zero; that claim was an artifact of the bug and is withdrawn. MS-036's 2026 context query had the same pattern and is fixed in code; its published report predates the fix and covers only a handful of neutral-site games.
 - **The rest** (home underdogs, divisional underdogs, big underdogs, rest edge, short week, body clock, divisional unders, high-total unders) sit at 49–52%.
 
 **Decision.**
@@ -1056,3 +1057,29 @@ Caesars alone toggled its markets on and off about 900 times, mostly weeks befor
 - Shown on `/systems` (catalogue table, from `apps/web/lib/generated/systems-catalogue.json`).
 - **Every F-system and both Wong variants are still tracked forward** in the paper portfolio (MS-045b), so the live record is not selected on these results.
 - **Where to look next.** The closing line absorbs public situational information. The remaining places to look are the market's own microstructure (MS-043: who moves first, stale numbers, steam) and information that arrives during the week (R2w: injuries). ML effort should go there, not into situational features.
+
+## ADR-056 — Paper portfolio: immutable hypothetical positions from every pre-registered system (MS-045b) (2026-10-20)
+
+**Context.** Jack wants to see the systems tracked live and visualised. Backtests on closing lines (ADR-054, ADR-055) can't show what was actually available before kickoff.
+
+**Decision.**
+
+- **Table `paper_positions`** (migrations 0017/0018, RLS). One row per strategy, game and mode.
+  - **Recorded at placement:** the book's posted line and price, the quote time and the placement time.
+  - **Filled in at grading:** result, Pinnacle's closing line (`line_moves`; nflverse close as fallback) and CLV in points.
+  - **Database guarantees:** a trigger makes the placement columns immutable and forbids deleting live rows. Checks require live positions to be placed before kickoff and every quote to precede kickoff.
+- **Modes:**
+  - `live`: placed by the scheduled job before kickoff.
+  - `reconstructed`: games before the job existed, filled in afterwards by the same rules from snapshots stored at least 10 minutes before kickoff. Labelled on the page.
+  - `synthetic`: demo and e2e databases only.
+- **Strategies:** Wong V0–V2 (teaser legs, paired chronologically per week at −125) and F1–F10, regardless of backtest verdict.
+  - The rules are the same functions as the backtests (`systems.py`), applied to the book's line instead of the nflverse close. F10 is refitted on every final game before the season.
+  - **Book:** Caesars (`williamhill_us`), else DraftKings. The free Odds API plan never returns Caesars, so live positions currently price at DraftKings.
+- **The job** (`research/paper.py`) is the one research module that writes, and only to `paper_positions`. Studies keep their read-only session. It lives with the systems so the rules are not duplicated in TypeScript.
+- **Schedule:** `paper-portfolio.yml` places positions after every odds collection (games kicking off within about 6 hours, from the snapshot just collected) and grades daily at 11:30 UTC, after the line-move import.
+- **`/portfolio`:** cumulative units by strategy (toggleable), mean CLV by strategy, a strategy table carrying each backtest verdict, and open and graded positions. Live, reconstructed or all. Everything is labelled hypothetical.
+
+**Consequences.**
+
+- The forward record accumulates without selection: a system that failed its backtest is still tracked.
+- CLV gives a faster read than units. At four snapshots a day, a quote can be up to about 6 hours old at kickoff; a paid real-time feed (MS-046) would tighten that and allow paper positions on the market-signal strategies (S2, S3).

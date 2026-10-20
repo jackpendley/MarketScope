@@ -24,12 +24,13 @@ flowchart LR
   subgraph Jobs["GitHub Actions"]
     C["collect-odds.yml · 4×/day<br/>apps/collector (TypeScript)"]
     L["line-moves.yml · 11:00 UTC<br/>apps/collector (TypeScript)"]
+    P["paper-portfolio.yml · after each collection + 11:30 UTC<br/>research/paper.py"]
     F["football-data.yml · 13:00 + 23:00 UTC<br/>apps/football (Python)"]
     M["migrate-production.yml · on merge<br/>Drizzle migrations"]
     CI["ci.yml · every PR<br/>lint · types · unit · integration · pytest · e2e"]
   end
 
-  DB[("Supabase PostgreSQL 17<br/>25 tables, RLS on every table")]
+  DB[("Supabase PostgreSQL 17<br/>26 tables, RLS on every table")]
 
   subgraph Readers
     W["apps/web on Vercel<br/>Next.js 16 server components<br/>accounts + sessions (proxy.ts)"]
@@ -44,6 +45,7 @@ flowchart LR
   WP --> F
   C -->|odds_observations · market_signals| DB
   L -->|line_moves| DB
+  P -->|paper_positions| DB
   F -->|nfl_* · rating_snapshots · season_projections · model_*| DB
   M --> DB
   DB --> W
@@ -70,13 +72,14 @@ flowchart LR
    - The live forward test appends pre-kickoff estimates to `model_predictions`; they are never updated.
    - The season simulation (10,000 seasons, NFL tiebreakers) writes `season_projections`.
 5. **Site** (`apps/web`). Server components call `lib/server/*`, which calls the query functions in `packages/db`. `/api/*` exposes the same functions as JSON, behind the same password.
-6. **Research** (`research/`, run on demand). Reads with a read-only session. Its study rules are committed before the code (`research/PREREGISTRATION.md`, `ml/design*.py`).
+6. **Paper portfolio** (`research/paper.py`, after every collection and nightly). Places hypothetical positions from the pre-registered systems before kickoff and grades them against results and Pinnacle's close (ADR-056). It is research's only writer, limited to `paper_positions`.
+7. **Research** (`research/`, run on demand). Reads with a read-only session. Its study rules are committed before the code (`research/PREREGISTRATION.md`, `ml/design*.py`).
 
 ## Schema overview
 
 | Group             | Tables                                                                                                                                                                               | Written by                                | Notes                                                                                                                        |
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| Odds              | `events`, `bookmakers`, `ingestion_runs`, `ingestion_payloads`, `odds_observations`, `market_signals`, `line_moves`                                                                  | collector                                 | Observations are append-only. One row per selection, per run and per snapshot. Lines keep their posted signs.                |
+| Odds              | `events`, `bookmakers`, `ingestion_runs`, `ingestion_payloads`, `odds_observations`, `market_signals`, `line_moves`, `paper_positions`                                               | collector                                 | Observations are append-only. One row per selection, per run and per snapshot. Lines keep their posted signs.                |
 | Football          | `nfl_teams`, `nfl_games`, `nfl_team_game_stats`, `nfl_player_game_snaps`, `nfl_injury_reports`, `nfl_coaching_staff`, `nfl_weather_forecasts`, `nfl_game_context`, `nfl_ingest_runs` | football pipeline                         | `nfl_games.event_id` links each game to its odds event. The nflverse close is a labelled benchmark and never an observation. |
 | Accounts          | `auth_users`, `auth_sessions`, `auth_accounts`, `auth_verifications`, `auth_rate_limits`                                                                                             | web app (Better Auth) and the account CLI | Invite-only. Passwords are hashed in `auth_accounts`.                                                                        |
 | Ratings and model | `rating_snapshots`, `season_projections`, `model_runs`, `model_predictions`                                                                                                          | football pipeline                         | Snapshots are filtered (point in time). Predictions are immutable; a new model version means new rows.                       |

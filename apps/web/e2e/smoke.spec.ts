@@ -288,6 +288,30 @@ test.describe("systems", () => {
   });
 });
 
+test.describe("paper portfolio", () => {
+  test("charts synthetic positions, filters by source and strategy", async ({ page }) => {
+    await page.goto("/nfl");
+    await page
+      .getByRole("navigation", { name: "Primary" })
+      .getByRole("link", { name: "Portfolio" })
+      .click();
+    await expect(page.getByRole("heading", { name: "Paper Portfolio", level: 1 })).toBeVisible();
+    await expect(page.getByText("Synthetic positions: not real odds or results.")).toBeVisible();
+    await expect(page.locator("figure").first().locator(".recharts-line").first()).toBeVisible();
+    const table = page.getByRole("table", { name: "Paper results by strategy" });
+    await expect(table).toContainText("Wong V0");
+    await table.getByRole("link", { name: /F1 Home underdogs/ }).click();
+    await expect(page).toHaveURL(/strategy=F1/);
+    await expect(page.getByRole("heading", { name: /Positions: F1 Home underdogs/ })).toBeVisible();
+    await page
+      .getByRole("navigation", { name: "Position source" })
+      .getByRole("link", { name: "Live" })
+      .click();
+    await expect(page).toHaveURL(/mode=live/);
+    await expect(page.getByText("No paper positions yet.")).toBeVisible();
+  });
+});
+
 test.describe("ml lab", () => {
   test("lists the experiments with their verdicts", async ({ page }) => {
     await page.goto("/nfl");

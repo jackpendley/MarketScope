@@ -23,6 +23,11 @@ TEASE = 6.0
 TOTAL_MAX = 49.0
 
 
+def _grade(margin: float, line: float):
+    """Graded result, or None for a game without a final score (live paper placement)."""
+    return None if pd.isna(margin) else grade_spread(margin, line)
+
+
 def in_wong_range(team_line: float) -> bool:
     """Favourite -7.5 to -8.5 (teased through 7 and 3) or underdog +1.5 to +2.5 (through 3 and 7)."""
     return -8.5 <= team_line <= -7.5 or 1.5 <= team_line <= 2.5
@@ -48,7 +53,7 @@ def wong_legs(games: pd.DataFrame, variant: Variant = "V0") -> pd.DataFrame:
             rows.append({"game_id": g.game_id, "season": g.season, "week": g.week, "kickoff": g.kickoff,
                          "team": team, "road": road, "role": "favourite" if line < 0 else "underdog",
                          "line": line, "teased": teased, "total": g.total,
-                         "result": grade_spread(margin, teased)})
+                         "result": _grade(margin, teased)})
             break
     return pd.DataFrame(rows, columns=["game_id", "season", "week", "kickoff", "team", "road", "role",
                                        "line", "teased", "total", "result"])
@@ -81,14 +86,14 @@ def _side(g, system: str, home: bool) -> dict:
     line = g.home_line if home else -g.home_line
     margin = g.margin if home else -g.margin
     return {"system": system, "game_id": g.game_id, "season": g.season, "week": g.week, "kickoff": g.kickoff,
-            "market": "spread", "side": team, "line": line, "result": grade_spread(margin, line)}
+            "market": "spread", "side": team, "line": line, "result": _grade(margin, line)}
 
 
 def _under(g, system: str) -> dict:
     v = g.total - g.points
+    result = None if pd.isna(v) else "win" if v > 0 else "push" if v == 0 else "loss"
     return {"system": system, "game_id": g.game_id, "season": g.season, "week": g.week, "kickoff": g.kickoff,
-            "market": "total", "side": "under", "line": g.total,
-            "result": "win" if v > 0 else "push" if v == 0 else "loss"}
+            "market": "total", "side": "under", "line": g.total, "result": result}
 
 
 def rule_positions(games: pd.DataFrame) -> pd.DataFrame:
@@ -150,6 +155,20 @@ def f10_positions(games: pd.DataFrame, first_season: int = F10_FIRST_SEASON) -> 
                 rows.append({**_side(g, "F10", home=True), "p": p})
             elif 1 - p >= F10_THRESHOLD:
                 rows.append({**_side(g, "F10", home=False), "p": 1 - p})
+    return pd.DataFrame(rows, columns=POSITION_COLUMNS + ["p"])
+
+
+def f10_select(history: pd.DataFrame, upcoming: pd.DataFrame) -> pd.DataFrame:
+    """Live F10: one model fitted on every final game in `history`, applied to `upcoming`."""
+    if upcoming.empty:
+        return pd.DataFrame(columns=POSITION_COLUMNS + ["p"])
+    p_home = f10_model(history).predict_proba(f10_matrix(upcoming))[:, 1]
+    rows = []
+    for g, p in zip(upcoming.itertuples(), p_home):
+        if p >= F10_THRESHOLD:
+            rows.append({**_side(g, "F10", home=True), "p": p})
+        elif 1 - p >= F10_THRESHOLD:
+            rows.append({**_side(g, "F10", home=False), "p": 1 - p})
     return pd.DataFrame(rows, columns=POSITION_COLUMNS + ["p"])
 
 

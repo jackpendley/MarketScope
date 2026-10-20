@@ -21,6 +21,7 @@ const NAV: { label: string; href?: string }[] = [
   { label: "Data", href: "/data" },
   { label: "Research", href: "/research" },
   { label: "Systems", href: "/systems" },
+  { label: "Portfolio", href: "/portfolio" },
   { label: "ML Lab", href: "/ml-lab" },
 ];
 

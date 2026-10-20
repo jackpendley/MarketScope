@@ -83,3 +83,17 @@ def test_f10_never_trains_on_the_season_it_predicts():
     # The planted relationship reverses in 2019 only; a leak would let the model follow it there.
     pos = sy.f10_positions(synthetic_seasons(range(2016, 2021), flip_in=2019))
     assert (pos.loc[pos["season"] == 2019, "result"] == "win").mean() < 0.05
+
+
+def test_context_attaches_by_team_even_at_neutral_sites():
+    from marketscope_research.run_catalogue import attach_context
+
+    g = pd.DataFrame([{"game_id": "n", "home": "JAX", "away": "BUF"}])
+    ctx = pd.DataFrame([  # a neutral-site game: neither team is "home" in the context table
+        {"game_id": "n", "team": "BUF", "rest": 7, "bye": False, "short": False, "body_clock": 8.5},
+        {"game_id": "n", "team": "JAX", "rest": 6, "bye": True, "short": False, "body_clock": 9.5},
+    ])
+    out = attach_context(g, ctx)
+    assert len(out) == 1
+    assert out.loc[0, "home_bye"] and not out.loc[0, "away_bye"]
+    assert out.loc[0, "away_body_clock"] == 8.5 and out.loc[0, "home_rest"] == 6
