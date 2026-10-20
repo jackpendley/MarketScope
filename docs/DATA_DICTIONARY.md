@@ -170,6 +170,22 @@ Primary key `(event_id, bookmaker_key, market_type, changed_at)`, which also ser
 
 A row means the main line changed; the line stays in effect until the next row. Changes under 1 s apart are merged, suspensions under 60 s are ignored, and only the last 14 days before kickoff are kept (plus the line in effect at the start).
 
+### `paper_positions`: hypothetical positions from pre-registered systems (MS-045b, ADR-056)
+
+| Column                                                     | Notes                                                                                   |
+| ---------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `id`                                                       | bigint identity                                                                         |
+| `strategy`                                                 | `wong-V0`…`wong-V2`, `F1`…`F10` (PREREGISTRATION.md Addenda E, F)                       |
+| `mode`                                                     | `live` (placed before kickoff), `reconstructed` (filled in afterwards), `synthetic`     |
+| `game_id`, `season`, `week`, `kickoff_utc`                 | FK `nfl_games`; copied for checks and ordering                                          |
+| `market`, `side`                                           | `spread` / `total` / `teaser_leg`; team abbreviation or `over`/`under`                  |
+| `line`, `teased_line`, `price`                             | the book's line from the side; teased line for teaser legs (priced when paired)         |
+| `bookmaker_key`, `quote_observed_at`                       | the book and the snapshot time of the quote used (before kickoff)                       |
+| `placed_at`                                                | when the row was written                                                                |
+| `result`, `close_line`, `close_source`, `clv`, `graded_at` | grading: win/loss/push, closing line for the side (Pinnacle or nflverse), CLV in points |
+
+Unique `(strategy, game_id, mode)`. Placement columns are immutable and live rows cannot be deleted (trigger, migration 0018). Checks: live positions placed before kickoff; quotes before kickoff; teaser legs have a teased line and no price, other positions a price. RLS is enabled.
+
 ## Football tables (ADR-028)
 
 Written only by `apps/football` (Python). The schema is still owned by Drizzle. Source: [nflverse](https://github.com/nflverse) (CC-BY 4.0).

@@ -115,6 +115,7 @@ The developer (Jack) is building it to move into a backend/full-stack software e
 | `cd research && PYTHONPATH=src STUDY_DATABASE_URL=… .venv/bin/python -m marketscope_research.run_sharp_market --phase {discovery,confirmation} --out reports/sharp-market-<phase>.md`                      | MS-043 sharp-market study S1–S5 on `line_moves` (read-only; Addenda C, D; confirmation after 2026-12-16)           |
 | `cd research && PYTHONPATH=src STUDY_DATABASE_URL=… .venv/bin/python -m marketscope_research.run_systems --out reports/systems-wong-teasers.md --web-json ../apps/web/lib/generated/wong-teasers.json`     | MS-044 Wong-teaser backtest (read-only; Addendum E); feeds `/systems` (run prettier on both outputs)               |
 | `cd research && PYTHONPATH=src STUDY_DATABASE_URL=… .venv/bin/python -m marketscope_research.run_catalogue --out reports/systems-catalogue.md --web-json ../apps/web/lib/generated/systems-catalogue.json` | MS-045a system catalogue F1–F10 (read-only; Addendum F); feeds `/systems`                                          |
+| `cd research && PYTHONPATH=src PAPER_DATABASE_URL=… .venv/bin/python -m marketscope_research.paper {place,reconstruct,grade}`                                                                              | paper portfolio (writes only `paper_positions`; immutable placement; ADR-056). CI runs place/grade                 |
 | `pnpm --filter @marketscope/<pkg> <script>`                                                                                                                                                                | run one package's script                                                                                           |
 
 ## Repo map
@@ -125,7 +126,7 @@ The developer (Jack) is building it to move into a backend/full-stack software e
 - `apps/football` (Phase 8+, Python): nflverse ingest, team-game stats, coaching staff, weather, ratings, evaluation, predictions.
   - Writes only `nfl_*`, `rating_*` and `model_*` tables.
   - Raw play-by-play stays in a gitignored Parquet cache.
-- `research/` (Python): read-only studies and the market ML (`ml/`).
+- `research/` (Python): read-only studies and the market ML (`ml/`). The one exception is `paper.py`, which writes only `paper_positions` (ADR-056).
 - `packages/db`: Drizzle schema (`src/schema.ts`), committed SQL migrations (`drizzle/`), client, and test helpers (`@marketscope/db/testing`).
 - Local Postgres: Homebrew `postgresql@17`, with DBs `marketscope_dev` and `marketscope_test`. Tests use `TEST_DATABASE_URL` (default: local test DB). Root `pnpm test` runs packages sequentially because they share the test DB.
 - `docs/`: ROADMAP, PROJECT_STATUS, DECISIONS, ARCHITECTURE, API, DEPLOYMENT, DATA_DICTIONARY, PROVIDER_COVERAGE, PERFORMANCE, SIGNAL_DEFINITIONS, RATINGS (ratings design + results), MODEL_CARD (Phase 7+), PRODUCT_SPEC (with a 2026-10-17 scope addendum).

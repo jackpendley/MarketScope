@@ -6,6 +6,7 @@
 | Database             | Supabase Postgres 17                                                                                                                                               | `migrate-production.yml` applies migrations when `packages/db/drizzle/**` changes on `main` |
 | Collector            | GitHub Actions `collect-odds.yml`                                                                                                                                  | 4×/day (00/06/12/18:07 UTC) plus manual dispatch                                            |
 | Line moves           | GitHub Actions `line-moves.yml` (needs repo secrets `DATABASE_URL` and `ODDSPAPI_API_KEY`; skips with a warning without the key)                                   | Daily 11:00 UTC plus manual dispatch                                                        |
+| Paper portfolio      | GitHub Actions `paper-portfolio.yml` (repo secret `DATABASE_URL`)                                                                                                  | After each `collect-odds` run (place) and daily 11:30 UTC (grade); manual dispatch          |
 
 ## Web app environment (Vercel → Project → Settings → Environment Variables)
 

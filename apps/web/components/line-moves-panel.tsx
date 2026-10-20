@@ -206,7 +206,12 @@ export function LineMovesPanel({
           {log.length === 0 ? (
             <p className="text-sm text-muted">No line changes in this range.</p>
           ) : (
-            <div className="relative max-h-96 overflow-auto rounded-lg border border-line bg-surface">
+            <div
+              tabIndex={0}
+              role="region"
+              aria-label="Line changes"
+              className="relative max-h-96 overflow-auto rounded-lg border border-line bg-surface"
+            >
               <table className="w-full min-w-[600px] text-sm">
                 <thead className="sticky top-0 bg-surface">
                   <tr className="text-left text-xs text-muted">
