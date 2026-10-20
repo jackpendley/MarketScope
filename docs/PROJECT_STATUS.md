@@ -208,7 +208,7 @@ The goal is to study the market for moves that indicate sharp betting and test w
   - All three are "discovery claims" on `/research`; signals wait for confirmation.
 
 - **MS-044 (#59, rebase-merged; ADR-054): Wong teasers.**
-  - Addendum E (`c47c71f`) before code; code (`60b023e`) before the first run. SHAs are main's after the rebase merge (#59).
+  - Addendum E (`d431cb9`) before code; code (`33238e4`) before the first run. SHAs are main's after the rebase merge (#59).
   - Primary (V0, 2016–25): 75.7% (72.5–78.9%) of 687 legs vs the −125 break-even of 74.5%: **no claim**. V1 (total ≤ 49) 76.8%; V2 (also road teams) 80.2% but weaker in 2024–25.
   - 2026 to date at −125: +0.2 units at the nflverse close, −1.6 at Caesars' own lines (16 teasers).
   - Engine `research/backtest.py`, systems `systems.py`, runner `run_systems.py`; `/systems` page from a generated JSON.
