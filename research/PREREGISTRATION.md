@@ -421,3 +421,49 @@ far in 2026. Known going in, from public sources (not our data):
 **What this can't see.** Prices available before the close (lines move into and out of the ranges
 during the week); books' actual teaser rules beyond the two push conventions; limits or account
 restrictions on teaser players.
+
+## Addendum F (2026-10-20): MS-045a system catalogue F1–F10 (ADR-051)
+
+Committed before any F-system code was written or any outcome computed. Looked at before writing
+this: counts only, 2016–25 final games with an nflverse close. Home underdogs 1,014; division games
+977; underdogs of 7 or more 793; primetime (7 pm ET or later) 578; closing totals of 50 or more 405;
+teams off a bye facing a team that was not 296; road teams on a short week 168; road teams with a
+body-clock kickoff of 10:30 or earlier 261. Known going in: these are well-known public systems, and
+public markets tend to price well-known edges away, so nulls are the expected result.
+
+**Common rules.**
+
+- **Games:** 2016–25 final games (regular season and playoffs) with an nflverse closing spread and
+  total. Situational fields come from `nfl_games` and `nfl_game_context`, which are known before
+  kickoff (rest, bye, short week, body-clock kickoff hour, division). Observed weather is never used.
+- **Grading:** against the nflverse close at −110 (break-even 52.38%). A side wins if team margin +
+  closing line > 0; a total wins on the stated side of the closing total. Pushes are excluded from
+  win rates and return 0 units.
+- **Primary, each system:** win rate on 2016–25 with a one-sided exact binomial test against 52.38%.
+  **Holm–Bonferroni across F1–F10 at a family-wise 0.05** (valid however the systems overlap). A
+  system is **supported** only if it passes Holm **and** its 2024–25 win rate is above 52.38%.
+  Everything else is reported as no claim. 95% intervals and return at −110 are descriptive.
+- **Forward:** every F-system and both Wong variants are tracked in the paper portfolio (MS-045b)
+  regardless of the backtest verdict, so the forward record is not selected on past results.
+
+**Systems.** One position per game per system.
+
+- **F1 home underdogs:** home team closing at +0.5 or more, neutral sites excluded. Take the home team.
+- **F2 divisional underdogs:** the underdog in a division game (closing spread not 0).
+- **F3 big underdogs:** the underdog when the closing spread is 7 or more.
+- **F4 rest edge:** a team coming off a bye playing a team that is not. Take the rested team.
+- **F5 short-week road teams:** the road team is on a short week. Take the home team.
+- **F6 early body clock:** the road team's body-clock kickoff hour is 10:30 or earlier (for example a
+  Pacific team at 1 pm ET). Take the home team.
+- **F7 divisional unders:** the under in division games.
+- **F8 primetime unders:** the under when kickoff is 7 pm ET or later.
+- **F9 high-total unders:** the under when the closing total is 50 or more.
+- **F10 ML (walk-forward logistic regression):** predicts whether the home team covers the closing
+  spread from: closing home spread, closing total, division game, neutral site, both teams' rest
+  days, bye flags and short-week flags, road team's travel (km), time-zone shift and body-clock
+  kickoff hour, altitude change. Standardised features, L2 penalty with C = 1.0 (fixed, not tuned).
+  For each season s from 2018 to 2025 the model is fitted on all seasons from 2016 to s − 1 and
+  predicts season s. Positions: the side whose predicted cover probability is 0.55 or more. Its
+  primary uses 2018–25.
+
+**What this can't see.** Prices other than −110; lines before the close; public betting percentages.
