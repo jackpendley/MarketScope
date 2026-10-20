@@ -1,6 +1,6 @@
 # System catalogue F1–F10: backtest (MS-045a)
 
-_Generated 2026-10-20 22:14 UTC · commit `288f664` · reproduce with `research/src/marketscope_research/run_catalogue.py`._
+_Generated 2026-10-20 22:15 UTC · commit `56861d7` · reproduce with `research/src/marketscope_research/run_catalogue.py`._
 
 Design pre-registered in `research/PREREGISTRATION.md` (Addendum F, committed before this code). Graded at the nflverse close at −110 (break-even 52.38%); pushes excluded from win rates. Primary: one-sided exact binomial test per system, Holm–Bonferroni across all ten at a family-wise 0.05, plus a 2024–25 win rate above break-even. Intervals resample games (5,000 draws, seed 2026). F10 is walk-forward from 2018. **Hypothetical results on closing lines; not betting advice.**
 
