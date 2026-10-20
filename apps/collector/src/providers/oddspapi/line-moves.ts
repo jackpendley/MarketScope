@@ -43,6 +43,11 @@ export interface LineMoveOptions {
   windowDays?: number;
   settleMs?: number;
   minSuspensionMs?: number;
+  /**
+   * MarketScope keys whose limits are kept; other books' limits are dropped, so a limit change
+   * alone never makes a row. Omitted = keep every book's limits.
+   */
+  limitBooks?: ReadonlySet<string>;
 }
 
 export const LINE_MOVE_DEFAULTS = {
@@ -58,7 +63,8 @@ export function deriveLineMoves(
   markets: ReadonlyMap<number, OddsPapiMarketMeta>,
   options: LineMoveOptions,
 ): LineMove[] {
-  const opts = { ...LINE_MOVE_DEFAULTS, ...options };
+  const { limitBooks, ...rest } = options;
+  const opts = { ...LINE_MOVE_DEFAULTS, ...rest };
   const kick = Date.parse(opts.kickoff);
   const out: LineMove[] = [];
   for (const [slug, book] of Object.entries(history.bookmakers ?? {})) {
@@ -71,7 +77,12 @@ export function deriveLineMoves(
       ["h2h", moneyline ? [moneyline] : []],
     ];
     for (const [market, candidates] of byMarket)
-      out.push(...timeline(bookmakerKey, market, candidates, kick, opts));
+      out.push(
+        ...timeline(bookmakerKey, market, candidates, kick, {
+          ...opts,
+          keepLimits: !limitBooks || limitBooks.has(bookmakerKey),
+        }),
+      );
   }
   return out;
 }
@@ -81,7 +92,9 @@ function timeline(
   market: Market,
   candidates: readonly Candidate[],
   kick: number,
-  opts: Required<Omit<LineMoveOptions, "kickoff" | "bookMap">>,
+  opts: Required<Omit<LineMoveOptions, "kickoff" | "bookMap" | "limitBooks">> & {
+    keepLimits: boolean;
+  },
 ): LineMove[] {
   const times = [...new Set(candidates.flatMap((c) => [...c.side1.times, ...c.side2.times]))].sort(
     (a, b) => a - b,
@@ -105,7 +118,8 @@ function timeline(
     });
     lastKey = "off";
   };
-  const limit = (v: number | null | undefined) => (v == null ? null : Math.round(v));
+  const limit = (v: number | null | undefined) =>
+    v == null || !opts.keepLimits ? null : Math.round(v);
 
   for (const [i, t] of times.entries()) {
     const next = times[i + 1];

@@ -1,10 +1,10 @@
 # Project Status
 
-_Rewrite this file at the end of every session. Last updated: 2026-10-18 (session 1, continued; MS-041)._
+_Rewrite this file at the end of every session. Last updated: 2026-10-20 (session 1, continued; MS-042)._
 
 ## Current milestone
 
-**Phases 0–11 and the post-release projects are done. Phase 12, the Sharp-Market Lab (ADR-051), has started: MS-041 (data sources) is done. Next: MS-042, the line-move event store.**
+**Phases 0–11 and the post-release projects are done. Phase 12, the Sharp-Market Lab (ADR-051): MS-041 (data sources) and MS-042 (minute-level line moves) are done. Next: MS-043, the pre-registered sharp-market study.**
 
 The goal is to study the market for moves that indicate sharp betting and test whether any signals or systems are profitable. CLV is the yardstick; the ratings are context.
 
@@ -183,29 +183,37 @@ The goal is to study the market for moves that indicate sharp betting and test w
   - Fitted carryover is higher when the QB changes, because the game layer's QB term already models the new starter.
   - Report `apps/football/reports/ratings-v2.md`; no `params_v2.json`.
 
-- **MS-041 (this PR): data-source evaluation (`docs/DATA_SOURCES.md`, ADR-051).**
+- **MS-041 (#54): data-source evaluation (`docs/DATA_SOURCES.md`, ADR-051).**
   - **OddsPapi** (free, tested): minute-level history with limits for Pinnacle, Circa, Bookmaker.eu/BetCRIS, Kalshi, Novig, ProphetX and SBOBet, plus the US retail books. No WebSocket on the free plan.
   - **The Odds API:** plans run $30/$59/$119/$249. Historical data goes back to 2020 in 5-minute snapshots since September 2022 (paid only). Pinnacle is in `eu`, with a delay; no Circa.
   - **SportsGameOdds Pro** ($299): sub-minute, with Pinnacle and Circa.
   - **Splits:** Sportradar (licensed, quote) or SharpAPI ($229, DraftKings/Circa, 48 h history, terms to confirm).
   - **Recommendation:** stay free for MS-042/043; then The Odds API at $59/month for live 5–10-minute snapshots, and optionally one month at $119 for a 2022–25 backfill.
-  - **Security:** the OddsPapi account endpoint echoed the API key into the session, so the key should be rotated.
+  - **Security:** the OddsPapi account endpoint echoed the API key into the session; Jack rotated it on 2026-10-19.
+
+- **MS-042 (#55, #56): minute-level line moves (ADR-052).**
+  - `line_moves` (migration 0016): one row per change to a book's main line, both sides and reference-book limits together; suspensions of 60 s or more are rows without prices. Changes under 1 s apart are merged; 14 days before kickoff are kept.
+  - Books: Pinnacle, Circa, Bookmaker.eu (references, never on the board) plus DraftKings, FanDuel, Caesars, Hard Rock.
+  - Backfilled all 92 finished 2026 games: 132,952 rows, 23 MB (about 70 MB a season). Cross-check against the stored snapshots: 99.99% match.
+  - The import was re-run as v2 after v1's rows turned out to be half FanDuel limit changes.
+  - Replay page: a "Minute-level line moves" panel with step charts per book (references dashed), ranges, and a change log showing which book posted each number first.
+  - Nightly `line-moves.yml` at 11:00 UTC (repo secret `ODDSPAPI_API_KEY`, approved and set 2026-10-19).
 
 ## Tests
 
 - **Football pytest:** 114 (unit tests, plus integration against the migrated test DB; includes validation of the committed coaching CSV and the 2016–24 seeding reproduction).
 - **Research pytest:** 40.
-- **TS:** db 47, shared 192, collector 51, web 124 (unit + integration), e2e 58.
+- **TS:** db 49, shared 192, collector 66, web 134 (unit + integration), e2e 59.
 
 ## Quotas
 
 - **Odds API:** about 12 credits/day from the cron (≈ 372 of 500/month).
-- **OddsPapi:** 9 of 250. Open-Meteo, Wikipedia and nflverse: free, no keys.
+- **OddsPapi:** 12 of 250 this month; the nightly line-move job adds about 2 a day (fixtures + market catalog). History calls are free. Open-Meteo, Wikipedia and nflverse: free, no keys.
 
 ## Data (production, Supabase)
 
-- **Size:** ≈ 75 MB of odds data plus ≈ 20 MB of football tables (team-game stats 3 MB, snaps 9 MB, injuries 3 MB, the rest small).
-- **Migrations:** 0007–0014 applied in production (0014 applies on merge).
+- **Size:** 133 MB of Supabase's 500 MB: `line_moves` 23 MB, the other odds tables ≈ 75 MB, football tables ≈ 20 MB, auth and the rest small.
+- **Migrations:** 0000–0016 applied in production.
 
 ## Waiting on Jack
 
@@ -229,18 +237,19 @@ Nothing blocking.
 
 ## Next task
 
-**MS-042: line-move event store.**
+**MS-043: pre-registered sharp-market study (S1–S5).**
 
-1. **Measure first:** import one game's OddsPapi history into a scratch table (main lines, value changes only, exchange top-of-book), count rows and bytes for sharp and retail books, and project a season against Supabase's 500 MB (currently about 109 MB). Bring an upgrade decision to Jack if needed.
-2. **Build:**
-   - `line_moves` (Drizzle, RLS, migration); the importer reuses `apps/collector/src/providers/oddspapi/{client,transform}.ts`, emits events, and is idempotent per fixture.
-   - Backfill every completed 2026 game; add a nightly job for new games.
-   - A cross-check test: the events reproduce the stored 6-hourly snapshots.
-3. **Show it:** a minute-level timeline with the sharp books on the replay page.
-4. **Then MS-043:** the pre-registered sharp-market study.
+1. **Pre-register first** (`research/PREREGISTRATION.md`, Addendum C), committed and pushed before any study code. The draft rules:
+   - **CLV in points** against Pinnacle's line at kickoff.
+   - **Discovery** on weeks 1–7 (stored now); **confirmation** on weeks 8–14 with the same code.
+   - **Game bootstrap**, 5,000 resamples, seed 2026.
+   - **Studies:**
+     - S1 lead-lag (primary: the share of Pinnacle–retail pairs where Pinnacle moved first);
+     - S2 stale retail lines (primary: mean CLV of taking a retail number still posted 60 s after Pinnacle moved, price −125 or better);
+     - S3 steam (3 of 7 books in 10 minutes; primary: Pinnacle's continuation to the close);
+     - S4 limits and S5 key numbers, exploratory.
+2. **Build:** a study module in `research/` reading `line_moves` read-only, with planted-signal and leakage tests, and a report in `research/reports/`.
+3. **Then:** add the new versioned signals (`sharp_book_lead`, `steam`, `stale_retail_line`) only for what the study supports; show CLV in the Signal Lab.
+4. **Then MS-044:** the system backtester and Wong teasers.
 
-**Waiting on Jack:**
-
-- Rotate the OddsPapi API key.
-- Optionally request a Sportradar Betting Splits quote, or email SharpAPI about terms.
-- Approve any data purchase.
+**Waiting on Jack (optional):** a Sportradar Betting Splits quote or SharpAPI terms; approval of any data purchase (recommended first: The Odds API at $59/month, after MS-043).

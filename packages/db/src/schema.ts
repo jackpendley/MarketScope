@@ -239,7 +239,7 @@ export const lineMoves = pgTable(
     point: numeric({ precision: 5, scale: 1, mode: "number" }),
     price1: integer(),
     price2: integer(),
-    /** Maximum stake the book reported per side, where it reports one (Pinnacle, Bookmaker.eu). */
+    /** Maximum stake per side, kept for the reference books only (Pinnacle, Bookmaker.eu). */
     limit1: integer(),
     limit2: integer(),
     source: text().notNull(),

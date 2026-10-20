@@ -155,16 +155,16 @@ RLS is enabled. Rows are replaced per (event, type, version) on recompute.
 
 ### `line_moves`: minute-level main-line history (MS-042, ADR-052)
 
-| Column                  | Notes                                                                                 |
-| ----------------------- | ------------------------------------------------------------------------------------- |
-| `event_id`              | FK `events` (cascade delete); the game's existing event, whichever source created it  |
-| `bookmaker_key`         | FK `bookmakers`; includes the reference books `pinnacle`, `circa`, `bookmaker_eu`     |
-| `market_type`           | `h2h`, `spreads`, `totals`                                                            |
-| `changed_at`            | provider time of the change (for a suspension, when the line went off)                |
-| `point`                 | home team's spread or the total; NULL for moneylines and suspensions                  |
-| `price1`, `price2`      | American prices. Side 1 = HOME (spreads, h2h) or OVER (totals). Both NULL = suspended |
-| `limit1`, `limit2`      | maximum stake per side where the book reports one (Pinnacle, Bookmaker.eu, FanDuel)   |
-| `source`, `ingested_at` | `oddspapi`; import time (never used as a market time)                                 |
+| Column                  | Notes                                                                                     |
+| ----------------------- | ----------------------------------------------------------------------------------------- |
+| `event_id`              | FK `events` (cascade delete); the game's existing event, whichever source created it      |
+| `bookmaker_key`         | FK `bookmakers`; includes the reference books `pinnacle`, `circa`, `bookmaker_eu`         |
+| `market_type`           | `h2h`, `spreads`, `totals`                                                                |
+| `changed_at`            | provider time of the change (for a suspension, when the line went off)                    |
+| `point`                 | home team's spread or the total; NULL for moneylines and suspensions                      |
+| `price1`, `price2`      | American prices. Side 1 = HOME (spreads, h2h) or OVER (totals). Both NULL = suspended     |
+| `limit1`, `limit2`      | maximum stake per side, reference books only (Pinnacle, Bookmaker.eu; Circa reports none) |
+| `source`, `ingested_at` | `oddspapi`; import time (never used as a market time)                                     |
 
 Primary key `(event_id, bookmaker_key, market_type, changed_at)`, which also serves "one book's history in one game, in time order". `CHECK`s: prices are both set or both NULL; point matches market (NULL for moneylines and suspensions); valid American prices. RLS is enabled.
 
