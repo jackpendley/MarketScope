@@ -374,3 +374,50 @@ numbers that motivated it are post hoc and are reported as such.
   decided bet, pushes excluded; claim only if its interval lies above 0. One season of results is
   noisy, so a null here is the expected outcome even if the price split is real.
 - **Unchanged:** every Addendum C rule, including the definition of S2 events and the close.
+
+## Addendum E (2026-10-20): MS-044 system backtester, Wong teasers (ADR-051)
+
+Committed before any backtest code was written or any teaser outcome computed. Looked at before
+writing this: counts only. Games at the nflverse close inside the Wong ranges, per season 2016–25:
+66, 68, 64, 42, 61, 64, 68, 80, 75, 99 (687 in all; 561 with a closing total of 49 or less); 34 so
+far in 2026. Known going in, from public sources (not our data):
+
+- **Prices:** two-team, six-point teaser prices in legal US books are reported between −120 and −135
+  (bet365 and DraftKings −120, Caesars and Hard Rock −125, BetMGM −130, FanDuel −134; DraftKings
+  reportedly −135 in 2025), and books reportedly shade lines away from the Wong ranges.
+- **Jack's price:** −125 at Caesars, the best of the books he uses, so −125 is the primary price.
+
+**Definitions.**
+
+- **Leg:** a team whose nflverse closing spread is −7.5 to −8.5 (teased to −1.5 to −2.5) or +1.5 to
+  +2.5 (teased to +7.5 to +8.5). At most one leg per game. Teased line = closing line + 6, from the
+  team's side. A leg wins if team margin + teased line > 0, pushes if it equals 0.
+- **Games:** all final games with an nflverse close (regular season and playoffs).
+- **Variants (fixed here; no others are tested):** V0 every leg; V1 closing total ≤ 49; V2 closing
+  total ≤ 49 and road teams only (neutral-site designated road teams count as road).
+- **Prices:** −110, −120, −125, −130, −135, −140 for a two-team teaser. Break-even leg win rate
+  = √(1 / decimal price): 72.4%, 73.9%, 74.5%, 75.2%, 75.8%, 76.4%.
+- **Pushes:** the leg win rate counts a push as a loss (the common teaser rule). Teaser results are
+  reported under two conventions: push loses the teaser; push voids it (stake returned).
+- **Pairing (teaser ROI):** chronological: within each season-week, legs sorted by kickoff (then
+  team) are paired 1–2, 3–4, …, an odd last leg is dropped; all-pairs: every pair of legs in the same
+  season-week, averaged. One unit staked per teaser.
+
+**Hypotheses.**
+
+- **Primary (V0, 2016–25):** leg win rate with a 95% game bootstrap interval (5,000 resamples, seed
+  2026). "Wong legs beat the −125 break-even" if the interval lies above 74.5%. The other prices are
+  compared with the same interval, descriptively.
+- **Secondary:** V1 and V2 the same way; 2016–23 versus 2024–25 as a stability check (no parameter
+  is fitted, so neither is a training set); favourites versus underdogs.
+- **Teaser ROI (descriptive, hypothetical):** per variant and price, chronological and all-pairs,
+  with season tables, maximum drawdown and an equity curve. Interval for chronological ROI from
+  resampling season-weeks.
+- **2026 to date (Jack's question, hypothetical):** the same rules on 2026 games, both at the nflverse
+  close and at **Caesars' own closing line** (the `williamhill_us` line in `line_moves` at kickoff,
+  where that book is the one Jack uses). About 30 legs: reported as a record and ROI at −125 with no
+  claim.
+
+**What this can't see.** Prices available before the close (lines move into and out of the ranges
+during the week); books' actual teaser rules beyond the two push conventions; limits or account
+restrictions on teaser players.
