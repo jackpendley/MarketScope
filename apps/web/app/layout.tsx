@@ -20,6 +20,7 @@ const NAV: { label: string; href?: string }[] = [
   { label: "Signal Lab", href: "/signals" },
   { label: "Data", href: "/data" },
   { label: "Research", href: "/research" },
+  { label: "Systems", href: "/systems" },
   { label: "ML Lab", href: "/ml-lab" },
 ];
 

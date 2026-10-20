@@ -270,6 +270,21 @@ test.describe("research", () => {
   });
 });
 
+test.describe("systems", () => {
+  test("shows the Wong-teaser backtest, labelled hypothetical", async ({ page }) => {
+    await page.goto("/nfl");
+    await page
+      .getByRole("navigation", { name: "Primary" })
+      .getByRole("link", { name: "Systems" })
+      .click();
+    await expect(page.getByRole("heading", { name: "Systems", level: 1 })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Wong teasers/ })).toBeVisible();
+    await expect(page.getByText("hypothetical", { exact: true }).first()).toBeVisible();
+    await expect(page.getByRole("table", { name: /Leg win rate/ })).toContainText("V0");
+    await expect(page.locator("figure .recharts-line").first()).toBeVisible();
+  });
+});
+
 test.describe("ml lab", () => {
   test("lists the experiments with their verdicts", async ({ page }) => {
     await page.goto("/nfl");

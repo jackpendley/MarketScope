@@ -1015,3 +1015,28 @@ Caesars alone toggled its markets on and off about 900 times, mostly weeks befor
 - **Next: MS-044**, the system backtester and Wong teasers, per Jack's order.
 
 **Consequences.** The project now has evidence that the reference books move first and that steam weakly persists. It also has an honest caution against reading points CLV as profit, which is exactly the lesson the Phase 12 yardstick was meant to teach.
+
+## ADR-054 — Wong-teaser backtest: no claim at −125; a reusable backtester; /systems (MS-044) (2026-10-20)
+
+**Context.** Jack asked whether betting every Wong teaser this season would be profitable. His best available price is −125 at Caesars; public sources report −120 to −135 at legal US books. Addendum E (`c47c71f`) fixed the legs, variants, prices, push rules and the primary before any code; the code (`60b023e`) was committed before the first run.
+
+**Results** (`research/reports/systems-wong-teasers.md`; hypothetical, closing lines):
+
+| Variant                    | Legs 2016–25 | Leg win rate (95% CI) | Return at −120 | Return at −125 |
+| -------------------------- | ------------ | --------------------- | -------------- | -------------- |
+| V0 every leg (**primary**) | 687          | 75.7% (72.5–78.9%)    | +4.4%          | +2.5%          |
+| V1 total ≤ 49              | 561          | 76.8% (73.3–80.2%)    | +9.8%          | +7.8%          |
+| V2 total ≤ 49, road teams  | 247          | 80.2% (74.9–85.0%)    | +7.7%          | +5.8%          |
+
+- **Primary:** the interval includes the −125 break-even (74.5%), so **no claim**. Every return interval except V1 at −110 includes zero.
+- **Recent seasons were weaker** (V0 76.4% in 2016–23, 73.6% in 2024–25). This is consistent with reports that books now shade lines away from the Wong ranges and price teasers higher.
+- **Underdog legs** (+1.5 to +2.5) won more often than favourite legs (77.4% vs 72.5%). Exploratory.
+- **2026 to date at −125:** 25–9 legs at the nflverse close (+0.2 units over 16 teasers); 25–10 at Caesars' own closing lines (−1.6 units). Far too few to mean anything.
+
+**Decision.**
+
+- `research/backtest.py` is the reusable engine: grading of spreads, totals, moneylines and teasers, two push conventions, chronological and all-pairs pairing, drawdown and cluster bootstraps. `systems.py` holds system definitions. Later systems each get their own pre-registration.
+- `/systems` shows the result from a generated JSON (`apps/web/lib/generated/wong-teasers.json`, written by `run_systems.py --web-json`), labelled hypothetical throughout.
+- **Price matters most.** The gap between −120 and −125 is worth about 2 points of return. The page and report show every price so the comparison is visible without naming a book to use.
+
+**Consequences.** MS-045 (paper portfolio) can track V0/V1 legs weekly at −125 as a live, hypothetical forward test, graded against Caesars' own lines.
