@@ -1018,7 +1018,7 @@ Caesars alone toggled its markets on and off about 900 times, mostly weeks befor
 
 ## ADR-054 — Wong-teaser backtest: no claim at −125; a reusable backtester; /systems (MS-044) (2026-10-20)
 
-**Context.** Jack asked whether betting every Wong teaser this season would be profitable. His best available price is −125 at Caesars; public sources report −120 to −135 at legal US books. Addendum E (`c47c71f`) fixed the legs, variants, prices, push rules and the primary before any code; the code (`60b023e`) was committed before the first run.
+**Context.** Jack asked whether betting every Wong teaser this season would be profitable. His best available price is −125 at Caesars; public sources report −120 to −135 at legal US books. Addendum E (`d431cb9`) fixed the legs, variants, prices, push rules and the primary before any code; the code (`33238e4`) was committed before the first run.
 
 **Results** (`research/reports/systems-wong-teasers.md`; hypothetical, closing lines):
 

@@ -1,6 +1,6 @@
 # Wong teasers: system backtest (MS-044)
 
-_Generated 2026-10-20 21:42 UTC · commit `60b023e` · reproduce with `research/src/marketscope_research/run_systems.py`._
+_Generated 2026-10-20 21:42 UTC · commit `33238e4` · reproduce with `research/src/marketscope_research/run_systems.py`._
 
 Design pre-registered in `research/PREREGISTRATION.md` (Addendum E, committed before this code). Legs: a team at the nflverse closing spread of −7.5 to −8.5 or +1.5 to +2.5, teased six points through 3 and 7. A push counts as a loss for the leg win rate. 95% intervals resample games (legs) or season-weeks (teasers), 5,000 draws, seed 2026. **Hypothetical results on closing lines; not betting advice.**
 
