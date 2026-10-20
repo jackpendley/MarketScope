@@ -991,7 +991,7 @@ Caesars alone toggled its markets on and off about 900 times, mostly weeks befor
 
 ## ADR-053 — Sharp-market study: discovery results, a post-hoc split registered for confirmation, signals wait (MS-043) (2026-10-19)
 
-**Context.** Addendum C (`59bce90`) fixed S1–S5 before any code: CLV in points against Pinnacle's line at kickoff, discovery on 2026 weeks 1–6, confirmation on weeks 7–14 with the same code. The code and tests were committed (`2c082bf`) before the first run.
+**Context.** Addendum C (`dd570b1`) fixed S1–S5 before any code: CLV in points against Pinnacle's line at kickoff, discovery on 2026 weeks 1–6, confirmation on weeks 7–14 with the same code. The code and tests were committed (`fa4afd5`) before the first run.
 
 **Discovery results** (`research/reports/sharp-market-discovery.md`, 91 games):
 
@@ -1005,7 +1005,7 @@ Caesars alone toggled its markets on and off about 900 times, mostly weeks befor
 
 - **S2 is mostly mechanical in points.** The old number starts +0.54 points ahead of Pinnacle's new one, and Pinnacle gives back −0.10 by the close. Points CLV ignores price, and the hypothetical cover rate (53.7%) is not distinguishable from break-even (52.9%).
 - **Retail books are not simply slow copies of Pinnacle.** Only 4–15% of Pinnacle's changes were matched by a retail book within an hour, and 43–83% never before kickoff. Many "stale" numbers are retail books holding a different number with different juice.
-- **Post-hoc split:** cases at −110 or better looked better than juiced ones. Because that was found after seeing results, it was registered as Addendum D (`9e4a305`) and will be tested on weeks 7–14 only. The discovery numbers are not evidence for it.
+- **Post-hoc split:** cases at −110 or better looked better than juiced ones. Because that was found after seeing results, it was registered as Addendum D (`3acbccf`) and will be tested on weeks 7–14 only. The discovery numbers are not evidence for it.
 
 **Decision.**
 

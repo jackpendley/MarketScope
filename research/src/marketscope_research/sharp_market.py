@@ -1,5 +1,5 @@
 """MS-043 sharp-market study S1–S5, implementing research/PREREGISTRATION.md Addendum C (committed
-before this code, 59bce90). Pure functions over a `line_moves` frame; loading is in run_sharp_market.py.
+before this code, dd570b1). Pure functions over a `line_moves` frame; loading is in run_sharp_market.py.
 
 Conventions (Addendum C):
 - A book's line at time d is its latest row with changed_at <= d; a row without prices means off the

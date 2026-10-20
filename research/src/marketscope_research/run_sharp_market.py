@@ -140,7 +140,7 @@ def main() -> None:
         f"_Generated {now} · commit `{commit}` · reproduce with "
         f"`research/src/marketscope_research/run_sharp_market.py --phase {args.phase}`._", "",
         "Design pre-registered in `research/PREREGISTRATION.md` (Addendum C, committed before this code as "
-        "`59bce90`). Data: `line_moves` (minute-level main lines, ADR-052). CLV is in points against "
+        "`dd570b1`). Data: `line_moves` (minute-level main lines, ADR-052). CLV is in points against "
         "Pinnacle's line at kickoff. 95% intervals resample games (5,000 draws, seed 2026). "
         "Timing describes which book changed its number first, not who bet. Hypothetical results are analysis, "
         "not betting advice.", "",
