@@ -213,11 +213,16 @@ The goal is to study the market for moves that indicate sharp betting and test w
   - 2026 to date at −125: +0.2 units at the nflverse close, −1.6 at Caesars' own lines (16 teasers).
   - Engine `research/backtest.py`, systems `systems.py`, runner `run_systems.py`; `/systems` page from a generated JSON.
 
+- **MS-045a (this PR, ADR-055): system catalogue F1–F10.**
+  - Addendum F (`679cdc4`) before code; code (`3d5aa1d`) before the first run. Rebase-merge, then fix the SHAs.
+  - 0 of 10 supported (Holm plus a 2024–25 check). Best: F8 primetime unders, 54.5%, not significant. F10 (walk-forward ML) was significantly worse than chance: 47.1%.
+  - `/systems` now shows the catalogue table.
+
 ## Tests
 
 - **Football pytest:** 114 (unit tests, plus integration against the migrated test DB; includes validation of the committed coaching CSV and the 2016–24 seeding reproduction).
-- **Research pytest:** 64.
-- **TS:** db 49, shared 192, collector 66, web 141 (unit + integration), e2e 61.
+- **Research pytest:** 72.
+- **TS:** db 49, shared 192, collector 66, web 142 (unit + integration), e2e 61.
 
 ## Quotas
 

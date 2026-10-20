@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { equityRows, PRICES, seasonStarts, versusBreakEven, WONG, y2026 } from "./systems-view";
+import {
+  CATALOGUE,
+  equityRows,
+  PRICES,
+  seasonStarts,
+  versusBreakEven,
+  WONG,
+  y2026,
+} from "./systems-view";
 
 describe("systems view", () => {
   it("lists prices from best to worst and break-evens rising with price", () => {
@@ -31,6 +39,17 @@ describe("systems view", () => {
   it("has a 2026 row for every source and variant", () => {
     for (const src of ["nflverse close", "Caesars' closing line"] as const)
       for (const v of ["V0", "V1", "V2"] as const) expect(y2026(src, v).legs).toBeGreaterThan(0);
+  });
+
+  it("lists F1–F10 with estimates inside their intervals", () => {
+    expect(CATALOGUE.systems.map((s) => s.id)).toEqual(
+      Array.from({ length: 10 }, (_, i) => `F${i + 1}`),
+    );
+    for (const s of CATALOGUE.systems) {
+      expect(s.low).toBeLessThanOrEqual(s.rate);
+      expect(s.high).toBeGreaterThanOrEqual(s.rate);
+      if (s.supported) expect(s.holm).toBe(true);
+    }
   });
 
   it("never uses pick or lock language", () => {
