@@ -5,7 +5,9 @@
 export const REPO = "https://github.com/jackpendley/MarketScope/blob/main";
 export const PREREGISTRATION = `${REPO}/research/PREREGISTRATION.md`;
 
-export type StudyStatus = "claim" | "no claim" | "inconclusive" | "waiting for data";
+/** "discovery claim": met on the discovery sample, not yet confirmed on the held-out weeks. */
+export type StudyStatus =
+  "claim" | "discovery claim" | "no claim" | "inconclusive" | "waiting for data";
 
 export type Study = {
   id: string;
@@ -14,7 +16,7 @@ export type Study = {
   window: string;
   status: StudyStatus;
   /** The primary estimate with its 95% interval, as reported. Null until the study has run. */
-  primary: { label: string; estimate: string; interval: string } | null;
+  primary: { label: string; estimate: string; interval: string; threshold?: number } | null;
   finding: string;
   /** Exploratory results: labelled as such on the page. */
   exploratory: string[];
@@ -182,5 +184,74 @@ export const STUDIES: Study[] = [
       "Scheme: across 20 play-callers who moved teams, neither pass rate over expected nor pace clearly followed them.",
     ],
     report: `${REPO}/research/reports/r7-play-caller.md`,
+  },
+];
+
+// The sharp-market studies (MS-043, PREREGISTRATION.md Addenda C and D), from
+// research/reports/sharp-market-discovery.md. Discovery = 2026 weeks 1–6; the same code re-runs on
+// weeks 7–14 before any result counts as established.
+export const MARKET_STUDIES: Study[] = [
+  {
+    id: "S1",
+    title: "Who moves first?",
+    question:
+      "When Pinnacle and a US retail book make the same spread change within an hour, which one changes first?",
+    window: "2026 weeks 1–6, 91 games, 216 matched Pinnacle–retail changes",
+    status: "discovery claim",
+    primary: {
+      label: "Share of matched changes where Pinnacle moved first (claim if above 0.5)",
+      estimate: "0.741",
+      interval: "0.680 to 0.798",
+      threshold: 0.5,
+    },
+    finding:
+      "Pinnacle changed its number first about three times in four. Circa led about as often (0.735). Retail books seldom followed quickly: 4–15% of Pinnacle's changes were matched within an hour, and 43–83% never before kickoff.",
+    exploratory: [
+      "Pinnacle led more often more than 48 hours before kickoff (83%) than in the final 6 hours (63%).",
+      "Bookmaker.eu led retail in 0.637 of its matched changes (0.525 to 0.744).",
+    ],
+    report: `${REPO}/research/reports/sharp-market-discovery.md`,
+  },
+  {
+    id: "S2",
+    title: "Stale retail numbers",
+    question:
+      "A minute after Pinnacle moves, a retail book still shows the old number on the side Pinnacle moved toward. Does taking it beat Pinnacle's close?",
+    window: "2026 weeks 1–6, 1,450 cases in 89 games",
+    status: "discovery claim",
+    primary: {
+      label: "Mean closing-line value (points)",
+      estimate: "+0.44",
+      interval: "+0.36 to +0.52",
+    },
+    finding:
+      "Yes, in points, but mostly by construction: the old number starts half a point ahead of Pinnacle's new one (+0.54), and Pinnacle then gives back a little of its move (−0.10). Points ignore what the retail book charged for the old number, so whether it was worth taking depends on price.",
+    exploratory: [
+      "Hypothetical cover rate 53.7% against a 52.9% break-even at the posted prices: not distinguishable from break-even over one season.",
+      "At standard prices (−110 or better) the cases looked stronger than juiced ones. That split was found after the fact, so it was pre-registered (Addendum D) for the held-out weeks.",
+      "Totals, same rule: +0.55 points (+0.43 to +0.68).",
+    ],
+    report: `${REPO}/research/reports/sharp-market-discovery.md`,
+  },
+  {
+    id: "S3",
+    title: "Steam",
+    question:
+      "When three of seven books move the spread the same way within ten minutes, does Pinnacle keep moving that way until kickoff?",
+    window: "2026 weeks 1–6, 120 episodes",
+    status: "discovery claim",
+    primary: {
+      label: "Pinnacle's further move to the close, in the steam direction (points)",
+      estimate: "+0.17",
+      interval: "+0.01 to +0.34",
+    },
+    finding:
+      "A little, and only just: the interval barely clears zero. A reference book was among the first three movers in 92% of episodes.",
+    exploratory: [
+      "Retail books that had not yet moved were +0.82 points (+0.56 to +1.07) better than Pinnacle's close, at −125 or better.",
+      "Totals: +0.24 points (+0.12 to +0.37).",
+      "Limits and key numbers (S4, S5): Pinnacle changes at higher limits reversed more often (45% vs 37%); key-number changes reversed less (33% vs 41%). Descriptive only.",
+    ],
+    report: `${REPO}/research/reports/sharp-market-discovery.md`,
   },
 ];

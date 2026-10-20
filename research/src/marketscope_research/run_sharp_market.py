@@ -92,6 +92,7 @@ def main() -> None:
     ev5 = sm.s2_events(tl, kicks, closes, delay=pd.Timedelta(minutes=5))
     ev_t = sm.s2_events(tl_t, kicks, closes_t, market="totals")
     cover = sm.hypothetical_cover(ev, margins)
+    r2b = sm.s2b(ev, margins)
     # S3
     episodes = sm.steam_episodes(tl, kicks)
     out3 = sm.s3_outcomes(episodes, tl, closes)
@@ -100,13 +101,25 @@ def main() -> None:
     # S4/S5
     pc = sm.pinnacle_changes(tl, closes)
 
+    def mean_ci(df, col):
+        return ci(sm.ratio_bootstrap(df, col)) if len(df) else "–"
+
+    if len(ev):
+        head = [sm.clv(sd, a, b) for sd, a, b in zip(ev["side"], ev["line"], ev["pin_to"])]
+        cont = [sm.clv(sd, b, closes[e]) for sd, b, e in zip(ev["side"], ev["pin_to"], ev["event_id"])]
+    else:
+        head = cont = []
+    price_rows = []
+    for label, mask in (("−110 or better", ev["price"] >= -110), ("−111 to −125", ev["price"] < -110)):
+        d = ev[mask]
+        c = sm.hypothetical_cover(d, margins) if len(d) else {"cover_rate": np.nan, "break_even": np.nan}
+        price_rows.append([label, len(d), mean_ci(d, "clv") if len(d) else "–", pct(c["cover_rate"]),
+                           pct(c["break_even"])])
+
     commit = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], text=True).strip()
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     start, end = PHASES[args.phase]
     pin = r1["pinnacle"]
-
-    def mean_ci(df, col):
-        return ci(sm.ratio_bootstrap(df, col)) if len(df) else "–"
 
     s1_rows = [[NAMES[r], r1[r]["pairs"], r1[r]["ties"], ci(r1[r]["share"], 3, signed=False)
                 if r1[r]["share"] else "–"] for r in sm.REFERENCE]
@@ -160,6 +173,24 @@ def main() -> None:
         f"{cover['bets']} decided bets (pushes excluded), versus a break-even of {pct(cover['break_even'])} at the "
         "posted prices. One season's results are noisy; CLV is the yardstick.", "",
         table(s2_book, ["Retail book", "Events", "Mean CLV (points)", "Median time the old number stayed up"]), "",
+        "### S2 robustness (added after seeing the primary result; not pre-registered)", "",
+        "By construction the old number starts better than Pinnacle's new one, so S2's CLV splits into that head "
+        "start plus Pinnacle's own move from its new number to the close (negative when it moves back). "
+        "Points-based CLV also ignores what the retail book charged for the old number.", "",
+        f"- Head start over Pinnacle's new number: {mean_ci(ev.assign(head=head), 'head') if len(ev) else '–'} points; "
+        f"Pinnacle's continuation from its new number to the close: "
+        f"{mean_ci(ev.assign(cont=cont), 'cont') if len(ev) else '–'} points.",
+        "",
+        table(price_rows, ["Retail price on the side taken", "Events", "Mean CLV (points)",
+                           "Hypothetical cover rate", "Break-even at those prices"]), "",
+        "### S2b: standard prices only (Addendum D; registered after discovery, tested on confirmation)", "",
+        (f"Events at −110 or better: {r2b['events']}. Mean CLV {ci(r2b['clv'])} points; mean hypothetical "
+         f"(cover − break-even) per decided bet {ci(r2b['edge'], 3)}. "
+         + ("**Primary (confirmation):** "
+            + verdict(r2b["clv"], True, "standard-price stale lines carry positive CLV").replace(
+                " (discovery result; needs confirmation on weeks 7–14)", "")
+            if args.phase == "confirmation" else
+            "Discovery numbers motivated this hypothesis, so they are not evidence for it.")), "",
         "## S3: steam (primary: does Pinnacle keep moving to the close?)", "",
         f"Steam: 3 of the 7 books move the spread the same way within 10 minutes. {len(episodes)} episodes; "
         f"{r3['episodes']} with Pinnacle on the board at the decision time and a usable close. Gate: "

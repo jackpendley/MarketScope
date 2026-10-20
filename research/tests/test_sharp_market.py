@@ -157,3 +157,12 @@ def test_hypothetical_cover_excludes_pushes():
                        "line": [-3.0, -3.0, -3.0], "price": [-110, -110, -110]})
     r = sm.hypothetical_cover(ev, pd.Series({"a": 7, "b": 7, "c": 3}))
     assert r["bets"] == 2 and r["cover_rate"] == 0.5 and r["break_even"] == pytest.approx(110 / 210)
+
+
+def test_s2b_keeps_standard_prices_and_scores_cover_minus_break_even():
+    ev = pd.DataFrame({"event_id": ["a", "b", "c"], "side": ["home", "home", "home"],
+                       "line": [-3.0, -3.0, -3.0], "price": [-110, -120, 100], "clv": [0.5, 0.5, 0.5]})
+    edges = sm.s2b_edges(ev, pd.Series({"a": 7, "b": 7, "c": 1}))
+    assert list(edges["event_id"]) == ["a", "c"]  # -120 excluded
+    assert edges["edge"].tolist() == pytest.approx([1 - 110 / 210, 0 - 0.5])
+    assert sm.s2b(ev, pd.Series({"a": 7, "b": 7, "c": 1}), resamples=100)["events"] == 2
