@@ -282,6 +282,9 @@ test.describe("systems", () => {
     await expect(page.getByText("hypothetical", { exact: true }).first()).toBeVisible();
     await expect(page.getByRole("table", { name: /Leg win rate/ })).toContainText("V0");
     await expect(page.locator("figure .recharts-line").first()).toBeVisible();
+    await expect(page.getByRole("table", { name: "System catalogue results" })).toContainText(
+      "F10",
+    );
   });
 });
 

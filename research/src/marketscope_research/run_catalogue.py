@@ -84,8 +84,8 @@ def main() -> None:
     stats = {k: summarise(pos[pos["system"] == k]) for k in sy.CATALOGUE}
     passed = sy.holm({k: s["p"] for k, s in stats.items()})
     for k, s in stats.items():
-        s["holm"] = passed[k]
-        s["supported"] = passed[k] and s["late_rate"] > sy.BREAK_EVEN_110
+        s["holm"] = bool(passed[k])
+        s["supported"] = bool(passed[k] and s["late_rate"] > sy.BREAK_EVEN_110)
 
     def rate(e):
         return "–" if e is None else f"{100 * e.value:.1f}% ({100 * e.low:.1f}–{100 * e.high:.1f}%)"

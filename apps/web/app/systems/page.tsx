@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { EquityChart } from "@/components/equity-chart";
 import {
+  CATALOGUE,
+  CATALOGUE_REPORT,
   PREREGISTRATION,
   PRICES,
   REPORT,
@@ -142,6 +144,76 @@ export default function SystemsPage() {
             })
             .join("; ")}
         />
+      </section>
+
+      <section aria-labelledby="catalogue" className="space-y-3">
+        <h2 id="catalogue" className="text-lg font-semibold tracking-tight">
+          System catalogue (2016–25)
+        </h2>
+        <p className="max-w-3xl text-sm text-muted">
+          Ten more published approaches, pre-registered together (Addendum F) and graded against the
+          closing line at −110, where a position must win {pct(CATALOGUE.breakEven)} of the time to
+          break even. Testing ten at once makes a lucky winner likely, so each must pass a
+          Holm–Bonferroni correction and still beat break-even in 2024–25. F10 is a machine-learning
+          system: a logistic regression on rest, travel, body clock and line features, refitted each
+          season on earlier seasons only.
+        </p>
+        <div className="relative overflow-x-auto rounded-lg border border-line bg-surface">
+          <table className="w-full min-w-[720px] text-sm">
+            <caption className="sr-only">System catalogue results</caption>
+            <thead>
+              <tr className="text-left text-xs text-muted">
+                <th scope="col" className="px-4 py-2 font-medium">
+                  System
+                </th>
+                <th scope="col" className="px-3 py-2 text-right font-medium">
+                  Positions
+                </th>
+                <th scope="col" className="px-3 py-2 font-medium">
+                  Win rate (95% CI)
+                </th>
+                <th scope="col" className="px-3 py-2 text-right font-medium">
+                  2024–25
+                </th>
+                <th scope="col" className="px-3 py-2 text-right font-medium">
+                  Return at −110
+                </th>
+                <th scope="col" className="px-3 py-2 font-medium">
+                  Result
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {CATALOGUE.systems.map((s) => (
+                <tr key={s.id} className="border-t border-line/60">
+                  <th scope="row" className="px-4 py-2 text-left font-normal">
+                    <span className="text-muted">{s.id}</span> {s.label}
+                  </th>
+                  <td className="px-3 py-2 text-right tabular-nums">{s.decided}</td>
+                  <td className="whitespace-nowrap px-3 py-2 tabular-nums">
+                    {pct(s.rate)}{" "}
+                    <span className="text-xs text-muted">
+                      ({pct(s.low)}–{pct(s.high)})
+                    </span>
+                  </td>
+                  <td className="px-3 py-2 text-right tabular-nums">{pct(s.lateRate)}</td>
+                  <td className="px-3 py-2 text-right tabular-nums">{signedPct(s.roi)}</td>
+                  <td className="px-3 py-2">{s.supported ? "supported" : "no claim"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="max-w-3xl text-xs text-subtle">
+          {CATALOGUE.systems.filter((s) => s.supported).length} of {CATALOGUE.systems.length}{" "}
+          supported. The machine-learning system did worst: fitted to noisy situational features, it
+          learned patterns that did not carry into the next season. Every system is still tracked
+          forward in the paper portfolio, so future results are not chosen by these past ones.{" "}
+          <a href={CATALOGUE_REPORT} className="text-accent underline">
+            Catalogue report
+          </a>
+          .
+        </p>
       </section>
 
       <section aria-labelledby="y2026" className="space-y-3">

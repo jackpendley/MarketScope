@@ -1040,3 +1040,19 @@ Caesars alone toggled its markets on and off about 900 times, mostly weeks befor
 - **Price matters most.** The gap between −120 and −125 is worth about 2 points of return. The page and report show every price so the comparison is visible without naming a book to use.
 
 **Consequences.** MS-045 (paper portfolio) can track V0/V1 legs weekly at −125 as a live, hypothetical forward test, graded against Caesars' own lines.
+
+## ADR-055 — System catalogue F1–F10: none supported; the ML system overfits; all tracked forward (MS-045a) (2026-10-20)
+
+**Context.** Jack asked for other sharp systems beyond Wong teasers. Addendum F (`679cdc4`) pre-registered nine public situational systems and one walk-forward ML system before code (`3d5aa1d`). The correction is Holm–Bonferroni across all ten, plus a 2024–25 sign check.
+
+**Result** (`research/reports/systems-catalogue.md`, 2016–25 at the close, −110): **0 of 10 supported.**
+
+- **Best:** F8 primetime unders, 54.5% (50.3–58.5%), p = 0.17, falling to 50.8% in 2024–25.
+- **Worst:** F10, the ML logistic regression on rest, travel, body-clock and line features. It won 47.1% (42.7–51.5%), with a return of −9.8% (−18.1 to −1.8), significantly worse than chance. Refitting each season on earlier seasons learned patterns that did not carry forward.
+- **The rest** (home underdogs, divisional underdogs, big underdogs, rest edge, short week, body clock, divisional unders, high-total unders) sit at 49–52%.
+
+**Decision.**
+
+- Shown on `/systems` (catalogue table, from `apps/web/lib/generated/systems-catalogue.json`).
+- **Every F-system and both Wong variants are still tracked forward** in the paper portfolio (MS-045b), so the live record is not selected on these results.
+- **Where to look next.** The closing line absorbs public situational information. The remaining places to look are the market's own microstructure (MS-043: who moves first, stale numbers, steam) and information that arrives during the week (R2w: injuries). ML effort should go there, not into situational features.

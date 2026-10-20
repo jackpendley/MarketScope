@@ -2,6 +2,7 @@
 // which writes lib/generated/wong-teasers.json; this page never computes results itself.
 // Everything here is a hypothetical backtest on closing lines, labelled as such on the page.
 
+import catalogue from "./generated/systems-catalogue.json";
 import data from "./generated/wong-teasers.json";
 
 export const REPORT =
@@ -44,3 +45,8 @@ export const Y2026_SOURCES = ["nflverse close", "Caesars' closing line"] as cons
 export function y2026(source: (typeof Y2026_SOURCES)[number], variant: VariantKey) {
   return data.y2026[`${source}|${variant}` as keyof typeof data.y2026];
 }
+
+/** The F1–F10 catalogue (Addendum F), from run_catalogue.py. */
+export const CATALOGUE = catalogue;
+export const CATALOGUE_REPORT =
+  "https://github.com/jackpendley/MarketScope/blob/main/research/reports/systems-catalogue.md";

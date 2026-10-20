@@ -304,6 +304,7 @@ The goal is to study the market for moves that indicate sharp betting, learn fro
   - [x] Pre-registration (Addenda C, D), study code, discovery run on weeks 1–6 (ADR-053): S1, S2 and S3 met as discovery claims.
   - [ ] Confirmation run on weeks 7–14 (after 2026-12-16), then signals only for what holds.
 - [x] **MS-044** System backtester and Wong teasers (2016–25 nflverse closes, plus 2026 from our lines). Primary: no claim at −125 (ADR-054); `/systems`.
+- [x] **MS-045a** System catalogue F1–F10 (pre-registered; 0 of 10 supported; ADR-055).
 - [ ] **MS-045** Paper portfolio (immutable pre-kickoff paper bets, graded, with CLV).
 - [ ] **MS-046** (needs a paid feed) Real-time collector and alerts.
 - [ ] **MS-047** (needs licensed splits) Reverse line movement.
