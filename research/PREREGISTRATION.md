@@ -357,3 +357,20 @@ Looked at before writing this:
 stored); moves more than 14 days before kickoff. Points-based CLV ignores price differences beyond
 the −125 bound. One season of history (OddsPapi starts in January 2026), so confirmation is forward
 only.
+
+## Addendum D (2026-10-19): S2 price split, registered after discovery for confirmation only
+
+Committed after the S1–S5 discovery run (`research/reports/sharp-market-discovery.md`) and before any
+week 7–14 game was imported, so it can only be tested on the confirmation sample. The discovery
+numbers that motivated it are post hoc and are reported as such.
+
+- **Why:** S2's points CLV is mostly the half-point head start of the old number (+0.54) less
+  Pinnacle's partial reversal (−0.10), and points CLV ignores the price paid. In discovery, events at
+  standard prices looked better than juiced ones (hypothetical cover 57.9% vs a 52.0% break-even, 628
+  bets; 50.5% vs 53.6% for −111 to −125, 822 bets).
+- **S2b (confirmation, weeks 7–14):** S2 events whose retail price on the side taken is −110 or
+  better. **Primary:** mean CLV in points, game bootstrap (5,000, seed 2026); claim if the interval
+  lies above 0. **Secondary:** the mean of (hypothetical cover − break-even at the posted price) per
+  decided bet, pushes excluded; claim only if its interval lies above 0. One season of results is
+  noisy, so a null here is the expected outcome even if the price split is real.
+- **Unchanged:** every Addendum C rule, including the definition of S2 events and the close.
