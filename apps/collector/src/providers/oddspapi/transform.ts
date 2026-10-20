@@ -33,6 +33,8 @@ export interface OddsPapiEntry {
   createdAt: string;
   price: number;
   active: boolean;
+  /** Maximum stake, for books that report one (e.g. Pinnacle). */
+  limit?: number | null;
 }
 
 export interface OddsPapiHistory {
@@ -92,13 +94,13 @@ export function snapshotTimes(
   return times;
 }
 
-interface Series {
+export interface Series {
   times: number[];
   entries: OddsPapiEntry[];
 }
 
 /** Latest entry at or before t (binary search over a time-sorted series). */
-function latestAt(series: Series | undefined, t: number): OddsPapiEntry | null {
+export function latestAt(series: Series | undefined, t: number): OddsPapiEntry | null {
   if (!series) return null;
   let lo = 0;
   let hi = series.times.length - 1;
@@ -116,10 +118,86 @@ function latestAt(series: Series | undefined, t: number): OddsPapiEntry | null {
 /** Continuous "cents" scale so −105 vs +105 counts as 10 apart, not 210. */
 const cents = (american: number) => (american < 0 ? american + 100 : american - 100);
 
-interface Candidate {
+/** One full-game market of one book: a line (handicap) and its two sides' histories. */
+export interface Candidate {
   handicap: number;
   side1: Series;
   side2: Series;
+}
+
+export interface BookCandidates {
+  spreads: Candidate[];
+  totals: Candidate[];
+  moneyline: Candidate | null;
+  /** Earliest pregame entry (ms), or Infinity if the book has none. */
+  firstEntry: number;
+}
+
+/** A book's full-game spread, total and moneyline markets, using pregame entries only. */
+export function bookCandidates(
+  book: OddsPapiHistory["bookmakers"][string],
+  markets: ReadonlyMap<number, OddsPapiMarketMeta>,
+  kickoffMs: number,
+): BookCandidates {
+  const out: BookCandidates = { spreads: [], totals: [], moneyline: null, firstEntry: Infinity };
+  for (const [marketId, market] of Object.entries(book.markets ?? {})) {
+    const meta = markets.get(Number(marketId));
+    if (!meta || meta.period !== "result" || meta.playerProp) continue;
+    const isSpread = meta.marketType === "spreads";
+    const isTotal = meta.marketType === "totals";
+    const isMoneyline = meta.marketType === "moneyline";
+    if (!isSpread && !isTotal && !isMoneyline) continue;
+
+    const name = new Map(meta.outcomes.map((o) => [String(o.outcomeId), o.outcomeName]));
+    const seriesFor = (wanted: string): Series | undefined => {
+      const id = [...name.entries()].find(([, n]) => n === wanted)?.[0];
+      const entries = id
+        ? (market.outcomes[id]?.players?.["0"] ?? [])
+            .filter((e) => Date.parse(e.createdAt) < kickoffMs && e.price > 1)
+            .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+        : [];
+      return entries.length
+        ? { times: entries.map((e) => Date.parse(e.createdAt)), entries }
+        : undefined;
+    };
+    const side1 = seriesFor(isTotal ? "Over" : "1");
+    const side2 = seriesFor(isTotal ? "Under" : "2");
+    if (!side1 || !side2) continue;
+    out.firstEntry = Math.min(out.firstEntry, side1.times[0]!, side2.times[0]!);
+    const candidate = { handicap: Number(meta.handicap), side1, side2 };
+    if (isSpread) out.spreads.push(candidate);
+    else if (isTotal) out.totals.push(candidate);
+    else out.moneyline = candidate;
+  }
+  return out;
+}
+
+export interface MainLine {
+  handicap: number;
+  side1: OddsPapiEntry;
+  side2: OddsPapiEntry;
+}
+
+/**
+ * The main line at time t: the candidate whose two sides are both active and priced closest
+ * to even (ties go to the smaller |handicap|). Null when nothing is on the board.
+ */
+export function pickMain(candidates: readonly Candidate[], t: number): MainLine | null {
+  let best: (MainLine & { gap: number }) | null = null;
+  for (const c of candidates) {
+    const a = latestAt(c.side1, t);
+    const b = latestAt(c.side2, t);
+    if (!a?.active || !b?.active) continue;
+    const gap = Math.abs(cents(decimalToAmerican(a.price)) - cents(decimalToAmerican(b.price)));
+    if (
+      !best ||
+      gap < best.gap ||
+      (gap === best.gap && Math.abs(c.handicap) < Math.abs(best.handicap))
+    ) {
+      best = { handicap: c.handicap, side1: a, side2: b, gap };
+    }
+  }
+  return best && { handicap: best.handicap, side1: best.side1, side2: best.side2 };
 }
 
 export function deriveObservations(
@@ -133,64 +211,11 @@ export function deriveObservations(
   for (const [slug, book] of Object.entries(history.bookmakers ?? {})) {
     const bookmakerKey = options.bookMap[slug];
     if (!bookmakerKey) continue;
-
-    const spreads: Candidate[] = [];
-    const totals: Candidate[] = [];
-    let moneyline: Candidate | null = null;
-    let firstEntry = Infinity;
-
-    for (const [marketId, market] of Object.entries(book.markets ?? {})) {
-      const meta = markets.get(Number(marketId));
-      if (!meta || meta.period !== "result" || meta.playerProp) continue;
-      const isSpread = meta.marketType === "spreads";
-      const isTotal = meta.marketType === "totals";
-      const isMoneyline = meta.marketType === "moneyline";
-      if (!isSpread && !isTotal && !isMoneyline) continue;
-
-      const name = new Map(meta.outcomes.map((o) => [String(o.outcomeId), o.outcomeName]));
-      const seriesFor = (wanted: string): Series | undefined => {
-        const id = [...name.entries()].find(([, n]) => n === wanted)?.[0];
-        const entries = id
-          ? (market.outcomes[id]?.players?.["0"] ?? [])
-              .filter((e) => Date.parse(e.createdAt) < kick && e.price > 1)
-              .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-          : [];
-        return entries.length
-          ? { times: entries.map((e) => Date.parse(e.createdAt)), entries }
-          : undefined;
-      };
-      const side1 = seriesFor(isTotal ? "Over" : "1");
-      const side2 = seriesFor(isTotal ? "Under" : "2");
-      if (!side1 || !side2) continue;
-      firstEntry = Math.min(firstEntry, side1.times[0]!, side2.times[0]!);
-      const candidate = { handicap: Number(meta.handicap), side1, side2 };
-      if (isSpread) spreads.push(candidate);
-      else if (isTotal) totals.push(candidate);
-      else moneyline = candidate;
-    }
+    const { spreads, totals, moneyline, firstEntry } = bookCandidates(book, markets, kick);
     if (firstEntry === Infinity) continue;
 
     for (const at of snapshotTimes(new Date(firstEntry).toISOString(), options.kickoff, options)) {
       const t = Date.parse(at);
-      const pick = (candidates: Candidate[]) => {
-        let best: { c: Candidate; a: OddsPapiEntry; b: OddsPapiEntry; gap: number } | null = null;
-        for (const c of candidates) {
-          const a = latestAt(c.side1, t);
-          const b = latestAt(c.side2, t);
-          if (!a?.active || !b?.active) continue;
-          const gap = Math.abs(
-            cents(decimalToAmerican(a.price)) - cents(decimalToAmerican(b.price)),
-          );
-          if (
-            !best ||
-            gap < best.gap ||
-            (gap === best.gap && Math.abs(c.handicap) < Math.abs(best.c.handicap))
-          ) {
-            best = { c, a, b, gap };
-          }
-        }
-        return best;
-      };
       const push = (market: Market, selection: Selection, point: number | null, e: OddsPapiEntry) =>
         out.push({
           bookmakerKey,
@@ -202,24 +227,21 @@ export function deriveObservations(
           observedAt: at,
         });
 
-      const spread = pick(spreads);
+      const spread = pickMain(spreads, t);
       if (spread) {
         // Spread markets store the home line; the away line is its negation.
-        push("spreads", "HOME", spread.c.handicap, spread.a);
-        push("spreads", "AWAY", spread.c.handicap === 0 ? 0 : -spread.c.handicap, spread.b);
+        push("spreads", "HOME", spread.handicap, spread.side1);
+        push("spreads", "AWAY", spread.handicap === 0 ? 0 : -spread.handicap, spread.side2);
       }
-      const total = pick(totals);
+      const total = pickMain(totals, t);
       if (total) {
-        push("totals", "OVER", total.c.handicap, total.a);
-        push("totals", "UNDER", total.c.handicap, total.b);
+        push("totals", "OVER", total.handicap, total.side1);
+        push("totals", "UNDER", total.handicap, total.side2);
       }
-      if (moneyline) {
-        const a = latestAt(moneyline.side1, t);
-        const b = latestAt(moneyline.side2, t);
-        if (a?.active && b?.active) {
-          push("h2h", "HOME", null, a);
-          push("h2h", "AWAY", null, b);
-        }
+      const ml = moneyline && pickMain([moneyline], t);
+      if (ml) {
+        push("h2h", "HOME", null, ml.side1);
+        push("h2h", "AWAY", null, ml.side2);
       }
     }
   }

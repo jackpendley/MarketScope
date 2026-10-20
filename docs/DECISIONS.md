@@ -948,3 +948,36 @@ The test is only honest if the model is fixed before it runs and cannot be re-ru
 
 - **Data:** MS-042 builds on OddsPapi's free minute-level history, which was tested and includes Pinnacle, Circa, Bookmaker.eu and the exchanges, with limits. Paid feeds (The Odds API at $59/month for live 5–10-minute snapshots; one month at $119 for a 2022–25 historical backfill) and licensed splits (Sportradar, SharpAPI) each need Jack's approval and come after MS-043 shows what matters.
 - **Supabase storage** may become the constraint (minute-level exchange data is large). MS-042 measures it before committing.
+
+## ADR-052 — Minute-level line moves as a separate event table (MS-042) (2026-10-19)
+
+**Context.** OddsPapi's free history logs every price change, for the sharp books (Pinnacle, Circa, Bookmaker.eu) as well as the retail ones. The snapshot import (ADR-026) kept only 6-hourly samples of it, which is far too coarse for the sharp-market study (MS-043). Supabase's free tier (500 MB, about 109 MB used) caps what can be stored.
+
+**Measured on one game (Bears @ Packers, 2026-10-11) before building:**
+
+| What is stored, per game (7 books)                              | Rows   |
+| --------------------------------------------------------------- | ------ |
+| Raw entries in full-game spread/total/moneyline markets         | ~100k  |
+| Main-line state changes, suspensions included                   | ~7,400 |
+| Same, but suspensions under a minute ignored, last 14 days only | ~2,200 |
+
+Caesars alone toggled its markets on and off about 900 times, mostly weeks before kickoff. A second game (Buccaneers @ Cowboys) gave 1,734 rows. A full season (~285 games) is therefore roughly 0.5–0.6M rows, about 100 MB with the primary key.
+
+**Decision.**
+
+- **New table `line_moves`, separate from `odds_observations`.** Snapshots keep their meaning (ADR-009/026); moves are a different grain. One row each time a book's **main line** changes: the line (home spread or total), both prices, and both limits, with the provider's `changed_at`. Both sides travel together so any row gives a no-vig price.
+- **Main line** = the same rule as the snapshot import (`pickMain`: both sides active, priced closest to even). The snapshot transform and the move transform now share that code.
+- **Three noise rules** (all in `providers/oddspapi/line-moves.ts`):
+  - **Settle:** entries less than 1 s apart are one change, recorded when the burst ends (books write their two sides and alternate lines milliseconds apart).
+  - **Suspensions:** a main line off the board for 60 s or more gets a row with no prices, so a later study never mistakes "off the board" for "still offering the old number". Shorter blips are ignored.
+  - **Window:** the last 14 days before kickoff, plus the line in effect at the start.
+- **Books:** Pinnacle, Circa (`circa`) and Bookmaker.eu (`bookmaker_eu`) as references (`LINE_MOVE_ONLY_BOOKMAKERS`: never on the board, in consensus or in snapshots), plus DraftKings, FanDuel, Caesars and Hard Rock. BetMGM stays out (ADR-026). Exchanges (Kalshi, Novig, ProphetX) are deferred: their histories are order-book depth, millions of entries per game.
+- **Games collected live are included.** Moves attach to the game's existing event, whichever source created it, because the separate table means sources never mix in `odds_observations`.
+- **Idempotent per fixture** (`oddspapi-moves:<fixture>:v1`); a new import version replaces a game's moves in one transaction.
+- **Cross-check:** `import:line-moves --check` compares every stored OddsPapi snapshot in the window with the move in effect at that time. A unit test proves exact agreement with the settle and suspension rules switched off.
+
+**Consequences.**
+
+- MS-043 can measure lead-lag, steam and stale retail lines at second-to-minute resolution, from free data, for the 2026 season.
+- Storage is about 100 MB a season. A second season will need either pruning or the Supabase Pro plan; that decision goes to Jack before 2027.
+- History starts in January 2026 (OddsPapi's limit). Earlier seasons need a paid source (`docs/DATA_SOURCES.md`).

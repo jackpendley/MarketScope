@@ -8,19 +8,15 @@
 // The default --to is when live Odds API collection began, so no game mixes sources.
 
 import { createDb } from "@marketscope/db";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import path from "node:path";
 import { parseArgs } from "node:util";
 import { ConfigError, loadConfig, requireDatabaseUrl, requireOddsPapiKey } from "../config";
 import { jsonLogger } from "../log";
 import { importFixture, ODDSPAPI_BOOK_MAP, ODDSPAPI_REQUEST_GROUPS } from "../oddspapi-import";
+import { loadNflMarkets } from "../oddspapi-markets";
 import { createOddsPapiClient, ODDSPAPI_NFL_TOURNAMENT_ID } from "../providers/oddspapi/client";
-import { deriveObservations, type OddsPapiMarketMeta } from "../providers/oddspapi/transform";
+import { deriveObservations } from "../providers/oddspapi/transform";
 import { recomputeSignals } from "../signals-job";
 
-const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
-const CACHE_DIR = path.join(REPO_ROOT, "fixtures/oddspapi/local"); // gitignored
-const MARKETS_CACHE = path.join(CACHE_DIR, "markets.json");
 const LIVE_COLLECTION_START = "2026-10-16T00:00:00Z";
 
 async function main() {
@@ -38,17 +34,7 @@ async function main() {
   const before = await client.account();
   jsonLogger.info("oddspapi.quota", { ...before, when: "start" });
 
-  let catalog: OddsPapiMarketMeta[];
-  if (existsSync(MARKETS_CACHE)) {
-    catalog = JSON.parse(readFileSync(MARKETS_CACHE, "utf8"));
-  } else {
-    catalog = await client.markets(); // billable, once
-    mkdirSync(CACHE_DIR, { recursive: true });
-    writeFileSync(MARKETS_CACHE, JSON.stringify(catalog));
-  }
-  const markets = new Map(
-    catalog.filter((m) => m.sportId === undefined || m.sportId === 14).map((m) => [m.marketId, m]),
-  );
+  const markets = await loadNflMarkets(client); // billable once, then cached
 
   const fixtures = (
     await client.fixtures({

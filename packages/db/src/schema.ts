@@ -216,6 +216,52 @@ export const marketSignals = pgTable(
   ],
 ).enableRLS();
 
+/**
+ * Minute-level main-line history (MS-042, ADR-052): one row each time a book's main line
+ * changed, from provider change logs (OddsPapi). Separate from odds_observations, whose rows
+ * are snapshots on our collection cadence. Both sides travel together so a no-vig price can
+ * be computed from any row. Side 1 = HOME (spreads, h2h) or OVER (totals). A row with no
+ * prices records a suspension (the main line was off the board for at least a minute).
+ */
+export const lineMoves = pgTable(
+  "line_moves",
+  {
+    eventId: uuid()
+      .notNull()
+      .references(() => events.id, { onDelete: "cascade" }),
+    bookmakerKey: text()
+      .notNull()
+      .references(() => bookmakers.key),
+    marketType: marketType().notNull(),
+    /** Provider time of the change. */
+    changedAt: tstz().notNull(),
+    /** Home team's spread or the total; NULL for moneylines and suspensions. */
+    point: numeric({ precision: 5, scale: 1, mode: "number" }),
+    price1: integer(),
+    price2: integer(),
+    /** Maximum stake the book reported per side, where it reports one (Pinnacle, Bookmaker.eu). */
+    limit1: integer(),
+    limit2: integer(),
+    source: text().notNull(),
+    ingestedAt: tstz().notNull().defaultNow(),
+  },
+  (t) => [
+    // Also the index for "one book's history in one game, in time order".
+    primaryKey({ columns: [t.eventId, t.bookmakerKey, t.marketType, t.changedAt] }),
+    check("line_moves_prices_paired", sql`(${t.price1} IS NULL) = (${t.price2} IS NULL)`),
+    check(
+      "line_moves_point_matches_market",
+      sql`CASE WHEN ${t.price1} IS NULL OR ${t.marketType} = 'h2h' THEN ${t.point} IS NULL
+        ELSE ${t.point} IS NOT NULL END`,
+    ),
+    check(
+      "line_moves_valid_american_prices",
+      sql`${t.price1} IS NULL OR ((${t.price1} <= -100 OR ${t.price1} >= 100)
+        AND (${t.price2} <= -100 OR ${t.price2} >= 100))`,
+    ),
+  ],
+).enableRLS();
+
 // ---- Football context (ADR-028) -------------------------------------------------------------
 // Written only by the Python app `apps/football` (nflverse ingest). The schema lives here so
 // there is one migration history, one drift check, and RLS on every table.
