@@ -48,6 +48,17 @@ test("screenshot game page", async ({ page }, info) => {
   await shoot(page, `${OUT}/game-${info.project.name}.png`, info.project.name === "desktop");
 });
 
+test("screenshot minute-level line moves", async ({ page }, info) => {
+  test.skip(info.project.name === "mobile", "desktop only");
+  await page.goto("/nfl");
+  await page.locator("section[aria-labelledby^='evt-']").first().getByRole("link").first().click();
+  await page.getByRole("link", { name: /Open market replay/ }).click();
+  const panel = page.locator("#line-moves");
+  await panel.getByRole("button", { name: "Final 14 days" }).click();
+  await panel.scrollIntoViewIfNeeded();
+  await panel.screenshot({ path: `${OUT}/line-moves-${info.project.name}.png` });
+});
+
 test.describe("signed out", () => {
   test.use({ storageState: { cookies: [], origins: [] } });
   test("screenshot login page", async ({ page }, info) => {

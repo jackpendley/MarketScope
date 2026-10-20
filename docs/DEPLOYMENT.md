@@ -5,6 +5,7 @@
 | Web app (`apps/web`) | Vercel project `marketscope` (`prj_qkPeUA6ADjQKFEW2jjckjevjNw8o`, Hobby, Node 24), root directory `apps/web`. **Production: https://marketscope-delta.vercel.app** | Every push to `main` deploys production; PRs get preview deployments                        |
 | Database             | Supabase Postgres 17                                                                                                                                               | `migrate-production.yml` applies migrations when `packages/db/drizzle/**` changes on `main` |
 | Collector            | GitHub Actions `collect-odds.yml`                                                                                                                                  | 4×/day (00/06/12/18:07 UTC) plus manual dispatch                                            |
+| Line moves           | GitHub Actions `line-moves.yml` (needs repo secrets `DATABASE_URL` and `ODDSPAPI_API_KEY`; skips with a warning without the key)                                   | Daily 11:00 UTC plus manual dispatch                                                        |
 
 ## Web app environment (Vercel → Project → Settings → Environment Variables)
 

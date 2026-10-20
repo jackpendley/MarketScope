@@ -2,15 +2,20 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
+import { lineMoveHistory, type LineMoveRow } from "@marketscope/db";
 import {
   formatAmericanOdds,
   formatPoint,
+  getBookmakerInfo,
   isMarket,
+  LINE_MOVE_ONLY_BOOKMAKERS,
+  REFERENCE_BOOKMAKERS,
   MARKET_LABELS,
   type Market,
   type Selection,
 } from "@marketscope/shared";
 import { DataUnavailable, Notice } from "@/components/data-states";
+import { LineMovesPanel, type LineMoveBook } from "@/components/line-moves-panel";
 import { MarketReplay } from "@/components/market-replay";
 import {
   defaultSelection,
@@ -38,6 +43,32 @@ const VALID: Record<Market, Selection[]> = {
   totals: ["OVER", "UNDER"],
 };
 const shortName = (team: string) => team.split(" ").at(-1) ?? team;
+const REFERENCE_KEYS = [...REFERENCE_BOOKMAKERS, ...LINE_MOVE_ONLY_BOOKMAKERS].map((b) => b.key);
+const LINE_MOVE_BOOK_ORDER = [
+  ...REFERENCE_KEYS,
+  "draftkings",
+  "fanduel",
+  "williamhill_us",
+  "hardrockbet",
+];
+
+/** Books present in a game's line moves: market makers first, then retail. */
+function lineMoveBooks(rows: readonly LineMoveRow[]): LineMoveBook[] {
+  const keys = [...new Set(rows.map((r) => r.bookmakerKey))];
+  const rank = (k: string) => {
+    const i = LINE_MOVE_BOOK_ORDER.indexOf(k);
+    return i === -1 ? LINE_MOVE_BOOK_ORDER.length : i;
+  };
+  return keys
+    .sort((a, b) => rank(a) - rank(b) || a.localeCompare(b))
+    .map((key) => ({
+      key,
+      displayName: (getBookmakerInfo(key)?.displayName ?? key)
+        .replace(/ \(reference\)$/, "")
+        .replace(/ \(IN feed\)$/, ""),
+      reference: REFERENCE_KEYS.includes(key),
+    }));
+}
 
 export default async function MarketReplayPage(props: PageProps<"/nfl/games/[id]/history">) {
   await connection();
@@ -60,12 +91,17 @@ export default async function MarketReplayPage(props: PageProps<"/nfl/games/[id]
 
   const now = new Date();
   let data: MarketReplayData | null;
+  let moves: LineMoveRow[];
   try {
-    data = await loadMarketReplay(getDb(), id, {
-      market,
-      chartSelection: selection,
-      from: historyRangeStart(range, now),
-    });
+    const db = getDb();
+    [data, moves] = await Promise.all([
+      loadMarketReplay(db, id, {
+        market,
+        chartSelection: selection,
+        from: historyRangeStart(range, now),
+      }),
+      lineMoveHistory(db, id, market),
+    ]);
   } catch (err) {
     if (err instanceof DatabaseNotConfiguredError || isConnectionError(err))
       return <DataUnavailable />;
@@ -98,6 +134,16 @@ export default async function MarketReplayPage(props: PageProps<"/nfl/games/[id]
           Kickoff <time dateTime={game.commenceTime}>{formatKickoff(game.commenceTime)}</time>
           {started && " (started)"} · Pregame observations only · changes are detected between
           snapshots, so each one happened somewhere in the interval shown
+          {moves.length > 0 && (
+            <>
+              {" "}
+              ·{" "}
+              <a href="#line-moves" className="text-accent underline">
+                Minute-level line moves
+              </a>{" "}
+              below
+            </>
+          )}
         </p>
       </div>
 
@@ -269,6 +315,38 @@ export default async function MarketReplayPage(props: PageProps<"/nfl/games/[id]
             </section>
           )}
         </>
+      )}
+
+      {moves.length > 0 && (
+        <section id="line-moves" className="space-y-3 scroll-mt-4">
+          <div className="space-y-1">
+            <h2 className="text-sm font-medium uppercase tracking-wide text-muted">
+              Minute-level line moves: {side}
+            </h2>
+            <p className="text-sm text-muted">
+              Every change to each book&apos;s main line, at the time the book made it (OddsPapi
+              change logs), including the market makers Pinnacle, Circa and Bookmaker.eu. A line
+              stays in effect until that book&apos;s next change. Gaps mean the book had the market
+              off the board for at least a minute; changes less than a second apart are merged. The
+              last 14 days before kickoff are kept.
+            </p>
+          </div>
+          {sources.includes("synthetic") && (
+            <Notice tone="warn" title="Synthetic line moves: not real odds.">
+              Generated from the demo snapshots; the reference books are copies that move first.
+            </Notice>
+          )}
+          <LineMovesPanel
+            key={`${market}-${selection}`}
+            rows={moves}
+            books={lineMoveBooks(moves)}
+            market={market}
+            selection={selection}
+            end={started ? game.commenceTime : now.toISOString()}
+            pointLabel={orientation}
+            priceLabel={`${side} price (American odds)`}
+          />
+        </section>
       )}
     </div>
   );

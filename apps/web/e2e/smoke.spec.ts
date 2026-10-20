@@ -62,13 +62,15 @@ test.describe("game detail and history", () => {
     await gameTables(page).first().getByRole("link").first().click();
     await page.getByRole("link", { name: /Open market replay/ }).click();
 
-    const charts = page.locator("figure");
+    const charts = page.locator("figure:not(#line-moves figure)");
     await expect(charts).toHaveCount(2); // spread line + price
     await expect(charts.first().locator(".recharts-line").first()).toBeVisible();
     await expect(page.getByRole("heading", { name: /Movement timeline/ })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Data gaps" })).toBeVisible();
 
-    const dk = page.getByRole("button", { name: "DraftKings", exact: true });
+    const dk = page
+      .getByRole("group", { name: "Sportsbooks shown in charts", exact: true })
+      .getByRole("button", { name: "DraftKings", exact: true });
     const linesBefore = await charts.first().locator(".recharts-line").count();
     await dk.click();
     await expect(dk).toHaveAttribute("aria-pressed", "false");
@@ -80,7 +82,31 @@ test.describe("game detail and history", () => {
     await gameTables(page).first().getByRole("link").first().click();
     await expect(page).toHaveURL(/\/nfl\/games\/[0-9a-f-]{36}$/);
     await page.goto(`${page.url()}/history?market=h2h`);
-    await expect(page.locator("figure")).toHaveCount(1);
+    await expect(page.locator("figure:not(#line-moves figure)")).toHaveCount(1);
+    await expect(page.locator("#line-moves figure")).toHaveCount(1);
+  });
+
+  test("minute-level line moves: reference books, ranges, and who posted a number first", async ({
+    page,
+  }) => {
+    await page.goto("/nfl");
+    await gameTables(page).first().getByRole("link").first().click();
+    await page.getByRole("link", { name: /Open market replay/ }).click();
+
+    const panel = page.locator("#line-moves");
+    await expect(panel.getByRole("heading", { name: /Minute-level line moves/ })).toBeVisible();
+    await expect(panel.locator("figure")).toHaveCount(2);
+    await expect(panel.getByRole("button", { name: /Pinnacle \(reference\)/ })).toBeVisible();
+
+    const fortnight = panel.getByRole("button", { name: "Final 14 days" });
+    await fortnight.click();
+    await expect(fortnight).toHaveAttribute("aria-pressed", "true");
+    const log = panel.getByRole("table");
+    await expect(log.getByRole("cell", { name: "First", exact: true }).first()).toBeVisible();
+    // Synthetic data: the Pinnacle copy moves 25 minutes before DraftKings.
+    await expect(log.getByRole("row").filter({ hasText: "DraftKings" }).first()).toContainText(
+      "Pinnacle, 25 min earlier",
+    );
   });
 
   test("unknown games return the not-found page", async ({ page }) => {
