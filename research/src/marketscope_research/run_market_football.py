@@ -42,10 +42,11 @@ def load_football(conn) -> dict[str, pd.DataFrame]:
         SELECT f.game_id, f.lead_days, f.wind_mph FROM nfl_weather_forecasts f
         JOIN nfl_games g USING (game_id) WHERE g.season = 2026""")
     context = _frame(conn, """
-        SELECT game_id, MAX(rest_diff) FILTER (WHERE is_home) AS rest_diff,
-               MAX(travel_km) FILTER (WHERE NOT is_home) AS away_travel_km,
-               BOOL_OR(COALESCE(short_week, false))::int AS short_week_any
-        FROM nfl_game_context WHERE season = 2026 GROUP BY game_id""")
+        SELECT c.game_id, MAX(c.rest_diff) FILTER (WHERE c.team = g.home_team) AS rest_diff,
+               MAX(c.travel_km) FILTER (WHERE c.team = g.away_team) AS away_travel_km,
+               BOOL_OR(COALESCE(c.short_week, false))::int AS short_week_any
+        FROM nfl_game_context c JOIN nfl_games g USING (game_id)
+        WHERE c.season = 2026 GROUP BY c.game_id""")
     return {"schedule": schedule, "ratings": ratings, "snaps": snaps, "weather": weather, "context": context}
 
 

@@ -7,3 +7,4 @@ export * from "./model";
 export * from "./projections";
 export * from "./accounts";
 export * from "./line-moves";
+export * from "./paper";

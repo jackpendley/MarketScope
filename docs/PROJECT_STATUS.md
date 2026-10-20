@@ -215,7 +215,7 @@ The goal is to study the market for moves that indicate sharp betting and test w
 
 - **MS-045a (#61, rebase-merged; ADR-055): system catalogue F1–F10.**
   - Addendum F (`b41edfb`) before code; code (`2c75e7e`) before the first run (main's SHAs).
-  - 0 of 10 supported (Holm plus a 2024–25 check). Best: F8 primetime unders, 54.5%, not significant. F10 (walk-forward ML) was significantly worse than chance: 47.1%.
+  - 0 of 10 supported (Holm plus a 2024–25 check). Best: F8 primetime unders, 54.7%, not significant. F10 (walk-forward ML) 48.6%, no better than the rules. Re-run in MS-045b after fixing a neutral-site context join; the first run's F10 "worse than chance" claim was an artifact and is withdrawn (ADR-055).
   - `/systems` now shows the catalogue table.
 
 ## Tests

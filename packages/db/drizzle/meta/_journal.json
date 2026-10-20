@@ -120,6 +120,20 @@
       "when": 1792447417208,
       "tag": "0016_line_moves",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1792534189250,
+      "tag": "0017_paper_positions",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1792534189858,
+      "tag": "0018_paper_positions_immutable",
+      "breakpoints": true
     }
   ]
 }

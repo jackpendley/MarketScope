@@ -26,6 +26,20 @@ SIDE_FIELDS = {"rest_days": "rest", "bye_before": "bye", "short_week": "short", 
                "tz_shift_hours": "tz_shift", "body_clock_kickoff_hour": "body_clock", "altitude_change_m": "alt_change"}
 
 
+def attach_context(games: pd.DataFrame, ctx: pd.DataFrame) -> pd.DataFrame:
+    """Add each side's pre-kickoff context as home_*/away_* columns, matched on the TEAM (not the
+    is_home flag, which is false for both teams at a neutral site)."""
+    g = games
+    for prefix, col in (("home_", "home"), ("away_", "away")):
+        side = ctx.rename(columns={"team": col})
+        g = g.merge(side.rename(columns={c: prefix + c for c in side.columns if c not in ("game_id", col)}),
+                    on=["game_id", col], how="left")
+    for c in ("home_bye", "away_bye", "home_short", "away_short"):
+        g[c] = g[c].fillna(False).astype(bool)
+    g["away_body_clock"] = g["away_body_clock"].fillna(13.0)
+    return g
+
+
 def load_games(conn, seasons: tuple[int, int]) -> pd.DataFrame:
     g = _frame(conn, """
         SELECT game_id, season, week, kickoff_utc AS kickoff, home_team AS home, away_team AS away,
@@ -37,16 +51,9 @@ def load_games(conn, seasons: tuple[int, int]) -> pd.DataFrame:
         WHERE season BETWEEN %s AND %s AND home_score IS NOT NULL
           AND nflverse_close_home_spread IS NOT NULL AND nflverse_close_total IS NOT NULL""", seasons)
     ctx = _frame(conn, f"""
-        SELECT game_id, is_home, {", ".join(SIDE_FIELDS)} FROM nfl_game_context
+        SELECT game_id, team, {", ".join(SIDE_FIELDS)} FROM nfl_game_context
         WHERE season BETWEEN %s AND %s""", seasons)
-    ctx = ctx.rename(columns=SIDE_FIELDS)
-    for prefix, flag in (("home_", True), ("away_", False)):
-        side = ctx[ctx["is_home"] == flag].drop(columns="is_home")
-        g = g.merge(side.rename(columns={c: prefix + c for c in side.columns if c != "game_id"}),
-                    on="game_id", how="left")
-    for c in ("home_bye", "away_bye", "home_short", "away_short"):
-        g[c] = g[c].fillna(False).astype(bool)
-    g["away_body_clock"] = g["away_body_clock"].fillna(13.0)
+    g = attach_context(g, ctx.rename(columns=SIDE_FIELDS))
     g["kickoff"] = pd.to_datetime(g["kickoff"], utc=True)
     return g
 

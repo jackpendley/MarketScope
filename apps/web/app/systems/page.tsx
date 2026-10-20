@@ -206,9 +206,10 @@ export default function SystemsPage() {
         </div>
         <p className="max-w-3xl text-xs text-subtle">
           {CATALOGUE.systems.filter((s) => s.supported).length} of {CATALOGUE.systems.length}{" "}
-          supported. The machine-learning system did worst: fitted to noisy situational features, it
-          learned patterns that did not carry into the next season. Every system is still tracked
-          forward in the paper portfolio, so future results are not chosen by these past ones.{" "}
+          supported. The machine-learning system did no better than the simple rules: refitting on
+          noisy situational features each season found nothing that carried into the next one. Every
+          system is still tracked forward in the paper portfolio, so future results are not chosen
+          by these past ones.{" "}
           <a href={CATALOGUE_REPORT} className="text-accent underline">
             Catalogue report
           </a>

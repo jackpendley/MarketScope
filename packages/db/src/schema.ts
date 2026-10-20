@@ -262,6 +262,69 @@ export const lineMoves = pgTable(
   ],
 ).enableRLS();
 
+/**
+ * Paper portfolio (MS-045b, ADR-056): hypothetical positions from pre-registered systems, placed
+ * before kickoff at a real book's posted line and graded after the game. Hypothetical only: nothing
+ * here is a wager. Placement columns are immutable (trigger in migration 0018); only the grading
+ * columns change. mode: live (placed before kickoff by the scheduled job), reconstructed (from
+ * snapshots stored before kickoff, created afterwards) or synthetic (demo/e2e databases only).
+ */
+export const paperPositions = pgTable(
+  "paper_positions",
+  {
+    id: bigint({ mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+    /** e.g. wong-V0, F1 … F10 (definitions: research/PREREGISTRATION.md Addenda E and F). */
+    strategy: text().notNull(),
+    mode: text().notNull(),
+    gameId: text()
+      .notNull()
+      .references(() => nflGames.gameId),
+    season: integer().notNull(),
+    week: integer().notNull(),
+    kickoffUtc: tstz().notNull(),
+    /** spread, total or teaser_leg (a teaser leg's price applies when legs are paired). */
+    market: text().notNull(),
+    /** nflverse team abbreviation, or over/under. */
+    side: text().notNull(),
+    /** The book's line from the side's perspective (team spread) or the total. */
+    line: numeric({ precision: 5, scale: 1, mode: "number" }).notNull(),
+    teasedLine: numeric({ precision: 5, scale: 1, mode: "number" }),
+    price: integer(),
+    bookmakerKey: text()
+      .notNull()
+      .references(() => bookmakers.key),
+    /** When the quote used was observed (a snapshot before kickoff). */
+    quoteObservedAt: tstz().notNull(),
+    placedAt: tstz().notNull().defaultNow(),
+    result: text(),
+    /** Pinnacle's closing line for the same side (or the nflverse close), and CLV in points. */
+    closeLine: numeric({ precision: 5, scale: 1, mode: "number" }),
+    closeSource: text(),
+    clv: doublePrecision(),
+    gradedAt: tstz(),
+  },
+  (t) => [
+    unique("paper_positions_strategy_game_mode_uq").on(t.strategy, t.gameId, t.mode),
+    index("paper_positions_season_idx").on(t.season, t.strategy),
+    check("paper_positions_mode", sql`${t.mode} IN ('live', 'reconstructed', 'synthetic')`),
+    check("paper_positions_market", sql`${t.market} IN ('spread', 'total', 'teaser_leg')`),
+    check(
+      "paper_positions_result",
+      sql`${t.result} IS NULL OR ${t.result} IN ('win', 'loss', 'push')`,
+    ),
+    check("paper_positions_quote_before_kickoff", sql`${t.quoteObservedAt} < ${t.kickoffUtc}`),
+    check(
+      "paper_positions_live_before_kickoff",
+      sql`${t.mode} <> 'live' OR ${t.placedAt} < ${t.kickoffUtc}`,
+    ),
+    check(
+      "paper_positions_teaser_shape",
+      sql`(${t.market} = 'teaser_leg') = (${t.teasedLine} IS NOT NULL)
+        AND (${t.market} = 'teaser_leg' OR ${t.price} IS NOT NULL)`,
+    ),
+  ],
+).enableRLS();
+
 // ---- Football context (ADR-028) -------------------------------------------------------------
 // Written only by the Python app `apps/football` (nflverse ingest). The schema lives here so
 // there is one migration history, one drift check, and RLS on every table.
