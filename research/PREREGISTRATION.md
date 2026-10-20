@@ -253,3 +253,107 @@ data, which has no record of when a status was first published. Looked at before
   previous Sunday.
 - **Exploratory:** QB events described separately; a QB claim needs at least 10 QB events.
 - **Gate:** at least 30 events in qualifying games.
+
+## Addendum C (2026-10-19): MS-043 sharp-market study S1–S5 (ADR-051, ADR-052)
+
+Committed before any S1–S5 code was written or any outcome computed. Phase 12 asks which market
+moves look like sharp action, measured by **closing-line value (CLV)** rather than win/loss.
+Looked at before writing this:
+
+- **Counts only:** `line_moves` holds 92 finished 2026 games, kickoffs 2026-09-10 to 2026-10-19 (weeks 1–6), 132,952 rows. Per book: DraftKings 57.8k (24.8k suspensions), Caesars 38.4k, Pinnacle 15.1k, Bookmaker.eu 9.6k, FanDuel 5.0k, Hard Rock 4.0k, Circa 3.0k.
+- **Seen while building MS-042:** row counts per game and book, the snapshot cross-check (99.99%
+  agreement), and the synthetic demo panel. No real game's lead-lag, steam or CLV has been computed
+  or viewed, and no real game's line-move panel has been opened.
+
+**Common rules for S1–S5.**
+
+- **Data:** `line_moves` only (minute-level main lines, ADR-052), read-only. Regular-season 2026
+  games with at least one Pinnacle spread row in the 14 days before kickoff.
+- **Books:** reference = Pinnacle, Circa, Bookmaker.eu. Retail = DraftKings, FanDuel, Caesars
+  (`williamhill_us`), Hard Rock (`hardrockbet`).
+- **Point in time:** a decision at time d uses only rows with `changed_at ≤ d`. A book's line at d is
+  its latest row at or before d; a row without prices means it is off the board (never "still
+  offering the old number").
+- **The close:** Pinnacle's line in effect at kickoff (its latest available row before kickoff). A
+  game whose Pinnacle spread was off the board for the final 30 minutes is excluded from CLV
+  analyses.
+- **CLV in points** (spreads and totals), from the bettor's side: home spread bet at line L against
+  Pinnacle's closing home line C scores L − C; away = C − L; over = C − L; under = L − C. Positive
+  means the bettor got a better number than the close. Price is not converted; S2 and S3 bound it
+  instead (below). Half-points differ in value around 3 and 7, so results crossing a key number are
+  also reported separately (exploratory).
+- **Discovery and confirmation.** Discovery = games kicking off before 2026-10-21 (weeks 1–6, what
+  is stored now). **Confirmation = games kicking off from 2026-10-21 to 2026-12-16 (weeks 7–14)**,
+  re-run with the same committed code after those games are final and imported. A result counts as established only if its discovery claim holds and the
+  confirmation estimate has the same sign with its interval excluding zero. Discovery-only results
+  are labelled "discovery".
+- **Inference:** 95% bootstrap intervals, 5,000 resamples of **games** (seed 2026), as in MS-035.
+  Each study has one **primary** hypothesis; everything else is exploratory. No correction; the count
+  of tests is visible. Nulls are published.
+- **Language (ADR-051):** results describe timing and CLV. "A reference book moved first" is
+  allowed; "sharp money" as a claim about who bet is not. Hypothetical results are labelled.
+
+### S1: who moves first? (lead-lag)
+
+- **Episode:** a spread line change by any book from a to b. Its **pair partners** are the other
+  books that make the same change (a → b, same direction) within 60 minutes after it.
+- **Pairwise lead:** for each (reference book R, retail book K) pair, count episodes where R moved
+  first and K followed within 60 minutes, and episodes where K moved first and R followed.
+- **Matching:** each change is matched to at most one change by the other book: the same a → b, the
+  nearest in time within 60 minutes (ties go to the earlier one). Changes in the same second count
+  for neither book and are reported as a count.
+- **Primary:** the share of matched Pinnacle–retail pairs in which Pinnacle moved first, pooled over
+  the four retail books (the bootstrap resamples games and recomputes the pooled share). "Pinnacle
+  leads retail" if its interval lies above 0.5.
+- **Exploratory:** the same share for Circa and Bookmaker.eu; each retail book's median follow time
+  after a Pinnacle move (moves not followed by kickoff are censored); by time to kickoff (> 48 h,
+  6–48 h, < 6 h) and by size (0.5 vs ≥ 1 point).
+- **Gate:** at least 200 Pinnacle–retail pairs.
+
+### S2: stale retail lines (the profitability question)
+
+- **Event:** Pinnacle changes its home spread from a to b. At **d = the Pinnacle change + 60
+  seconds**, a retail book is still posting a for the side Pinnacle moved toward (home if b < a, away
+  if b > a) at a price of −125 or better. One event per (Pinnacle change, retail book).
+- **Precisely:** "still posting a" means the retail book's home line at d equals a and it is on the
+  board; "−125 or better" applies to the price of the side bet (−125, −110, +100 and so on qualify;
+  −130 does not). Pinnacle changes less than 60 seconds before kickoff are excluded.
+- **Hypothetical bet:** that side at that retail book, line a, at time d.
+- **Primary:** mean CLV in points of the events. "Stale retail lines carry positive CLV" if its
+  interval lies above 0.
+- **Exploratory:** how long the stale number stayed available (until the book moved or went off);
+  the same with d = change + 5 minutes; by book; moves crossing 3 or 7; totals with the same rule
+  (over if Pinnacle raised the total); a hypothetical cover rate against the actual result,
+  labelled hypothetical, with the break-even rate at the posted price.
+- **Gate:** at least 100 events in at least 30 games.
+
+### S3: steam
+
+- **Definition (fixed here):** at least 3 of the 7 books move their home spread in the same
+  direction within 10 minutes, each book counted once. The episode's time is when the third book
+  moved; its direction is the side the books moved toward (home if the home line fell, away if it
+  rose). Episodes in the same game and direction less than 60 minutes apart are merged (the first
+  one stands).
+- **Primary (continuation, no execution assumed):** how far Pinnacle's line moves further in the
+  steam direction between d = episode time + 60 s and the close, in points (toward home: Pinnacle's
+  home line at d minus its closing home line; toward away: the reverse). Episodes where Pinnacle is
+  off the board at d are excluded. "Steam continues to the close" if the mean lies above 0.
+- **Exploratory:** CLV of betting the steam side at d at the best line among retail books that had
+  not yet moved, price −125 or better; whether a reference book was among the first three; totals.
+- **Gate:** at least 50 episodes.
+
+### S4: limits (exploratory only)
+
+- Pinnacle spread changes split by whether the reported limit at the new line was above Pinnacle's
+  median limit for that game. Outcome: reversal by the close (the closing line back at or beyond a).
+  Descriptive; no claim.
+
+### S5: key numbers (exploratory only)
+
+- Pinnacle spread changes that cross or land on 3 or 7 versus others. Outcomes: reversal by the
+  close, and how quickly retail books follow (S1's measure). Descriptive; no claim.
+
+**What this can't see.** Who bet or why; Circa limits (not reported); exchange order books (not
+stored); moves more than 14 days before kickoff. Points-based CLV ignores price differences beyond
+the −125 bound. One season of history (OddsPapi starts in January 2026), so confirmation is forward
+only.
