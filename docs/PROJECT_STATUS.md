@@ -199,8 +199,8 @@ The goal is to study the market for moves that indicate sharp betting and test w
   - Replay page: a "Minute-level line moves" panel with step charts per book (references dashed), ranges, and a change log showing which book posted each number first.
   - Nightly `line-moves.yml` at 11:00 UTC (repo secret `ODDSPAPI_API_KEY`, approved and set 2026-10-19).
 
-- **MS-043 discovery (this PR, ADR-053).**
-  - Pre-registration Addendum C (`59bce90`) before code; code and tests (`2c082bf`) before the first run; Addendum D (`9e4a305`) registers a post-hoc split for confirmation only. These SHAs are on the branch; the PR is rebase-merged, so fix the cited SHAs afterwards.
+- **MS-043 discovery (#57, rebase-merged; ADR-053).**
+  - Pre-registration Addendum C (`dd570b1`) before code; code and tests (`fa4afd5`) before the first run; Addendum D (`3acbccf`) registers a post-hoc split for confirmation only. SHAs are main's after the rebase merge (#57).
   - Results on weeks 1–6 (91 games):
     - **S1:** Pinnacle moved first in 0.741 (0.680–0.798) of matched changes with retail books.
     - **S2:** stale retail numbers +0.44 (+0.36–+0.52) points of CLV, mostly the half-point head start; hypothetical cover 53.7% vs 52.9% break-even.

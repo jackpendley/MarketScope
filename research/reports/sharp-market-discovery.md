@@ -1,8 +1,8 @@
 # Sharp-market study S1–S5: discovery (MS-043)
 
-_Generated 2026-10-20 03:20 UTC · commit `9e4a305` · reproduce with `research/src/marketscope_research/run_sharp_market.py --phase discovery`._
+_Generated 2026-10-20 03:20 UTC · commit `3acbccf` · reproduce with `research/src/marketscope_research/run_sharp_market.py --phase discovery`._
 
-Design pre-registered in `research/PREREGISTRATION.md` (Addendum C, committed before this code as `59bce90`). Data: `line_moves` (minute-level main lines, ADR-052). CLV is in points against Pinnacle's line at kickoff. 95% intervals resample games (5,000 draws, seed 2026). Timing describes which book changed its number first, not who bet. Hypothetical results are analysis, not betting advice.
+Design pre-registered in `research/PREREGISTRATION.md` (Addendum C, committed before this code as `dd570b1`). Data: `line_moves` (minute-level main lines, ADR-052). CLV is in points against Pinnacle's line at kickoff. 95% intervals resample games (5,000 draws, seed 2026). Timing describes which book changed its number first, not who bet. Hypothetical results are analysis, not betting advice.
 
 **Sample:** regular-season games kicking off 2026-09-01 to 2026-10-20: 91 final games, 91 with a Pinnacle spread history, 91 with a usable close.
 
