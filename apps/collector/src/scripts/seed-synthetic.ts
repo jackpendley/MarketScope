@@ -1,6 +1,7 @@
 // Seed a demo/e2e database with deterministic SYNTHETIC odds history, run through the
 // real collector (normalizer, transactions, constraints) with source = "synthetic", plus
-// synthetic MarketScope Ratings (model_version "synthetic-demo") for the ratings pages.
+// synthetic minute-level line moves, and synthetic MarketScope Ratings (model_version
+// "synthetic-demo") for the ratings pages.
 //
 //   DATABASE_URL=postgres://localhost:5432/marketscope_demo pnpm --filter @marketscope/collector seed:synthetic --reset
 //
@@ -13,6 +14,7 @@ import { collectNflOdds } from "../collect";
 import { jsonLogger } from "../log";
 import { recomputeSignals } from "../signals-job";
 import { assertSyntheticTarget, generateSyntheticHistory } from "../synthetic";
+import { seedSyntheticLineMoves } from "../synthetic-line-moves";
 import { seedSyntheticRatings } from "../synthetic-ratings";
 
 const { values } = parseArgs({
@@ -66,6 +68,7 @@ try {
   jsonLogger.info("seed.completed", { snapshots: snapshots.length, quotes });
   const ids = await eventIdsKickingOff(db, "1970-01-01T00:00:00Z", "2100-01-01T00:00:00Z");
   await recomputeSignals(db, ids, jsonLogger);
+  jsonLogger.info("seed.line_moves", { moves: await seedSyntheticLineMoves(db) });
 
   // Synthetic MarketScope Ratings (model_version "synthetic-demo"): replaced on every run.
   await sql`TRUNCATE model_predictions, model_runs, season_projections, rating_snapshots, nfl_player_game_snaps, nfl_coaching_staff, nfl_games RESTART IDENTITY CASCADE`;

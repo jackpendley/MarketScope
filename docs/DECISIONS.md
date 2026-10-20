@@ -963,6 +963,13 @@ The test is only honest if the model is fixed before it runs and cannot be re-ru
 
 Caesars alone toggled its markets on and off about 900 times, mostly weeks before kickoff. A second game (Buccaneers @ Cowboys) gave 1,734 rows. A full season (~285 games) is therefore roughly 0.5–0.6M rows, about 100 MB with the primary key.
 
+**Measured after the backfill (all 92 finished games, 2026-09-10 to 2026-10-19):**
+
+- **v1** stored 261,436 rows (54 MB). Half were FanDuel limit changes with the line unchanged, so v2 keeps limits for the reference books only.
+- **v2:** 132,952 rows (about 1,450 per game) in **23 MB** with the primary key, so a full season is about 70 MB. The database is at 133 MB of 500.
+- **By book:** DraftKings 57.8k (24.8k of them suspensions of a minute or more), Caesars 38.4k, Pinnacle 15.1k, Bookmaker.eu 9.6k, FanDuel 5.0k, Hard Rock 4.0k, Circa 3.0k.
+- **Cross-check against the stored OddsPapi snapshots:** 98,259 of 98,266 matched (99.99%). Every miss is FanDuel's, consistent with the settle and suspension rules.
+
 **Decision.**
 
 - **New table `line_moves`, separate from `odds_observations`.** Snapshots keep their meaning (ADR-009/026); moves are a different grain. One row each time a book's **main line** changes: the line (home spread or total), both prices, and both limits, with the provider's `changed_at`. Both sides travel together so any row gives a no-vig price.
@@ -971,13 +978,13 @@ Caesars alone toggled its markets on and off about 900 times, mostly weeks befor
   - **Settle:** entries less than 1 s apart are one change, recorded when the burst ends (books write their two sides and alternate lines milliseconds apart).
   - **Suspensions:** a main line off the board for 60 s or more gets a row with no prices, so a later study never mistakes "off the board" for "still offering the old number". Shorter blips are ignored.
   - **Window:** the last 14 days before kickoff, plus the line in effect at the start.
-- **Books:** Pinnacle, Circa (`circa`) and Bookmaker.eu (`bookmaker_eu`) as references (`LINE_MOVE_ONLY_BOOKMAKERS`: never on the board, in consensus or in snapshots), plus DraftKings, FanDuel, Caesars and Hard Rock. BetMGM stays out (ADR-026). Exchanges (Kalshi, Novig, ProphetX) are deferred: their histories are order-book depth, millions of entries per game.
+- **Books:** Pinnacle, Circa (`circa`) and Bookmaker.eu (`bookmaker_eu`) as references (`LINE_MOVE_ONLY_BOOKMAKERS`: never on the board, in consensus or in snapshots), plus DraftKings, FanDuel, Caesars and Hard Rock. BetMGM stays out (ADR-026). **Limits are kept for the reference books only** (import v2): in the first backfill, FanDuel's reported limit changed constantly with the line unchanged, producing half of all rows. Exchanges (Kalshi, Novig, ProphetX) are deferred: their histories are order-book depth, millions of entries per game.
 - **Games collected live are included.** Moves attach to the game's existing event, whichever source created it, because the separate table means sources never mix in `odds_observations`.
-- **Idempotent per fixture** (`oddspapi-moves:<fixture>:v1`); a new import version replaces a game's moves in one transaction.
+- **Idempotent per fixture** (`oddspapi-moves:<fixture>:v2`); a new import version replaces a game's moves in one transaction.
 - **Cross-check:** `import:line-moves --check` compares every stored OddsPapi snapshot in the window with the move in effect at that time. A unit test proves exact agreement with the settle and suspension rules switched off.
 
 **Consequences.**
 
 - MS-043 can measure lead-lag, steam and stale retail lines at second-to-minute resolution, from free data, for the 2026 season.
-- Storage is about 100 MB a season. A second season will need either pruning or the Supabase Pro plan; that decision goes to Jack before 2027.
+- Storage is about 70 MB a season. Two or three seasons fit the free tier alongside everything else; beyond that, pruning or the Supabase Pro plan is a decision for Jack.
 - History starts in January 2026 (OddsPapi's limit). Earlier seasons need a paid source (`docs/DATA_SOURCES.md`).

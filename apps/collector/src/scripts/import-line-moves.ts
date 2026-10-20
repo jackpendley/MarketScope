@@ -15,6 +15,7 @@ import {
   crossCheckSnapshots,
   importLineMoves,
   LINE_MOVE_BOOK_MAP,
+  LINE_MOVE_LIMIT_BOOKS,
   LINE_MOVE_REQUEST_GROUPS,
 } from "../line-moves-import";
 import { jsonLogger } from "../log";
@@ -78,6 +79,7 @@ async function main() {
     const rows = deriveLineMoves(merged, markets, {
       kickoff: f.startTime,
       bookMap: LINE_MOVE_BOOK_MAP,
+      limitBooks: LINE_MOVE_LIMIT_BOOKS,
     });
     const perBook: Record<string, number> = {};
     for (const r of rows) perBook[r.bookmakerKey] = (perBook[r.bookmakerKey] ?? 0) + 1;

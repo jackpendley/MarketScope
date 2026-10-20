@@ -181,6 +181,30 @@ describe("deriveLineMoves", () => {
     expect(spreads.map((m) => m.point)).toEqual([-3.5]); // -3 was replaced before the window
   });
 
+  it("drops limits for books outside limitBooks, so limit changes alone add no rows", () => {
+    const limitOnly: OddsPapiHistory = {
+      bookmakers: {
+        fanduel: {
+          markets: market(
+            141,
+            [e("2026-10-11T10:00:00Z", 1.5, true, 500), e("2026-10-11T11:00:00Z", 1.5, true, 900)],
+            [
+              e("2026-10-11T10:00:00Z", 2.75, true, 500),
+              e("2026-10-11T11:00:00Z", 2.75, true, 900),
+            ],
+          ),
+        },
+      },
+    };
+    const opts = { kickoff: KICKOFF, bookMap: { fanduel: "fanduel" } };
+    expect(deriveLineMoves(limitOnly, MARKETS, opts)).toHaveLength(2);
+    const kept = deriveLineMoves(limitOnly, MARKETS, {
+      ...opts,
+      limitBooks: new Set(["pinnacle"]),
+    });
+    expect(kept.map((m) => [m.price1, m.limit1])).toEqual([[-200, null]]);
+  });
+
   it("records a suspension that lasts until kickoff", () => {
     const pulled: OddsPapiHistory = {
       bookmakers: {

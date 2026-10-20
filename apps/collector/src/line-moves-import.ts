@@ -22,7 +22,8 @@ import { deriveLineMoves } from "./providers/oddspapi/line-moves";
 import type { OddsPapiHistory, OddsPapiMarketMeta } from "./providers/oddspapi/transform";
 
 export const LINE_MOVES_SOURCE = "oddspapi";
-export const LINE_MOVES_IMPORT_VERSION = 1;
+/** v2: limits kept for the reference books only (FanDuel's limit changes were half of v1's rows). */
+export const LINE_MOVES_IMPORT_VERSION = 2;
 
 /**
  * OddsPapi slug → MarketScope bookmaker key: the market makers (Pinnacle, Circa,
@@ -37,6 +38,12 @@ export const LINE_MOVE_BOOK_MAP: Readonly<Record<string, string>> = {
   caesars: "williamhill_us",
   hardrockbet: "hardrockbet",
 };
+/** Books whose reported limits are kept: the market makers, where a limit means something. */
+export const LINE_MOVE_LIMIT_BOOKS: ReadonlySet<string> = new Set([
+  "pinnacle",
+  "circa",
+  "bookmaker_eu",
+]);
 /** At most 3 bookmakers per historical-odds call. */
 export const LINE_MOVE_REQUEST_GROUPS: readonly (readonly string[])[] = [
   ["pinnacle", "circasports", "bookmaker.eu"],
@@ -87,6 +94,7 @@ export async function importLineMoves(
     const rows = deriveLineMoves(merged, markets, {
       kickoff: fixture.startTime,
       bookMap: LINE_MOVE_BOOK_MAP,
+      limitBooks: LINE_MOVE_LIMIT_BOOKS,
     });
     const perBook: Record<string, number> = {};
     for (const r of rows) perBook[r.bookmakerKey] = (perBook[r.bookmakerKey] ?? 0) + 1;

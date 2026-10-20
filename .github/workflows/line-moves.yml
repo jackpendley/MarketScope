@@ -1,0 +1,56 @@
+name: Import line moves
+
+# Nightly: minute-level main-line moves for NFL games that finished since the last run, from
+# OddsPapi's free history (MS-042, ADR-052). Games already imported are skipped without any
+# provider call (job key per fixture). 1 billable OddsPapi request for the fixture list, plus 1
+# for the market catalog (the runner has no local cache): about 60 of the 250 a month.
+# 11:00 UTC is after Monday Night Football and before the 13:00 football refresh.
+on:
+  schedule:
+    - cron: "0 11 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: line-moves
+  cancel-in-progress: false
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      ODDSPAPI_API_KEY: ${{ secrets.ODDSPAPI_API_KEY }}
+    steps:
+      - name: Check secrets are configured
+        id: secrets
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::Repository secret DATABASE_URL is required."
+            exit 1
+          fi
+          if [ -z "$ODDSPAPI_API_KEY" ]; then
+            echo "::warning::Repository secret ODDSPAPI_API_KEY is not set; skipping the import."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v7
+        if: steps.secrets.outputs.skip != 'true'
+      - uses: pnpm/action-setup@v6
+        if: steps.secrets.outputs.skip != 'true'
+      - uses: actions/setup-node@v7
+        if: steps.secrets.outputs.skip != 'true'
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile --filter @marketscope/collector...
+        if: steps.secrets.outputs.skip != 'true'
+
+      # The last 10 days catch late finals and retry any failed fixture.
+      - name: Import
+        if: steps.secrets.outputs.skip != 'true'
+        run: pnpm --filter @marketscope/collector import:line-moves --from "$(date -u -d '10 days ago' +%Y-%m-%dT00:00:00Z)"
