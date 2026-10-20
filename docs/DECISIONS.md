@@ -1043,7 +1043,7 @@ Caesars alone toggled its markets on and off about 900 times, mostly weeks befor
 
 ## ADR-055 — System catalogue F1–F10: none supported; the ML system overfits; all tracked forward (MS-045a) (2026-10-20)
 
-**Context.** Jack asked for other sharp systems beyond Wong teasers. Addendum F (`679cdc4`) pre-registered nine public situational systems and one walk-forward ML system before code (`3d5aa1d`). The correction is Holm–Bonferroni across all ten, plus a 2024–25 sign check.
+**Context.** Jack asked for other sharp systems beyond Wong teasers. Addendum F (`b41edfb`) pre-registered nine public situational systems and one walk-forward ML system before code (`2c75e7e`). The correction is Holm–Bonferroni across all ten, plus a 2024–25 sign check.
 
 **Result** (`research/reports/systems-catalogue.md`, 2016–25 at the close, −110): **0 of 10 supported.**
 
