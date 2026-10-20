@@ -268,6 +268,23 @@ def hypothetical_cover(events: pd.DataFrame, margins: pd.Series) -> dict:
             "break_even": float(e.loc[decided, "price"].map(implied).mean()) if decided.any() else np.nan}
 
 
+def s2b_edges(events: pd.DataFrame, margins: pd.Series) -> pd.DataFrame:
+    """Addendum D: S2 events at -110 or better, each decided bet's (cover - break-even). Hypothetical."""
+    e = events[(events["price"] >= -110) & events["event_id"].isin(margins.index)].copy()
+    m = e["event_id"].map(margins)
+    result = np.where(e["side"] == "home", m + e["line"], -(m + e["line"]))
+    e = e[result != 0].assign(edge=(result[result != 0] > 0).astype(float) - e.loc[result != 0, "price"].map(implied))
+    return e
+
+
+def s2b(events: pd.DataFrame, margins: pd.Series, resamples: int = RESAMPLES) -> dict:
+    std = events[events["price"] >= -110]
+    edges = s2b_edges(events, margins)
+    return {"events": len(std),
+            "clv": ratio_bootstrap(std, "clv", resamples=resamples) if len(std) else None,
+            "edge": ratio_bootstrap(edges, "edge", resamples=resamples) if len(edges) else None}
+
+
 # --- S3: steam ---------------------------------------------------------------------------------
 
 def steam_episodes(tl: dict[str, dict[str, Book]], kickoffs: pd.Series) -> pd.DataFrame:

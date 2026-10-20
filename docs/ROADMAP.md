@@ -301,6 +301,8 @@ The goal is to study the market for moves that indicate sharp betting, learn fro
 - [x] **MS-041** Data-source evaluation (`docs/DATA_SOURCES.md`). OddsPapi's free history has Pinnacle, Circa, Bookmaker.eu and the exchanges at minute level, with limits (tested). Paid options are costed; licensed splits come from Sportradar (quote) or SharpAPI (terms to confirm).
 - [x] **MS-042** Line-move event store (`line_moves`), minute-level for sharp and retail books, every 2026 game, with a nightly job. Storage is measured first.
 - [ ] **MS-043** Sharp-market study, pre-registered: lead-lag, steam, stale retail lines, limits and key numbers, each scored by CLV. New versioned signals.
+  - [x] Pre-registration (Addenda C, D), study code, discovery run on weeks 1–6 (ADR-053): S1, S2 and S3 met as discovery claims.
+  - [ ] Confirmation run on weeks 7–14 (after 2026-12-16), then signals only for what holds.
 - [ ] **MS-044** System backtester and Wong teasers (2016–25 nflverse closes, plus 2026 from our lines).
 - [ ] **MS-045** Paper portfolio (immutable pre-kickoff paper bets, graded, with CLV).
 - [ ] **MS-046** (needs a paid feed) Real-time collector and alerts.

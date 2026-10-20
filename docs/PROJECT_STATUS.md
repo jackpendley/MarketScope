@@ -4,7 +4,7 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-20 (sessio
 
 ## Current milestone
 
-**Phases 0–11 and the post-release projects are done. Phase 12, the Sharp-Market Lab (ADR-051): MS-041 (data sources) and MS-042 (minute-level line moves) are done. Next: MS-043, the pre-registered sharp-market study.**
+**Phases 0–11 and the post-release projects are done. Phase 12, the Sharp-Market Lab (ADR-051): MS-041 (data sources) and MS-042 (minute-level line moves) are done; MS-043's discovery run is done and its confirmation waits for weeks 7–14. Next: MS-044, the system backtester and Wong teasers.**
 
 The goal is to study the market for moves that indicate sharp betting and test whether any signals or systems are profitable. CLV is the yardstick; the ratings are context.
 
@@ -199,10 +199,18 @@ The goal is to study the market for moves that indicate sharp betting and test w
   - Replay page: a "Minute-level line moves" panel with step charts per book (references dashed), ranges, and a change log showing which book posted each number first.
   - Nightly `line-moves.yml` at 11:00 UTC (repo secret `ODDSPAPI_API_KEY`, approved and set 2026-10-19).
 
+- **MS-043 discovery (this PR, ADR-053).**
+  - Pre-registration Addendum C (`59bce90`) before code; code and tests (`2c082bf`) before the first run; Addendum D (`9e4a305`) registers a post-hoc split for confirmation only. These SHAs are on the branch; the PR is rebase-merged, so fix the cited SHAs afterwards.
+  - Results on weeks 1–6 (91 games):
+    - **S1:** Pinnacle moved first in 0.741 (0.680–0.798) of matched changes with retail books.
+    - **S2:** stale retail numbers +0.44 (+0.36–+0.52) points of CLV, mostly the half-point head start; hypothetical cover 53.7% vs 52.9% break-even.
+    - **S3:** steam continues +0.17 (+0.01–+0.34) points.
+  - All three are "discovery claims" on `/research`; signals wait for confirmation.
+
 ## Tests
 
 - **Football pytest:** 114 (unit tests, plus integration against the migrated test DB; includes validation of the committed coaching CSV and the 2016–24 seeding reproduction).
-- **Research pytest:** 40.
+- **Research pytest:** 54.
 - **TS:** db 49, shared 192, collector 66, web 134 (unit + integration), e2e 59.
 
 ## Quotas
@@ -237,19 +245,21 @@ Nothing blocking.
 
 ## Next task
 
-**MS-043: pre-registered sharp-market study (S1–S5).**
+**MS-044: system backtester and Wong teasers.**
 
-1. **Pre-register first** (`research/PREREGISTRATION.md`, Addendum C), committed and pushed before any study code. The draft rules:
-   - **CLV in points** against Pinnacle's line at kickoff.
-   - **Discovery** on weeks 1–7 (stored now); **confirmation** on weeks 8–14 with the same code.
-   - **Game bootstrap**, 5,000 resamples, seed 2026.
-   - **Studies:**
-     - S1 lead-lag (primary: the share of Pinnacle–retail pairs where Pinnacle moved first);
-     - S2 stale retail lines (primary: mean CLV of taking a retail number still posted 60 s after Pinnacle moved, price −125 or better);
-     - S3 steam (3 of 7 books in 10 minutes; primary: Pinnacle's continuation to the close);
-     - S4 limits and S5 key numbers, exploratory.
-2. **Build:** a study module in `research/` reading `line_moves` read-only, with planted-signal and leakage tests, and a report in `research/reports/`.
-3. **Then:** add the new versioned signals (`sharp_book_lead`, `steam`, `stale_retail_line`) only for what the study supports; show CLV in the Signal Lab.
-4. **Then MS-044:** the system backtester and Wong teasers.
+1. **Pre-register first** (definitions before any result):
+   - **Wong teaser legs:** 6-point two-team teasers; favourites −7.5 to −8.5 and underdogs +1.5 to +2.5, crossing 3 and 7.
+   - **Variants:** a total filter (e.g. ≤ 49); home/road.
+   - **Prices:** −120, −130 and −140 (break-even leg win rate ≈ 73.9% at −120).
+   - **Pairing:** chronological and all-pairs.
+   - **Holdouts:** 2016–23 to explore, 2024–25 held out, 2026 to date as the forward look Jack asked for.
+2. **Engine** (`research/`, pure and tested):
+   - grading of spreads, totals, moneylines and teaser legs, with push rules;
+   - vig and teaser prices as parameters;
+   - ROI with game-bootstrap intervals, drawdown, season tables and an equity curve.
+3. **Data:** nflverse closes for 2016–25 (`nfl_games`); 2026 from our lines (Pinnacle and the board at the close, via `line_moves` and snapshots).
+4. **Web:** a `/systems` page in the `/research` style, static from committed reports, with hypothetical labels.
 
-**Waiting on Jack (optional):** a Sportradar Betting Splits quote or SharpAPI terms; approval of any data purchase (recommended first: The Odds API at $59/month, after MS-043).
+**Later:** the MS-043 confirmation run after 2026-12-16 (`run_sharp_market --phase confirmation`), then signals for what holds; MS-045 paper portfolio.
+
+**Waiting on Jack (optional):** a Sportradar Betting Splits quote or SharpAPI terms; approval of any data purchase (The Odds API at $59/month is the recommended first one).

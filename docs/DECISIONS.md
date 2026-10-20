@@ -988,3 +988,30 @@ Caesars alone toggled its markets on and off about 900 times, mostly weeks befor
 - MS-043 can measure lead-lag, steam and stale retail lines at second-to-minute resolution, from free data, for the 2026 season.
 - Storage is about 70 MB a season. Two or three seasons fit the free tier alongside everything else; beyond that, pruning or the Supabase Pro plan is a decision for Jack.
 - History starts in January 2026 (OddsPapi's limit). Earlier seasons need a paid source (`docs/DATA_SOURCES.md`).
+
+## ADR-053 — Sharp-market study: discovery results, a post-hoc split registered for confirmation, signals wait (MS-043) (2026-10-19)
+
+**Context.** Addendum C (`59bce90`) fixed S1–S5 before any code: CLV in points against Pinnacle's line at kickoff, discovery on 2026 weeks 1–6, confirmation on weeks 7–14 with the same code. The code and tests were committed (`2c082bf`) before the first run.
+
+**Discovery results** (`research/reports/sharp-market-discovery.md`, 91 games):
+
+| Study                   | Primary                                                                                  | Estimate (95% CI)                           | Result                   |
+| ----------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------- | ------------------------ |
+| S1 lead-lag             | Share of matched Pinnacle–retail changes where Pinnacle moved first                      | 0.741 (0.680 to 0.798), 216 pairs           | Discovery claim          |
+| S2 stale retail numbers | Mean CLV of taking a retail book's old number 60 s after Pinnacle moved (−125 or better) | +0.44 (+0.36 to +0.52) points, 1,450 cases  | Discovery claim          |
+| S3 steam                | Pinnacle's further move to the close in the steam direction                              | +0.17 (+0.01 to +0.34) points, 120 episodes | Discovery claim (barely) |
+
+**What the numbers mean.**
+
+- **S2 is mostly mechanical in points.** The old number starts +0.54 points ahead of Pinnacle's new one, and Pinnacle gives back −0.10 by the close. Points CLV ignores price, and the hypothetical cover rate (53.7%) is not distinguishable from break-even (52.9%).
+- **Retail books are not simply slow copies of Pinnacle.** Only 4–15% of Pinnacle's changes were matched by a retail book within an hour, and 43–83% never before kickoff. Many "stale" numbers are retail books holding a different number with different juice.
+- **Post-hoc split:** cases at −110 or better looked better than juiced ones. Because that was found after seeing results, it was registered as Addendum D (`9e4a305`) and will be tested on weeks 7–14 only. The discovery numbers are not evidence for it.
+
+**Decision.**
+
+- **Labels.** Results are shown as "discovery claim" (`/research`, new status) until the confirmation run.
+- **No new product signals yet.** `sharp_book_lead`, `steam` and `stale_retail_line` wait for confirmation, so the Signal Lab never shows a signal whose evidence is discovery-only.
+- **Confirmation run:** after week 14's games are imported (the nightly job does this), `run_sharp_market --phase confirmation`. Both outcomes get published.
+- **Next: MS-044**, the system backtester and Wong teasers, per Jack's order.
+
+**Consequences.** The project now has evidence that the reference books move first and that steam weakly persists. It also has an honest caution against reading points CLV as profit, which is exactly the lesson the Phase 12 yardstick was meant to teach.
