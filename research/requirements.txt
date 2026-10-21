@@ -5,3 +5,7 @@ psycopg[binary]==3.3.6
 scikit-learn==1.8.0
 scipy==1.16.3
 pytest==9.1.1
+# Research data lake (MS-052): streaming JSON, Parquet, DuckDB
+ijson==3.6.0
+pyarrow==26.0.0
+duckdb==2.0.0

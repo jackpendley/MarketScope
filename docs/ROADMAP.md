@@ -357,6 +357,24 @@ Jack doesn't write code for the project. These are the ideas he should be able t
 - Walk-forward evaluation, ablations, and why the closing line is the benchmark: Phase 9
 - Event studies (injury news, weather): Phase 10
 
+## Phase 13 — Real value on NFL spreads, totals and moneylines (MS-052+, ADR-061)
+
+**Goal:** test the sources of main-line value that sharp bettors actually use, on better fair prices. Phase 12 tested whether following Pinnacle pays, which it doesn't, with tight intervals. Phase 13 tests:
+
+- being early on information;
+- a model that predicts the move from the open;
+- one market mis-priced against another: moneyline versus spread, alternate lines and teasers.
+
+The phase is NFL only and free first. A criteria-based gate decides whether paid history is worth buying.
+
+- [ ] **MS-052** Research data lake: full spread, total and moneyline ladders for 10 books and exchanges as Parquet (DuckDB), streamed with no size limit, rebuilt on demand from free history; cross-checked against `line_moves`.
+- [ ] **MS-053** Fair-value engine v2: a joint margin–total model (2016–25) and a sharp-consensus devig (Pinnacle, Circa, Bookmaker.eu, Novig).
+- [ ] **MS-054** Cross-market value: moneyline against the book's own spread; same-line retail prices against the consensus fair price.
+- [ ] **MS-055** Alternate lines and model-based teasers ("Wong 2.0").
+- [ ] **MS-056** Information timing: a faster injury and news feed and weather-forecast revisions, as event studies.
+- [ ] **MS-057** Does the market move toward the MarketScope model from the open?
+- [ ] **Paid-data gate:** buy The Odds API history ($119, one month) only if MS-055 or MS-057 shows a positive estimate too uncertain to decide on one season.
+
 ## Out of scope until the core works
 
 Props, alternate lines, live betting, bet placement, other leagues, betting splits, CLV tracking, and alerts. (Sharp-book references are done: Pinnacle is a reference book since MS-022.) See spec §5 "Future releases".
