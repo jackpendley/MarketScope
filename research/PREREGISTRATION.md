@@ -611,3 +611,38 @@ totals value, game bootstrap; claim if above 0.
 
 **What this can't see.** Openers more than 14 days before kickoff appear as the line in effect 14
 days out (the store's window); exchange totals; who bet.
+
+## Addendum K (2026-10-21): MS-051 exchanges, price-aware with fees
+
+Committed before any exchange import or MS-051 study code, and before any exchange outcome was
+computed. Looked at before writing this: one game's raw exchange history (Bears @ Packers): entries
+carry a top-of-book price and a `limit` (the size available at that price); reduced to main-line
+changes it is about 4,200 rows per game for Kalshi, Novig and ProphetX together; the median spread
+overround is about 1% (retail books about 4.5%). Everything in Addenda C, G and J stays as written.
+
+**Data.** Novig (`novig`), ProphetX (`prophetx`) and Kalshi (`kalshi`) spreads and totals, imported
+into `line_moves` with the same rules as the books (main line closest to even, 1 s settle, 60 s
+suspensions, 14-day window). The size at the top of book is stored with each row but a change in
+size alone does not create a row. Moneylines are left out to save storage.
+
+**Fees (per unit staked), fixed here.** Novig: none on pregame trades. ProphetX: 2% of net winnings
+(sensitivity: 1%). Kalshi: taker fee 0.07 × p × (1 − p) per $1 contract, where p = 1 / decimal price;
+cost per contract p + fee, profit per contract 1 − p − fee. Values are expected profit per unit
+staked at Pinnacle's no-vig close (Addendum G for spreads, Addendum J for totals), after fees.
+
+**K1 (primary): stale exchange prices.** Addendum C's S2 rule with an exchange as the lagging book:
+60 seconds after Pinnacle changes its line, the exchange still offers Pinnacle's old line on the side
+Pinnacle moved toward, at −125 or better, with at least 100 (in the provider's units) available at
+the top of book. Spreads and totals pooled. Claim if the mean value's interval lies above 0.
+Exploratory: by exchange; spreads versus totals; with a 1,000 size floor.
+
+**K2 (secondary): exchange prices at fixed horizons.** At 48, 24, 6 and 1 hours before kickoff,
+each exchange side whose line is better than Pinnacle's for that side (spreads and totals), at −125
+or better, size at least 100. Claim if the mean value's interval lies above 0.
+
+**Samples.** Discovery weeks 1–6; confirmation weeks 7–14 with the same code; game bootstrap
+(5,000, seed 2026).
+
+**What this can't see.** Depth beyond the top of book; whether an order would have been filled
+before the price changed; exchange account limits; fees on Kalshi rounded to cents (the exact
+formula is used).
