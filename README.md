@@ -2,7 +2,7 @@
 
 **NFL sportsbook market intelligence, and "KenPom for the NFL".** Compare the market. Replay its history. Understand the matchup. Investigate the signals. Test the evidence.
 
-MarketScope collects NFL odds from five sportsbooks four times a day and stores every observation, so line history can be replayed exactly. Next to the market it builds its own football model:
+MarketScope collects NFL odds from five sportsbooks four times a day and stores every observation, so line history can be replayed exactly. It also keeps minute-level line history for the market makers (Pinnacle, Circa, Bookmaker.eu), retail books and exchanges, to study how the market moves. Next to the market it builds its own football model:
 
 - opponent-adjusted offense, defense and special-teams ratings with uncertainty
 - a labelled model line and win probability for every game
@@ -12,7 +12,7 @@ MarketScope collects NFL odds from five sportsbooks four times a day and stores 
 
 It is an analytics and education project, not a picks service.
 
-> **Status:** Phases 0–10 are complete. Odds and football data update automatically on a schedule, and the site is deployed on Vercel behind invite-only accounts. Start with the [case study](docs/CASE_STUDY.md), then [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md) and [`docs/ROADMAP.md`](docs/ROADMAP.md).
+> **Status:** Phases 0–11 are complete, and Phase 12 (the Sharp-Market Lab) has finished its discovery studies; confirmation runs in December 2026. Odds and football data update automatically on a schedule, and the site is deployed on Vercel behind invite-only accounts. Start with the [case study](docs/CASE_STUDY.md), then [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md) and [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 ![MarketScope Ratings: the KenPom-style table (synthetic demo data)](docs/screenshots/ratings-desktop.png)
 
@@ -28,13 +28,22 @@ _All screenshots show the synthetic demo database used by the end-to-end tests (
   - **2025 test, run once:** margin error 10.06 points per game, against 9.67 for the closing line, 10.19 for 538-style Elo and 11.02 for home field alone.
   - **2026:** a live forward test with estimates stored before kickoff.
 - **Season projections.** 10,000 simulated seasons with NFL tiebreakers, giving playoff, division, #1 seed and Super Bowl odds. The tiebreakers reproduce every 2016–24 playoff field.
-- **Research and ML Lab.** Nine pre-registered studies plus the market-movement ML experiments (`/research`, `/ml-lab`). The questions and decision rules were committed before the code. Most results are nulls, all are published, and one claim met its bar: the consensus moves about 0.4 points per starter newly ruled Out during the week.
+- **Research and ML Lab.** Nineteen pre-registered studies (ten on the market, nine on football) plus the market-movement ML experiments (`/research`, `/ml-lab`). The questions and decision rules were committed before the code. Most results are nulls and all are published. One football claim met its bar (the consensus moves about 0.4 points per starter newly ruled Out during the week), and on the market side Pinnacle moving first is a discovery claim awaiting December's confirmation run.
 
-| Ratings and team pages                            | Matchups (FanMatch-style)                          | Research                                                 |
-| ------------------------------------------------- | -------------------------------------------------- | -------------------------------------------------------- |
-| ![Team page](docs/screenshots/team-desktop.png)   | ![Matchups](docs/screenshots/matchups-desktop.png) | ![Research](docs/screenshots/research-desktop.png)       |
-| **Odds board**                                    | **Game page**                                      | **Season projections**                                   |
-| ![Odds board](docs/screenshots/board-desktop.png) | ![Game page](docs/screenshots/game-desktop.png)    | ![Projections](docs/screenshots/projections-desktop.png) |
+- **Sharp-Market Lab.**
+  - **Minute-level line moves** on every game page, with which book posted each number first.
+  - **Market studies:** who moves first, stale numbers, steam, ML on market state, injury timing, openers, totals and exchanges. All are scored by price-aware closing-line value against Pinnacle's no-vig close, with discovery and confirmation splits.
+  - **Systems** (`/systems`): Wong teasers and ten more public systems, backtested 2016–25.
+  - **Paper portfolio** (`/portfolio`): every system tracked live with immutable pre-kickoff positions.
+  - **Headline:** Pinnacle moves first, but the books and exchange traders charge for the lag. No pattern was worth taking at its price in discovery.
+
+| Ratings and team pages                                 | Matchups (FanMatch-style)                          | Research                                                 |
+| ------------------------------------------------------ | -------------------------------------------------- | -------------------------------------------------------- |
+| ![Team page](docs/screenshots/team-desktop.png)        | ![Matchups](docs/screenshots/matchups-desktop.png) | ![Research](docs/screenshots/research-desktop.png)       |
+| **Odds board**                                         | **Game page**                                      | **Season projections**                                   |
+| ![Odds board](docs/screenshots/board-desktop.png)      | ![Game page](docs/screenshots/game-desktop.png)    | ![Projections](docs/screenshots/projections-desktop.png) |
+| **Minute-level line moves**                            | **Systems**                                        | **Paper portfolio**                                      |
+| ![Line moves](docs/screenshots/line-moves-desktop.png) | ![Systems](docs/screenshots/systems-desktop.png)   | ![Portfolio](docs/screenshots/portfolio-desktop.png)     |
 
 ## Stack
 

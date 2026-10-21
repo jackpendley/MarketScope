@@ -4,7 +4,7 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-20 (sessio
 
 ## Current milestone
 
-**Phases 0–11 and the post-release projects are done. Phase 12, the Sharp-Market Lab (ADR-051): MS-041 (data sources) and MS-042 (minute-level line moves) are done; MS-043's discovery run is done (confirmation waits for weeks 7–14); MS-044 (Wong teasers), MS-045a (system catalogue) and MS-045b (paper portfolio, `/portfolio`) are done. MS-046's market-ML discovery (no exploitable value; ADR-057) MS-047's injury-window discovery (news priced before the official report; ADR-058) MS-050's openers and totals (no value; ADR-059) and MS-051's exchanges (no value after fees; ADR-060) are done. The discovery phase is complete; confirmation runs after 2026-12-16. Next: the Phase 12 write-up.**
+**Phases 0–11 and the post-release projects are done. Phase 12, the Sharp-Market Lab (ADR-051): MS-041 (data sources) and MS-042 (minute-level line moves) are done; MS-043's discovery run is done (confirmation waits for weeks 7–14); MS-044 (Wong teasers), MS-045a (system catalogue) and MS-045b (paper portfolio, `/portfolio`) are done. MS-046's market-ML discovery (no exploitable value; ADR-057) MS-047's injury-window discovery (news priced before the official report; ADR-058) MS-050's openers and totals (no value; ADR-059) and MS-051's exchanges (no value after fees; ADR-060) are done. The discovery phase and its write-up (case study, README, screenshots) are complete. Next: the confirmation runs after 2026-12-16.**
 
 The goal is to study the market for moves that indicate sharp betting and test whether any signals or systems are profitable. CLV is the yardstick; the ratings are context.
 
@@ -287,14 +287,7 @@ Nothing blocking.
 
 ## Next task
 
-**Phase 12 write-up.** The discovery phase is complete.
-
-1. Update `docs/CASE_STUDY.md` and the README with the Sharp-Market Lab findings:
-   - the data pipeline: minute-level `line_moves` for sharp books, retail books and exchanges;
-   - the research method: pre-registration, discovery and confirmation, price-aware CLV;
-   - the main results: Pinnacle leads; retail books and exchanges price the lag into their juice or fees; no exploitable pattern in discovery; injury news is priced before the official report;
-   - the paper portfolio.
-2. Refresh the docs screenshots (`/research`, `/systems`, `/portfolio`, line-move panel).
+**Confirmation runs, after 2026-12-16** (week 14 final and imported by the nightly job). Until then, nothing in the research needs code: the paper portfolio and the imports run on their own.
 
 **Confirmation runbook (after 2026-12-16, once week 14 is imported).** Each with `--phase confirmation`:
 
