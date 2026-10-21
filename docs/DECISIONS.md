@@ -1147,7 +1147,7 @@ The remaining candidates are information that reaches the market during the week
 
 ## ADR-060 — Exchanges: imported, and no value after fees (MS-051) (2026-10-21)
 
-**Context.** Every retail pattern was priced into the juice (ADR-057, ADR-059). Exchanges have thin margins (median spread overround about 1%, against about 4.5% at retail books) and prices set by other traders, so a lag there might not be charged for. Addendum K (`9c53745`) was committed before any import or study code (`daa5b93`).
+**Context.** Every retail pattern was priced into the juice (ADR-057, ADR-059). Exchanges have thin margins (median spread overround about 1%, against about 4.5% at retail books) and prices set by other traders, so a lag there might not be charged for. Addendum K (`32c2199`) was committed before any import or study code (`bb9d71d`).
 
 **Import.**
 
@@ -1166,7 +1166,7 @@ The remaining candidates are information that reaches the market during the week
 
 **Decision.**
 
-- **Novig, the no-fee exchange, is the only cell above zero.** That was exploratory and rests on thin quotes, so it is registered as **K1n (Addendum L, `86e9bf6`)** for the confirmation weeks before any was played.
+- **Novig, the no-fee exchange, is the only cell above zero.** That was exploratory and rests on thin quotes, so it is registered as **K1n (Addendum L, `6df5a39`)** for the confirmation weeks before any was played.
 - **No signals.** Exchanges stay hidden by default in the replay panel; one click shows them.
 
 **Consequences.** The discovery phase of the Sharp-Market Lab is complete. Across spreads, totals, openers, retail books and exchanges, the market prices its own lags. What remains are the pre-registered confirmation tests (S2b/S2c, K1n and the rest) after 2026-12-16, and the forward paper portfolio.
