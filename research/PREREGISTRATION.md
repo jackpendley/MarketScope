@@ -772,3 +772,21 @@ candidates over about 90 games, a mean of about 1% per unit is the smallest dete
 
 **What this can't see.** Alternate ladders (MS-055b); limits at retail books; whether the price would
 have been accepted at that size.
+
+## Addendum Q (2026-10-22): MS-055b alternate ladders
+
+Committed before any MS-055b code was written or any outcome computed. Same data, timing, sharp
+consensus, engine and samples as Addendum P (MS-054), which has not yet been run.
+
+- **Positions.** At d = kickoff − h, h ∈ {48, 24, 6, 1}: every retail alternate spread and total (any
+  line other than that book's main line) with both sides active at d and a price between −300 and
+  +300. A side is a candidate when its price is worth more than 0 under the sharp-consensus fair
+  probability at d for that exact line.
+- **Primary.** Mean value of the candidates at the sharp-consensus close; game bootstrap (5,000, seed
+  2026). Claim if the interval lies above 0.
+- **Exploratory.** Alternates that cross or land on 3 or 7 relative to the book's main line (spreads)
+  versus others; by distance from the main line; by book; totals versus spreads.
+- **Power.** Alternates are numerous (dozens per book and game), but they are strongly correlated
+  within a game; the game bootstrap accounts for that. The smallest detectable mean is about 1% per
+  unit.
+- **What this can't see.** Retail limits on alternates (usually lower than on main lines).
