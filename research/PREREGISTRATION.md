@@ -467,3 +467,62 @@ public markets tend to price well-known edges away, so nulls are the expected re
   primary uses 2018–25.
 
 **What this can't see.** Prices other than −110; lines before the close; public betting percentages.
+
+## Addendum G (2026-10-20): MS-046 machine learning on minute-level market state (ADR-051, ADR-052)
+
+Committed before any MS-046 code was written or any target computed. Looked at before writing this:
+the MS-043 discovery report (Pinnacle led retail in 0.741 of matched changes; stale retail numbers
++0.44 points of CLV, mostly the half-point head start; steam continuation +0.17 points) and one
+descriptive count: of 1,473 stale-number cases, 79% were still posted 30 minutes later and 48% six
+hours later, with mean CLV unchanged (+0.39 to +0.41). No model, feature or target below has been
+computed.
+
+**Units and timing.**
+
+- Games: 2026 regular-season games with a Pinnacle spread history and a usable close (Addendum C
+  rules). Market: spreads.
+- Decision times d = kickoff − h for h ∈ {48, 24, 6, 1} hours. A unit needs Pinnacle on the board at
+  d. Every feature uses only `line_moves` rows with changed_at ≤ d (Addendum C's point-in-time rule).
+- **Discovery:** games kicking off before 2026-10-21 (weeks 1–6). **Confirmation:** weeks 7–14 (to
+  2026-12-16), scored once with models frozen on discovery data.
+
+**Features at d** (home orientation): Pinnacle's line; Pinnacle's price imbalance (home minus away,
+on the continuous cents scale); log Pinnacle limit and its change over the previous 6 h; Pinnacle
+line changes in the previous 6 h and 24 h, and their net direction; mean, highest and lowest retail
+line minus Pinnacle's; Circa's and Bookmaker.eu's line minus Pinnacle's (0 if absent, plus presence
+flags); signed steam episodes (Addendum C definition) in the previous 24 h; Pinnacle suspensions in
+the previous 24 h; hours to kickoff; a key-number flag (|Pinnacle line| ∈ {2.5, 3, 3.5, 6.5, 7, 7.5}).
+G2 adds, per retail book and side: the book's line minus Pinnacle's (from the side), the book's price
+on that side, minutes since the book last changed its line, whether the book still shows Pinnacle's
+previous number, and the book's identity.
+
+**Models and selection (fixed here).** Ridge-penalised linear models (C = 1, standardised) and
+gradient-boosted trees (scikit-learn HistGradientBoosting, max_depth 3, learning_rate 0.05,
+max_iter 200, random_state 2026). In discovery, each is evaluated walk-forward by week (train on all
+weeks before w, predict week w, for w = 3 to 6). The one with the better pooled walk-forward loss is
+chosen, refitted on weeks 1–6 and frozen for confirmation.
+
+**G1: Pinnacle's direction.** Target: the sign of Pinnacle's closing home line minus its line at d
+(toward home, no change, toward away). Baseline: class frequencies by horizon from the training
+weeks. **Primary:** pooled multinomial log loss of the chosen model minus the baseline's, game
+bootstrap (5,000, seed 2026). Discovery claim if the interval lies below 0 on the walk-forward
+weeks; established only if it also lies below 0 on confirmation.
+
+**G2: price-aware value of retail numbers.** Units: (game, d, retail book, side) with the book on the
+board at d. Target: the expected profit per unit of taking that side at the book's line and price at
+d, using Pinnacle's no-vig closing probability converted to the book's line with an empirical
+margin distribution:
+
+- Home-margin frequencies from 2016–25 regular-season games, bucketed by nflverse closing spread
+  (|spread| ≤ 2.5, 3–4, 4.5–7, > 7). For a closing home line C and line L: the cover probability at L
+  is the bucket's cover probability at L, shifted so that at C it equals Pinnacle's no-vig
+  probability (pushes kept at the bucket's frequency). Expected profit = P(win) × payout − P(loss).
+
+The model predicts this value; positions are units with a predicted value above 0. **Primary:** the
+mean realised value of the selected positions, game bootstrap; discovery claim if the interval lies
+above 0 on the walk-forward weeks. **Comparison (secondary):** the same for the rule "the book's line
+is better than Pinnacle's for the side at −125 or better" (no model), to show what the model adds.
+
+**What this can't see.** Who bet; injuries before 2026-10-18 at decision time (point-in-time
+reports start then, so they are left out); exchange order books; moves more than 14 days out. Value
+is measured against Pinnacle's close (CLV), not results.
