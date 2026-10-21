@@ -306,8 +306,12 @@ The goal is to study the market for moves that indicate sharp betting, learn fro
 - [x] **MS-044** System backtester and Wong teasers (2016–25 nflverse closes, plus 2026 from our lines). Primary: no claim at −125 (ADR-054); `/systems`.
 - [x] **MS-045a** System catalogue F1–F10 (pre-registered; 0 of 10 supported; ADR-055).
 - [x] **MS-045** Paper portfolio (immutable pre-kickoff paper positions, graded, with CLV; `/portfolio`; ADR-056).
-- [ ] **MS-046** (needs a paid feed) Real-time collector and alerts.
-- [ ] **MS-047** (needs licensed splits) Reverse line movement.
+- [ ] **MS-046** Machine learning on minute-level market state (pre-registered, Addenda G and H).
+  - [x] Discovery, walk-forward on weeks 3–6 (ADR-057): G1 Pinnacle direction, no claim (worse than baseline); G2 retail value, no claim (break-even). Price-aware re-score of S2: −2.0%.
+  - [ ] Confirmation on weeks 7–14, with MS-043's (after 2026-12-16).
+- [ ] **MS-047** Injury news and the line: how fast each book reacts to newly confirmed absences (point-in-time injury snapshots since 2026-10-18 plus `line_moves`).
+- [ ] **MS-048** (needs a near-real-time feed: OddsPapi permission or a paid plan) Live collector and alerts; live paper positions for market-signal strategies.
+- [ ] **MS-049** (needs licensed splits) Reverse line movement.
 
 ---
 

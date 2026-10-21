@@ -256,7 +256,7 @@ test.describe("research", () => {
       .getByRole("link", { name: "Research" })
       .click();
     await expect(page.getByRole("heading", { name: "Research", level: 1 })).toBeVisible();
-    await expect(page.locator("article[aria-labelledby^='study-']")).toHaveCount(12);
+    await expect(page.locator("article[aria-labelledby^='study-']")).toHaveCount(14);
     await expect(page.getByRole("article", { name: /S1 Who moves first/ })).toContainText(
       "discovery claim",
     );

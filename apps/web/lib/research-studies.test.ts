@@ -19,7 +19,7 @@ describe("research studies", () => {
   });
 
   it("lists the sharp-market studies in order", () => {
-    expect(MARKET_STUDIES.map((s) => s.id)).toEqual(["S1", "S2", "S3"]);
+    expect(MARKET_STUDIES.map((s) => s.id)).toEqual(["S1", "S2", "S3", "M1", "M2"]);
   });
 
   it("gives every completed study a primary estimate inside its interval and a report", () => {
