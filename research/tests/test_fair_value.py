@@ -66,3 +66,14 @@ def test_devig_methods():
 def test_win_probability_excludes_ties():
     pmf = pd.Series({-3: 0.3, 0: 0.1, 3: 0.6})
     assert fv.win_probability(pmf) == pytest.approx(0.6 / 0.9)
+
+
+def test_load_engine_uses_the_frozen_parameters(tmp_path):
+    import json
+    params = tmp_path / "p.json"
+    params.write_text(json.dumps({"margin": {"model": "kernel", "h_s": 1.0, "h_t": 1000.0},
+                                  "total": {"model": "bucket", "h_s": 1.0, "h_t": 6.0}, "devig": "shin"}))
+    eng = fv.load_engine(synthetic_games(800), params)
+    assert eng.margin is not None and eng.total is None and eng.devig_method == "shin"
+    assert eng.margin_pmf(-3.0, 44.0).sum() == pytest.approx(1)
+    assert eng.total_pmf(44.0, -3.0).sum() == pytest.approx(1)

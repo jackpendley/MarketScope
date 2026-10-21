@@ -1186,10 +1186,28 @@ These run on a better fair-value engine: a joint margin–total distribution and
 **Decision: the lake (MS-052).**
 
 - **What it holds:** every book's full spread, total and moneyline ladders (all alternate lines), pregame, for Pinnacle, Circa, Bookmaker.eu, the retail books and the exchanges, as one Parquet file per game (zstd), queried with DuckDB.
-- **Size and speed:** about 300 KB per game, roughly 85 MB a season, against the 500 MB database that forced us to keep only main lines.
+- **Size and speed:** 0.3–5 MB per game; games heavy with Kalshi traffic run 1.6–1.8 million rows, because exchange top-of-book prices flicker constantly. That is roughly 1 GB a season, fine on local disk and another reason not to put it in the 500 MB database. Parsing takes about 1–2 minutes per game.
 - **Streaming parser:** `ijson` parses responses from disk, so there is no size limit (the collector skipped five Kalshi games over V8's 512 MB string limit).
 - **Lossless reduction:** a price-unchanged entry is dropped. Limit changes are kept for the market makers.
 - **Local, not cloud:** the lake is a reproducible cache of free provider history. `python -m marketscope_research.lake build` rebuilds it, so it lives under `fixtures/oddspapi/local/lake` (gitignored, so provider data never enters the public repo). No storage bucket or new secret is needed. Supabase Storage remains an option if the lake is ever needed in CI.
 - **Verified:** a Python port of the main-line rules (`lake/mainline.py`, JavaScript rounding included) reproduces `line_moves` on a 15-minute grid. On the first two games: 100% for nine books, 99.7% for Kalshi.
 
 **Consequences.** Cross-market and alternate-line studies become possible on free data. The website keeps reading Supabase only.
+
+## ADR-062 — Fair-value engine v2: kernel margin and total models, Shin devig (MS-053) (2026-10-21)
+
+**Context.** Every value study prices lines through an empirical distribution calibrated to Pinnacle's no-vig close. The Phase 12 version bucketed by spread only (margins) or by total only (totals). Addendum M fixed the selection protocol before any code (`4141f12`); the code came before the first run (`be4de8c`).
+
+**Results** (`research/reports/fair-value-v2.md`; fitted on 2016–22, validated once on 2023–25, 855 games):
+
+- **Margin: the kernel model is adopted.** Log loss of the exact favourite margin improved by **−0.130 (−0.195 to −0.071)**. The moneyline implied by the spread tracks the devigged nflverse closing moneyline better: mean absolute difference 0.022, against 0.038 for the buckets.
+  - The chosen bandwidths are spread 2.0 and total 1000, which means **the total is ignored**. The data does not support "3 matters more in low-total games": margins of exactly 3 were 7.2% of games with totals of 41.5 or less and 10.3% with totals of 47 or more in 2023–25.
+  - The spread bandwidth is at the top of the pre-registered grid; a wider one is not tested in this version.
+- **Totals: the kernel model is adopted** (spread 2.0, total 6.0): **−0.094 (−0.171 to −0.026)**.
+- **Devig: Shin**, chosen on 2016–22. On NFL moneylines the three methods differ by less than 0.001 in log loss.
+
+**Decision.**
+
+- `fair_value.load_engine()` fits the adopted models on 2016–25 with the frozen parameters (`fair_value_params.json`).
+- The engine's distributions plug into the existing calibration functions.
+- MS-054 onwards use the engine. Phase 12 studies keep the version they were run with.
