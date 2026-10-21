@@ -1196,7 +1196,7 @@ These run on a better fair-value engine: a joint margin–total distribution and
 
 ## ADR-062 — Fair-value engine v2: kernel margin and total models, Shin devig (MS-053) (2026-10-21)
 
-**Context.** Every value study prices lines through an empirical distribution calibrated to Pinnacle's no-vig close. The Phase 12 version bucketed by spread only (margins) or by total only (totals). Addendum M fixed the selection protocol before any code (`4141f12`); the code came before the first run (`be4de8c`).
+**Context.** Every value study prices lines through an empirical distribution calibrated to Pinnacle's no-vig close. The Phase 12 version bucketed by spread only (margins) or by total only (totals). Addendum M fixed the selection protocol before any code (`9ccff2d`); the code came before the first run (`524f8cf`).
 
 **Results** (`research/reports/fair-value-v2.md`; fitted on 2016–22, validated once on 2023–25, 855 games):
 
@@ -1214,7 +1214,7 @@ These run on a better fair-value engine: a joint margin–total distribution and
 
 ## ADR-063 — Wong 2.0 at break-even; the market moves toward the model early in the week (MS-055a, MS-057) (2026-10-21)
 
-**Context.** Two Phase 13 studies needed no lake. Both were pre-registered in Addenda N and O (`351afec`), with code (`9b4243b`) before the first runs.
+**Context.** Two Phase 13 studies needed no lake. Both were pre-registered in Addenda N and O (`0def715`), with code (`69ff544`) before the first runs.
 
 **MS-055a, model-priced teaser legs** (`research/reports/teasers-model.md`):
 

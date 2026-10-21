@@ -1,6 +1,6 @@
 # Fair-value engine v2: model selection (MS-053)
 
-_Generated 2026-10-21 23:35 UTC · commit `be4de8c` · reproduce with `research/src/marketscope_research/run_fair_value.py`._
+_Generated 2026-10-21 23:35 UTC · commit `524f8cf` · reproduce with `research/src/marketscope_research/run_fair_value.py`._
 
 Protocol pre-registered in `research/PREREGISTRATION.md` (Addendum M, committed before this code). Bandwidths chosen by leave-one-season-out log loss on 2016–22; models fitted on 2016–22 and validated once on 2023–25; game bootstrap (5,000, seed 2026). The adopted engine is then fitted on 2016–25 for use in 2026.
 
