@@ -241,10 +241,10 @@ def s2_events(tl: dict[str, dict[str, Book]], kickoffs: pd.Series, closes: dict[
                 stale_until = next((tc for tc, qq in zip(books[k].stamps, books[k].quotes)
                                     if tc > d and (qq is None or qq.point != a)), kick)
                 end = min(stale_until, kick)
-                rows.append({"event_id": event, "retail": k, "side": side, "line": a, "pin_to": b,
+                rows.append({"event_id": event, "retail": k, "side": side, "line": a, "pin_to": b, "pin_t": t,
                              "price": getattr(q, use), "clv": clv(side, a, close),
                              "key": crosses_key(a, b), "stale_min": (end - d) / pd.Timedelta(minutes=1)})
-    return pd.DataFrame(rows, columns=["event_id", "retail", "side", "line", "pin_to", "price", "clv",
+    return pd.DataFrame(rows, columns=["event_id", "retail", "side", "line", "pin_to", "pin_t", "price", "clv",
                                        "key", "stale_min"])
 
 
