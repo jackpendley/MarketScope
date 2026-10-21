@@ -1211,3 +1211,29 @@ These run on a better fair-value engine: a joint margin–total distribution and
 - `fair_value.load_engine()` fits the adopted models on 2016–25 with the frozen parameters (`fair_value_params.json`).
 - The engine's distributions plug into the existing calibration functions.
 - MS-054 onwards use the engine. Phase 12 studies keep the version they were run with.
+
+## ADR-063 — Wong 2.0 at break-even; the market moves toward the model early in the week (MS-055a, MS-057) (2026-10-21)
+
+**Context.** Two Phase 13 studies needed no lake. Both were pre-registered in Addenda N and O (`351afec`), with code (`9b4243b`) before the first runs.
+
+**MS-055a, model-priced teaser legs** (`research/reports/teasers-model.md`):
+
+- Every team's 6-point leg was priced with the engine's margin distribution, walk-forward by season, and legs at or above the −125 break-even were selected.
+- **Primary (2023–25): 74.5% (68.7–79.8%) of 243 legs, exactly break-even. No claim.**
+  - The model mostly re-selects Wong's legs and is slightly overconfident: it expected 76.7%.
+  - Teasers at −125 over 2018–25: +0.8% (−11.3 to +12.7).
+- **A forward observation, not evidence:** underdog legs (+1.5 to +3) won about 77–80% and favourite legs about 69–71%, as in ADR-054. Both looks use the same seasons, so only the 2026 forward record can test it.
+- A paper strategy `wong-model` is added to the portfolio, as pre-registered.
+
+**MS-057, model versus Pinnacle six days out** (`research/reports/model-open-discovery.md`, 66 games):
+
+- **Primary:** Pinnacle's move to the close per point of ratings disagreement was **+0.116 (+0.048 to +0.189)**. **Discovery claim:** the market moves toward the ratings.
+- **Secondary:** taking the model's side at Pinnacle's early line was worth −1.0% (−2.8 to +0.8) at its close. No claim. A move of about a quarter-point on a typical disagreement does not cover the vig.
+- **Exploratory:** no pattern by size of disagreement (9–15 positions per group).
+
+**Decision.**
+
+- **This is the first Phase 13 result to bear on the paid-data gate.** The informational signal is significant on one season; the value is not.
+- The gate says to buy history only for a positive result too uncertain to decide on one season. So: **wait for the free weeks 7–14 confirmation (after 2026-12-16).**
+- **If the slope confirms,** buying The Odds API's 2020–25 history ($119, one month) is worthwhile. It would test value at the early line over about 1,400 games, ideally with the full model (QB and availability), not only the ratings.
+- **If it doesn't confirm,** don't buy.
