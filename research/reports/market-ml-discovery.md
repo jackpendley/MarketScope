@@ -1,6 +1,6 @@
 # Market ML on minute-level state: discovery (MS-046)
 
-_Generated 2026-10-21 02:31 UTC · commit `b39fb92` · reproduce with `research/src/marketscope_research/run_market_ml.py --phase discovery`._
+_Generated 2026-10-21 02:31 UTC · commit `96c723b` · reproduce with `research/src/marketscope_research/run_market_ml.py --phase discovery`._
 
 Design pre-registered in `research/PREREGISTRATION.md` (Addendum G, committed before this code). Units at 48, 24, 6 and 1 hours before kickoff; features use only line changes up to that time. Intervals resample games (5,000 draws, seed 2026). Value is closing-line value against Pinnacle's no-vig close, not results. **Analysis, not betting advice.**
 

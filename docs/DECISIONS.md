@@ -1086,7 +1086,7 @@ Caesars alone toggled its markets on and off about 900 times, mostly weeks befor
 
 ## ADR-057 — Market ML finds no exploitable value; price-aware CLV replaces points CLV for retail numbers (MS-046) (2026-10-20)
 
-**Context.** MS-043 found that Pinnacle leads retail and that stale retail numbers beat Pinnacle's close by +0.44 points. Jack asked whether machine learning on the market itself could turn that into significant results. Addendum G (`5b88278`) fixed two models before code (`1fbd0ad`).
+**Context.** MS-043 found that Pinnacle leads retail and that stale retail numbers beat Pinnacle's close by +0.44 points. Jack asked whether machine learning on the market itself could turn that into significant results. Addendum G (`02360c6`) fixed two models before code (`7a103bf`).
 
 **Discovery results** (walk-forward inside weeks 1–6; `research/reports/market-ml-discovery.md`):
 
@@ -1100,7 +1100,7 @@ Caesars alone toggled its markets on and off about 900 times, mostly weeks befor
 **Decision.**
 
 - **The yardstick for retail numbers is now price-aware value.** It is expected profit at Pinnacle's no-vig close, converted between lines with an empirical margin distribution in which 3 and 7 carry the most value. Points CLV stays for Pinnacle-versus-Pinnacle comparisons, where the price is comparable.
-- **Addendum H (`c4d7ab6`)** registers the standard-price stale-number test (S2c) for the confirmation weeks before any was played.
+- **Addendum H (`b980392`)** registers the standard-price stale-number test (S2c) for the confirmation weeks before any was played.
 - **No signals are added.** The paper portfolio keeps tracking the systems.
 - **Live data.** Near-real-time OddsPapi polling still matters for confirmation and for live tracking, but it is no longer expected to unlock profit. An email asking OddsPapi to confirm acceptable use is with Jack.
 
