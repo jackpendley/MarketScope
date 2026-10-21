@@ -1,6 +1,6 @@
 # Openers and totals, price-aware: discovery (MS-050)
 
-_Generated 2026-10-21 03:04 UTC · commit `f0263ed` · reproduce with `research/src/marketscope_research/run_openers_totals.py --phase discovery`._
+_Generated 2026-10-21 03:04 UTC · commit `ba56350` · reproduce with `research/src/marketscope_research/run_openers_totals.py --phase discovery`._
 
 Design pre-registered in `research/PREREGISTRATION.md` (Addendum J, committed before this code). Value is expected profit per unit at Pinnacle's no-vig close, converted between lines with empirical 2016–25 margin and total-points distributions. Intervals resample games (5,000 draws, seed 2026). **Analysis, not betting advice.**
 

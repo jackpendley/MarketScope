@@ -238,8 +238,8 @@ The goal is to study the market for moves that indicate sharp betting and test w
   - **Exploratory:** about two-thirds of the injury move is priced four days out, before the official designation.
   - `/research` adds I1 and I2.
 
-- **MS-050 discovery (this PR, ADR-059): openers and totals, price-aware.**
-  - Addendum J (`b8668cc`) before code; code (`f0263ed`) before the first run. Rebase-merge, then fix the SHAs.
+- **MS-050 discovery (#68, rebase-merged; ADR-059): openers and totals, price-aware.**
+  - Addendum J (`b48baf6`) before code; code (`ba56350`) before the first run (main's SHAs).
   - **J1 openers:** 21 cases, −2.3% (−6.3 to +1.8), no claim. **J2 stale totals:** −1.8% (−2.5 to −1.1). **J3 better-than-Pinnacle totals:** −3.0%.
   - `/research` adds O1 and T1 and a summary paragraph for the market studies.
 

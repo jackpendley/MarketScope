@@ -1130,7 +1130,7 @@ The remaining candidates are information that reaches the market during the week
 
 ## ADR-059 — Openers and totals: no value against Pinnacle's no-vig close (MS-050) (2026-10-21)
 
-**Context.** After MS-046 showed stale retail spread numbers are worth −2.0% once priced, two places remained where books might be softer: their first numbers (openers) and totals. Addendum J (`b8668cc`) was committed before code (`f0263ed`). It adds a totals value model: 2016–25 total-points frequencies by closing-total bucket, calibrated to Pinnacle's no-vig closing total.
+**Context.** After MS-046 showed stale retail spread numbers are worth −2.0% once priced, two places remained where books might be softer: their first numbers (openers) and totals. Addendum J (`b48baf6`) was committed before code (`ba56350`). It adds a totals value model: 2016–25 total-points frequencies by closing-total bucket, calibrated to Pinnacle's no-vig closing total.
 
 **Discovery results** (weeks 1–6, `research/reports/openers-totals-discovery.md`):
 
