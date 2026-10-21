@@ -4,7 +4,7 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-20 (sessio
 
 ## Current milestone
 
-**Phases 0–11 and the post-release projects are done. Phase 12, the Sharp-Market Lab (ADR-051): MS-041 (data sources) and MS-042 (minute-level line moves) are done; MS-043's discovery run is done (confirmation waits for weeks 7–14); MS-044 (Wong teasers), MS-045a (system catalogue) and MS-045b (paper portfolio, `/portfolio`) are done. MS-046's market-ML discovery run is done (no exploitable value; ADR-057). Next: MS-047, injury news and the line.**
+**Phases 0–11 and the post-release projects are done. Phase 12, the Sharp-Market Lab (ADR-051): MS-041 (data sources) and MS-042 (minute-level line moves) are done; MS-043's discovery run is done (confirmation waits for weeks 7–14); MS-044 (Wong teasers), MS-045a (system catalogue) and MS-045b (paper portfolio, `/portfolio`) are done. MS-046's market-ML discovery (no exploitable value; ADR-057) and MS-047's injury-window discovery (news priced before the official report; ADR-058) are done. Next: MS-050, openers and totals, price-aware.**
 
 The goal is to study the market for moves that indicate sharp betting and test whether any signals or systems are profitable. CLV is the yardstick; the ratings are context.
 
@@ -232,10 +232,16 @@ The goal is to study the market for moves that indicate sharp betting and test w
   - `/research` adds M1 and M2 and the price-aware line on S2.
   - **OddsPapi:** its free history endpoint returns near-real-time logs for upcoming games (Pinnacle's latest entry was 17 s old). An email asking whether polling is acceptable is drafted for Jack (to contact@55-tech.com, from the OddsPapi terms page).
 
+- **MS-047 discovery (this PR, ADR-058): injury-report windows.**
+  - Addendum I (`5d03d20`) before code; code (`b2297ad`) before the first run. Rebase-merge, then fix the SHAs.
+  - **I1:** Pinnacle's move in the game-status filing window was +0.02 points per net newly-out starter (−0.00 to +0.05): no claim. **I2:** 18 cases against a gate of 50: inconclusive.
+  - **Exploratory:** about two-thirds of the injury move is priced four days out, before the official designation.
+  - `/research` adds I1 and I2.
+
 ## Tests
 
 - **Football pytest:** 114 (unit tests, plus integration against the migrated test DB; includes validation of the committed coaching CSV and the 2016–24 seeding reproduction).
-- **Research pytest:** 88.
+- **Research pytest:** 95.
 - **TS:** db 54, shared 192, collector 66, web 148 (unit + integration), e2e 63.
 
 ## Quotas
@@ -270,19 +276,14 @@ Nothing blocking.
 
 ## Next task
 
-**MS-047: injury news and the line.** Information that reaches the market during the week is the remaining candidate, since R2w found that the consensus moves +0.40 points per newly-out starter.
+**MS-050: openers and totals, price-aware.** Every market study so far scored spreads close to kickoff. Two places remain where books may be softer:
 
-1. **Pre-register** (Addendum I) using the point-in-time injury snapshots (twice daily since 2026-10-18) and `line_moves`:
-   - when a starter is first seen as Out or Doubtful, how long each book takes to move;
-   - whether Pinnacle leads;
-   - the price-aware value of the lagging books' numbers.
-   - Data accrues each week; the gate is a minimum number of events.
-2. **Meanwhile:**
-   - the paper portfolio places live positions automatically;
-   - the nightly line-move import continues;
-   - the MS-043/046 confirmation runs after 2026-12-16 (`run_sharp_market --phase confirmation`, `run_market_ml --phase confirmation`).
+1. **Pre-register** (Addendum J) before code:
+   - **Openers:** the price-aware value of each book's first number for a game (lookahead lines and Sunday-night openers, from `line_moves`, whose window starts 14 days out) against Pinnacle's no-vig close. Do some books open softer than others?
+   - **Totals:** extend the price-aware value model to totals. An empirical total-points distribution from 2016–25, calibrated to Pinnacle's no-vig closing total, with key totals such as 41, 44, 47 and 51. Then re-score S2's totals cases (+0.55 points in MS-043) and retail totals at fixed horizons.
+   - **Discovery** weeks 1–6, **confirmation** weeks 7–14, as before.
+2. **Meanwhile:** paper portfolio live placement, the nightly line-move import, and the MS-043/046/047 confirmation runs after 2026-12-16.
 
-**Waiting on Jack:**
+**On hold (Jack, 2026-10-21):** the OddsPapi email about near-real-time polling (plan and questions in `docs/DATA_SOURCES.md`). Live market-signal tracking (MS-048) waits on it.
 
-- **Send the OddsPapi email** (draft in this session). If they approve, build the poller (MS-048).
-- **Optional:** a Sportradar Betting Splits quote or SharpAPI terms; approval of any data purchase.
+**Waiting on Jack (optional):** a Sportradar Betting Splits quote or SharpAPI terms; approval of any data purchase.
