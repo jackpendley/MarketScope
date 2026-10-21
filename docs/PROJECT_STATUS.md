@@ -4,7 +4,7 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-20 (sessio
 
 ## Current milestone
 
-**Phases 0–11 and the post-release projects are done. Phase 12, the Sharp-Market Lab (ADR-051): MS-041 (data sources) and MS-042 (minute-level line moves) are done; MS-043's discovery run is done (confirmation waits for weeks 7–14); MS-044 (Wong teasers), MS-045a (system catalogue) and MS-045b (paper portfolio, `/portfolio`) are done. Next: MS-046, a pre-registered ML model of where the line goes, built on `line_moves`.**
+**Phases 0–11 and the post-release projects are done. Phase 12, the Sharp-Market Lab (ADR-051): MS-041 (data sources) and MS-042 (minute-level line moves) are done; MS-043's discovery run is done (confirmation waits for weeks 7–14); MS-044 (Wong teasers), MS-045a (system catalogue) and MS-045b (paper portfolio, `/portfolio`) are done. MS-046's market-ML discovery run is done (no exploitable value; ADR-057). Next: MS-047, injury news and the line.**
 
 The goal is to study the market for moves that indicate sharp betting and test whether any signals or systems are profitable. CLV is the yardstick; the ratings are context.
 
@@ -218,23 +218,30 @@ The goal is to study the market for moves that indicate sharp betting and test w
   - 0 of 10 supported (Holm plus a 2024–25 check). Best: F8 primetime unders, 54.7%, not significant. F10 (walk-forward ML) 48.6%, no better than the rules. Re-run in MS-045b after fixing a neutral-site context join; the first run's F10 "worse than chance" claim was an artifact and is withdrawn (ADR-055).
   - `/systems` now shows the catalogue table.
 
-- **MS-045b (this PR, ADR-056): paper portfolio.**
+- **MS-045b (#63, ADR-056): paper portfolio.**
   - `paper_positions` (migrations 0017/0018): placement immutable by trigger, live rows undeletable, quotes and live placement before kickoff.
   - `research/paper.py` places (live), reconstructs (finished games) and grades (result, Pinnacle close, CLV). `paper-portfolio.yml` places after each collection and grades at 11:30 UTC.
   - `/portfolio`: cumulative units and mean CLV by strategy, a strategy table with backtest verdicts, and open and graded positions. Synthetic positions in the e2e seed.
   - Found and fixed a neutral-site context join in the catalogue loader; re-run unchanged at 0 of 10, and F10's earlier "worse than chance" claim withdrawn (ADR-055).
-  - After merge: run `paper reconstruct` and `paper grade` against production for weeks 1–7.
+  - Production: 245 reconstructed positions for weeks 1–7, all graded; live placement starts with the next game inside the 6-hour window.
+
+- **MS-046 discovery (this PR, ADR-057): ML on minute-level market state.**
+  - Addendum G (`5b88278`) before code; code (`1fbd0ad`) before the first run; Addendum H (`c4d7ab6`) before any confirmation game. Rebase-merge, then fix the SHAs.
+  - **G1** (Pinnacle direction): worse than the baseline, +0.417 log loss (+0.153 to +0.697). **G2** (price-aware retail value): model selections +0.0% (−1.9 to +2.0); the no-model rule −2.0%; all numbers −4.6%.
+  - **Price-aware re-score of S2:** −2.0% (−2.7 to −1.3); at −110 or better −0.6% (−1.5 to +0.3). Points CLV overstated stale numbers.
+  - `/research` adds M1 and M2 and the price-aware line on S2.
+  - **OddsPapi:** its free history endpoint returns near-real-time logs for upcoming games (Pinnacle's latest entry was 17 s old). An email asking whether polling is acceptable is drafted for Jack (to contact@55-tech.com, from the OddsPapi terms page).
 
 ## Tests
 
 - **Football pytest:** 114 (unit tests, plus integration against the migrated test DB; includes validation of the committed coaching CSV and the 2016–24 seeding reproduction).
-- **Research pytest:** 77.
+- **Research pytest:** 88.
 - **TS:** db 54, shared 192, collector 66, web 148 (unit + integration), e2e 63.
 
 ## Quotas
 
 - **Odds API:** about 12 credits/day from the cron (≈ 372 of 500/month).
-- **OddsPapi:** 12 of 250 this month; the nightly line-move job adds about 2 a day (fixtures + market catalog). History calls are free. Open-Meteo, Wikipedia and nflverse: free, no keys.
+- **OddsPapi:** 14 of 250 this month; the nightly line-move job adds about 2 a day (fixtures + market catalog). History calls are free. Open-Meteo, Wikipedia and nflverse: free, no keys.
 
 ## Data (production, Supabase)
 
@@ -263,25 +270,19 @@ Nothing blocking.
 
 ## Next task
 
-**MS-046: where does the line go? A pre-registered ML model on minute-level market state.**
+**MS-047: injury news and the line.** Information that reaches the market during the week is the remaining candidate, since R2w found that the consensus moves +0.40 points per newly-out starter.
 
-The closing line absorbs public situational information (ADR-055), so the ML effort moves to the market's own microstructure, where MS-043 found structure: reference books lead, and steam weakly persists.
+1. **Pre-register** (Addendum I) using the point-in-time injury snapshots (twice daily since 2026-10-18) and `line_moves`:
+   - when a starter is first seen as Out or Doubtful, how long each book takes to move;
+   - whether Pinnacle leads;
+   - the price-aware value of the lagging books' numbers.
+   - Data accrues each week; the gate is a minimum number of events.
+2. **Meanwhile:**
+   - the paper portfolio places live positions automatically;
+   - the nightly line-move import continues;
+   - the MS-043/046 confirmation runs after 2026-12-16 (`run_sharp_market --phase confirmation`, `run_market_ml --phase confirmation`).
 
-1. **Pre-register** (Addendum G) before code:
-   - **Unit:** game-market snapshots at fixed times before kickoff (for example 48 h, 24 h, 6 h).
-   - **Target:** Pinnacle's move from that time to the close, in points (or its sign).
-   - **Features, all point-in-time from `line_moves` (and injuries):**
-     - reference-versus-retail gaps;
-     - Pinnacle and Bookmaker.eu limits and their change;
-     - recent move velocity and count;
-     - steam episodes so far;
-     - suspensions;
-     - newly-out starters (R2w).
-   - **Baselines:** no move, and the last move continuing.
-   - **Model and validation:** gradient-boosted trees or regularised regression, with a walk-forward split by week. Weeks 1–6 to develop; weeks 7–14 held out, the same confirmation window as MS-043.
-   - **Yardstick:** directional accuracy and calibration, plus the hypothetical CLV of taking the predicted side at the best retail number.
-2. **If it confirms:** a versioned signal in `market_signals` and a paper-portfolio strategy, which would need a real-time feed to place live (MS-047, a purchase decision for Jack).
+**Waiting on Jack:**
 
-**Later:** the MS-043 confirmation run after 2026-12-16. MS-047 is the real-time collector (paid) and MS-048 reverse line movement (licensed splits).
-
-**Waiting on Jack (optional):** a Sportradar Betting Splits quote or SharpAPI terms; approval of any data purchase (The Odds API at $59/month recommended first: it would add Caesars and Pinnacle to live snapshots and make live paper positions price at Caesars).
+- **Send the OddsPapi email** (draft in this session). If they approve, build the poller (MS-048).
+- **Optional:** a Sportradar Betting Splits quote or SharpAPI terms; approval of any data purchase.

@@ -228,7 +228,8 @@ export const MARKET_STUDIES: Study[] = [
       "Yes, in points, but mostly by construction: the old number starts half a point ahead of Pinnacle's new one (+0.54), and Pinnacle then gives back a little of its move (−0.10). Points ignore what the retail book charged for the old number, so whether it was worth taking depends on price.",
     exploratory: [
       "Hypothetical cover rate 53.7% against a 52.9% break-even at the posted prices: not distinguishable from break-even over one season.",
-      "At standard prices (−110 or better) the cases looked stronger than juiced ones. That split was found after the fact, so it was pre-registered (Addendum D) for the held-out weeks.",
+      "Counting the price (MS-046): −2.0% per unit against Pinnacle's no-vig close (−2.7% to −1.3%). The books keep the old number but charge for it, so the points overstate it.",
+      "At standard prices (−110 or better): −0.6% (−1.5% to +0.3%), close to break-even. Found after the fact, so it is pre-registered (Addenda D and H) for the held-out weeks.",
       "Totals, same rule: +0.55 points (+0.43 to +0.68).",
     ],
     report: `${REPO}/research/reports/sharp-market-discovery.md`,
@@ -253,5 +254,42 @@ export const MARKET_STUDIES: Study[] = [
       "Limits and key numbers (S4, S5): Pinnacle changes at higher limits reversed more often (45% vs 37%); key-number changes reversed less (33% vs 41%). Descriptive only.",
     ],
     report: `${REPO}/research/reports/sharp-market-discovery.md`,
+  },
+  {
+    id: "M1",
+    title: "Machine learning: Pinnacle's next move",
+    question:
+      "From the market's state 48, 24, 6 or 1 hours before kickoff, can a model predict which way Pinnacle's line goes by the close?",
+    window:
+      "2026 weeks 3–6, walk-forward (each week predicted from earlier weeks), 244 game-horizons",
+    status: "no claim",
+    primary: {
+      label: "Log loss, model minus class-frequency baseline (negative = better)",
+      estimate: "+0.417",
+      interval: "+0.153 to +0.697",
+    },
+    finding:
+      "No. The model did worse than simply predicting how often lines move at each horizon: with a few dozen games per week it fitted noise. Pinnacle's own direction looks unpredictable from this data, which is what an efficient sharp market would show.",
+    exploratory: [
+      "Pinnacle's line did not change at all from the decision time to the close in 52% of cases.",
+    ],
+    report: `${REPO}/research/reports/market-ml-discovery.md`,
+  },
+  {
+    id: "M2",
+    title: "Machine learning: retail numbers worth taking",
+    question:
+      "Can a model find retail numbers whose price beats Pinnacle's no-vig close, once the value of each half-point (3 and 7 above all) is counted?",
+    window: "2026 weeks 3–6, walk-forward, 1,892 book-side-horizons",
+    status: "no claim",
+    primary: {
+      label: "Mean value per unit of the model's selections (Pinnacle's no-vig close)",
+      estimate: "+0.000",
+      interval: "−0.019 to +0.020",
+    },
+    finding:
+      "The model found numbers worth about break-even, not more. Every retail number averaged −4.6% (the books' margin); a simple rule, a better number than Pinnacle's at −125 or better, averaged −2.0%. Selecting by model closed that gap but did not open a positive one.",
+    exploratory: ["Value rose with the number's head start over Pinnacle and with a better price."],
+    report: `${REPO}/research/reports/market-ml-discovery.md`,
   },
 ];

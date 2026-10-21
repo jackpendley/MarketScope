@@ -1083,3 +1083,31 @@ Caesars alone toggled its markets on and off about 900 times, mostly weeks befor
 
 - The forward record accumulates without selection: a system that failed its backtest is still tracked.
 - CLV gives a faster read than units. At four snapshots a day, a quote can be up to about 6 hours old at kickoff; a paid real-time feed (MS-046) would tighten that and allow paper positions on the market-signal strategies (S2, S3).
+
+## ADR-057 — Market ML finds no exploitable value; price-aware CLV replaces points CLV for retail numbers (MS-046) (2026-10-20)
+
+**Context.** MS-043 found that Pinnacle leads retail and that stale retail numbers beat Pinnacle's close by +0.44 points. Jack asked whether machine learning on the market itself could turn that into significant results. Addendum G (`5b88278`) fixed two models before code (`1fbd0ad`).
+
+**Discovery results** (walk-forward inside weeks 1–6; `research/reports/market-ml-discovery.md`):
+
+- **G1, Pinnacle's direction to the close:** the model's log loss was **+0.417 (+0.153 to +0.697)** worse than the class-frequency baseline. With about 60 games per horizon it overfits. Pinnacle's own path looks unpredictable from this data, which is consistent with an efficient sharp market.
+- **G2, price-aware value of retail numbers:**
+  - The value model is coherent: all retail numbers average −4.6%, roughly the books' margin.
+  - The no-model rule "a better number than Pinnacle's at −125 or better" averages −2.0%.
+  - The model's selections average **+0.0% (−1.9 to +2.0)**: break-even, not positive.
+- **S2 re-scored with price (exploratory, added after the first run).** Stale retail numbers are **−2.0% (−2.7 to −1.3)** per unit against Pinnacle's no-vig close. At −110 or better they are −0.6% (−1.5 to +0.3). The +0.44 points was real, but the books charge for the old number.
+
+**Decision.**
+
+- **The yardstick for retail numbers is now price-aware value.** It is expected profit at Pinnacle's no-vig close, converted between lines with an empirical margin distribution in which 3 and 7 carry the most value. Points CLV stays for Pinnacle-versus-Pinnacle comparisons, where the price is comparable.
+- **Addendum H (`c4d7ab6`)** registers the standard-price stale-number test (S2c) for the confirmation weeks before any was played.
+- **No signals are added.** The paper portfolio keeps tracking the systems.
+- **Live data.** Near-real-time OddsPapi polling still matters for confirmation and for live tracking, but it is no longer expected to unlock profit. An email asking OddsPapi to confirm acceptable use is with Jack.
+
+**Consequences.** The project now has a clear, evidence-backed answer to "where is the structure?":
+
+- Information flows from the market makers to retail books.
+- Retail books price the lag into their juice.
+- Neither the sharp book's path nor the retail numbers offered an exploitable advantage in weeks 1–6.
+
+The remaining candidates are information that reaches the market during the week, such as injury news (R2w, MS-047), and the confirmation weeks.
