@@ -20,7 +20,7 @@ from . import model_open as mo
 from . import sharp_market as sm
 from .data import _frame, connect
 from .ml import design_football
-from .run_football_studies import ci
+from .run_football_studies import ci, table
 
 FR = "(SELECT franchise FROM nfl_teams WHERE abbr = {})"
 
@@ -83,6 +83,16 @@ def main() -> None:
     def pct(e):
         return "–" if e is None else f"{100 * e.value:+.1f}% ({100 * e.low:+.1f} to {100 * e.high:+.1f})"
 
+    # Exploratory (added after the first run): value by size of the disagreement.
+    by_size = []
+    allv = mo.model_side_values(frame.assign(x=frame["x"]), tl, kicks, engine)
+    xs = frame.set_index("event_id")["x"].abs()
+    allv["absx"] = allv["event_id"].map(xs)
+    for lo, hi in ((1.5, 2.5), (2.5, 3.5), (3.5, 99)):
+        d = allv[(allv["absx"] >= lo) & (allv["absx"] < hi)]
+        by_size.append([f"{lo}–{hi if hi < 99 else '+'}", len(d), pct(sm.ratio_bootstrap(d.assign(v=d["value"]), "v"))
+                        if len(d) else "–"])
+
     commit = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], text=True).strip()
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     parts = [
@@ -101,6 +111,8 @@ def main() -> None:
         "## Secondary: the model's side at Pinnacle's line 6 days out (|disagreement| ≥ 1.5)", "",
         f"{len(vals)} positions. Mean value at Pinnacle's no-vig close: {pct(e2)}. Secondary: "
         f"{verdict(e2, 'taking the model side early carries positive value')}.", "",
+        "## Exploratory: value by size of the disagreement (added after the first run)", "",
+        table(by_size, ["Disagreement size (points)", "Positions", "Value at Pinnacle's close"]), "",
         "## What this can't see", "",
         "Injury and QB news (the model line here is ratings-only); openers more than 14 days out; earlier seasons "
         "(no early lines before 2026 without paid history).", "",

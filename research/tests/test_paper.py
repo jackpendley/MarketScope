@@ -56,3 +56,5 @@ def test_selections_cover_every_strategy_shape():
     assert by[("F3", "w")].side == "LV" and by[("F3", "w")].line == 8.0
     assert {k for k in by if k[1] == "d"} >= {("F1", "d"), ("F2", "d"), ("F7", "d")}
     assert by[("F7", "d")].market == "total" and by[("F7", "d")].side == "under"
+    model = s[s["strategy"] == "wong-model"]
+    assert (model["market"] == "teaser_leg").all() and (model["teased_line"] == model["line"] + 6).all()

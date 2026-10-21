@@ -371,8 +371,12 @@ The phase is NFL only and free first. A criteria-based gate decides whether paid
 - [x] **MS-053** Fair-value engine v2 (ADR-062): kernel margin model (−0.13 log loss; the total turned out not to help), kernel total model (−0.09), Shin devig; frozen parameters in `fair_value_params.json`.
 - [ ] **MS-054** Cross-market value: moneyline against the book's own spread; same-line retail prices against the consensus fair price.
 - [ ] **MS-055** Alternate lines and model-based teasers ("Wong 2.0").
+  - [x] MS-055a model-priced teaser legs (ADR-063): 74.5% on 2023–25, break-even, no claim; `wong-model` paper strategy.
+  - [ ] MS-055b alternate ladders (needs the lake).
 - [ ] **MS-056** Information timing: a faster injury and news feed and weather-forecast revisions, as event studies.
 - [ ] **MS-057** Does the market move toward the MarketScope model from the open?
+  - [x] Discovery (ADR-063): slope +0.116 (+0.048 to +0.189), a discovery claim; early-line value −1.0%, no claim.
+  - [ ] Confirmation on weeks 7–14; then the paid-data decision.
 - [ ] **Paid-data gate:** buy The Odds API history ($119, one month) only if MS-055 or MS-057 shows a positive estimate too uncertain to decide on one season.
 
 ## Out of scope until the core works

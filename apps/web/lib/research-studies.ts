@@ -388,4 +388,44 @@ export const MARKET_STUDIES: Study[] = [
     ],
     report: `${REPO}/research/reports/exchanges-discovery.md`,
   },
+  {
+    id: "M3",
+    title: "Does the market move toward our model?",
+    question:
+      "Six days before kickoff, when MarketScope's ratings disagree with Pinnacle's line, does Pinnacle move toward the ratings by the close?",
+    window: "2026 weeks 1–6, 66 games",
+    status: "discovery claim",
+    primary: {
+      label: "Pinnacle's move to the close per point of disagreement (points)",
+      estimate: "+0.116",
+      interval: "+0.048 to +0.189",
+    },
+    finding:
+      "Yes: for each point the ratings disagreed, Pinnacle's line moved about an eighth of a point their way by kickoff. The ratings hold information early-week lines have not yet absorbed. Not enough to pay yet: taking the model's side at Pinnacle's early line averaged −1.0% (−2.8% to +0.8%) against its close.",
+    exploratory: [
+      "No clear pattern by size of disagreement (9–15 positions per group).",
+      "If weeks 7–14 confirm the slope, this is the case for buying earlier seasons of history to test it at scale.",
+    ],
+    report: `${REPO}/research/reports/model-open-discovery.md`,
+  },
+  {
+    id: "W2",
+    title: "Model-priced teaser legs (Wong 2.0)",
+    question:
+      "If each six-point teaser leg is priced with the fair-value model instead of Wong's fixed ranges, do the selected legs clear the −125 break-even (74.5%)?",
+    window: "2023–25 out of sample, 243 legs (model fitted on earlier seasons only)",
+    status: "no claim",
+    primary: {
+      label: "Win rate of model-selected legs (claim if above 0.745)",
+      estimate: "0.745",
+      interval: "0.687 to 0.798",
+      threshold: 0.745,
+    },
+    finding:
+      "Exactly at break-even. The model mostly re-selects Wong's legs, and it was slightly overconfident (it expected 76.7%). Tracked forward in the paper portfolio as Wong 2.0.",
+    exploratory: [
+      "Underdog legs (+1.5 to +3) won about 77–80% and favourite legs about 69–71%, as in the Wong backtest; seen twice in the same seasons, so only the 2026 forward record can test it.",
+    ],
+    report: `${REPO}/research/reports/teasers-model.md`,
+  },
 ];

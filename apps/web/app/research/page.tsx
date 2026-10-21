@@ -72,9 +72,9 @@ export default function ResearchPage() {
       <div className="space-y-2">
         <h1 className="text-xl font-semibold tracking-tight">Research</h1>
         <p className="max-w-3xl text-sm text-muted">
-          Nineteen pre-registered studies, each with one primary question: ten on the betting market
-          itself and nine on football. The questions, data windows, decision rules and minimum
-          sample sizes were{" "}
+          Twenty-one pre-registered studies, each with one primary question: twelve on the betting
+          market itself and nine on football. The questions, data windows, decision rules and
+          minimum sample sizes were{" "}
           <a href={PREREGISTRATION} className="text-accent hover:underline">
             pre-registered
           </a>{" "}
@@ -102,10 +102,10 @@ export default function ResearchPage() {
           <a href={PREREGISTRATION} className="text-accent underline">
             pre-registered
           </a>{" "}
-          (Addenda C, D and G–L). These are <strong className="text-fg">discovery</strong> results
-          from weeks 1–6; the same code re-runs on weeks 7–14, and a result counts only if it holds
-          there too. Timing describes which book changed first, not who placed wagers. Analysis, not
-          betting advice.
+          (Addenda C, D, G–L, N and O). These are <strong className="text-fg">discovery</strong>{" "}
+          results from weeks 1–6; the same code re-runs on weeks 7–14, and a result counts only if
+          it holds there too. Timing describes which book changed first, not who placed wagers.
+          Analysis, not betting advice.
         </p>
         <div className="grid gap-4 lg:grid-cols-2">
           {MARKET_STUDIES.map((s) => (
@@ -119,7 +119,8 @@ export default function ResearchPage() {
           (S2) and totals (T1) alike, and neither a model of Pinnacle&apos;s next move (M1) nor a
           model of which retail numbers to take (M2) found value, and exchanges, where traders set
           the price, behave the same way after fees (X1). Injury news is priced days before the
-          official report (I1).
+          official report (I1). One lead points the other way: early in the week the market moves
+          toward MarketScope&apos;s own ratings (M3), though not yet by enough to pay.
         </p>
       </section>
       <section className="space-y-3" aria-labelledby="football">

@@ -114,6 +114,7 @@ describe("portfolio view", () => {
       "wong-V0",
       "wong-V1",
       "wong-V2",
+      "wong-model",
       "F1",
       "F2",
       "F3",

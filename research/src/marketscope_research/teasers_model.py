@@ -42,3 +42,18 @@ def select_legs(legs: pd.DataFrame, price: int = PRIMARY_PRICE) -> pd.DataFrame:
     """The higher-probability leg per game, kept if it clears the price's break-even."""
     best = legs.sort_values("p", ascending=False).drop_duplicates("game_id")
     return best[best["p"] >= teaser_break_even(price)].sort_values(["kickoff", "team"]).reset_index(drop=True)
+
+
+def select_upcoming(games: pd.DataFrame, engine: fv.Engine, price: int = PRIMARY_PRICE) -> pd.DataFrame:
+    """Live paper use: legs for games with a book's line (home_line, total) and no result yet, priced with
+    the engine fitted on all earlier seasons; one per game, kept if it clears the break-even."""
+    rows = []
+    for g in games.itertuples():
+        pmf = engine.margin_pmf(g.home_line, g.total)
+        for side, team, line in (("home", g.home, g.home_line), ("away", g.away, -g.home_line)):
+            win, _push, _loss = ml.side_probabilities(pmf, g.home_line, 0.5, side, line + TEASE)
+            rows.append({"game_id": g.game_id, "team": team, "side": side, "line": line,
+                         "teased": line + TEASE, "p": win})
+    legs = pd.DataFrame(rows, columns=["game_id", "team", "side", "line", "teased", "p"])
+    best = legs.sort_values("p", ascending=False).drop_duplicates("game_id")
+    return best[best["p"] >= teaser_break_even(price)].reset_index(drop=True)

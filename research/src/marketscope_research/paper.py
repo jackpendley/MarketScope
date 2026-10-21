@@ -21,7 +21,9 @@ import numpy as np
 import pandas as pd
 import psycopg
 
+from . import fair_value as fv
 from . import systems as sy
+from . import teasers_model as tm
 from .data import _frame
 from .run_catalogue import SIDE_FIELDS, attach_context
 from .sharp_market import clv
@@ -97,6 +99,11 @@ def selections(games: pd.DataFrame, history: pd.DataFrame) -> pd.DataFrame:
         legs = sy.wong_legs(upcoming, v)
         out.append(pd.DataFrame({"strategy": f"wong-{v}", "game_id": legs["game_id"], "market": "teaser_leg",
                                  "side": legs["team"], "line": legs["line"], "teased_line": legs["teased"]}))
+    # Wong 2.0 (Addendum N): model-priced legs with the fair-value engine fitted on every earlier season.
+    model_legs = tm.select_upcoming(games, fv.load_engine(history))
+    out.append(pd.DataFrame({"strategy": "wong-model", "game_id": model_legs["game_id"], "market": "teaser_leg",
+                             "side": model_legs["team"], "line": model_legs["line"],
+                             "teased_line": model_legs["teased"]}))
     rules = pd.concat([sy.rule_positions(upcoming), sy.f10_select(history, upcoming)], ignore_index=True)
     out.append(pd.DataFrame({"strategy": rules["system"], "game_id": rules["game_id"], "market": rules["market"],
                              "side": rules["side"], "line": rules["line"], "teased_line": np.nan}))

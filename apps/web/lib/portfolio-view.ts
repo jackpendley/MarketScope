@@ -27,6 +27,12 @@ export const STRATEGIES: readonly StrategyInfo[] = [
     group: "Wong teasers" as const,
     backtest: v === "V0" ? "no claim (primary)" : "secondary",
   })),
+  {
+    id: "wong-model",
+    label: "Wong 2.0: legs priced by the fair-value engine",
+    group: "Wong teasers" as const,
+    backtest: "no claim (2023–25 at break-even)",
+  },
   ...catalogue.systems.map((s) => ({
     id: s.id,
     label: `${s.id} ${s.label}`,
