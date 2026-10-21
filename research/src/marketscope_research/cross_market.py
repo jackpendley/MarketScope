@@ -19,6 +19,14 @@ from . import market_ml as ml
 from . import openers_totals as ot
 from .lake import mainline
 
+KEYS = (3.0, 7.0)
+
+
+def spans_key(main: float, alt: float) -> bool:
+    """3 or 7 lies between the main line and the alternate, inclusive (Addendum Q)."""
+    lo, hi = sorted((abs(main), abs(alt)))
+    return lo != hi and any(lo <= k <= hi for k in KEYS)
+
 RETAIL = ("draftkings", "fanduel", "caesars", "hardrockbet")
 SHARP = ("pinnacle", "circasports", "bookmaker.eu", "novig.us")
 HORIZONS = (48, 24, 6, 1)
@@ -150,3 +158,46 @@ def fixture_positions(ladder: pd.DataFrame, kickoff: pd.Timestamp, engine: fv.En
     cols_a = ["h", "book", "side", "price", "spread", "value_d", "value"]
     cols_b = ["h", "book", "market", "side", "line", "price", "value_d", "value"]
     return pd.DataFrame(a_rows, columns=cols_a), pd.DataFrame(b_rows, columns=cols_b)
+
+
+ALT_BAND = (-300, 300)
+
+
+def alt_positions(ladder: pd.DataFrame, kickoff: pd.Timestamp, engine: fv.Engine,
+                  horizons=HORIZONS) -> pd.DataFrame:
+    """MS-055b (Addendum Q): retail alternate spreads and totals worth more than the sharp-consensus fair
+    probability at their exact line, scored at the consensus close."""
+    cands = book_candidates(ladder)
+    close_t = kickoff - pd.Timedelta(microseconds=1)
+    c_tot, c_spr = hints(cands, close_t)
+    rows = []
+    for h in horizons:
+        d = kickoff - pd.Timedelta(hours=h)
+        tot_h, spr_h = hints(cands, d)
+        for book in RETAIL:
+            for market, sides in (("spreads", ("home", "away")), ("totals", ("over", "under"))):
+                main = line_at(cands, book, market, d)
+                if main is None:
+                    continue
+                for c in cands.get((book, market), []):
+                    if c.handicap == main.point:
+                        continue
+                    i, j = c.side1.at(d), c.side2.at(d)
+                    if i < 0 or j < 0 or not c.side1.active[i] or not c.side2.active[j]:
+                        continue
+                    for side, dec in ((sides[0], c.side1.prices[i]), (sides[1], c.side2.prices[j])):
+                        a = american(dec)
+                        if not ALT_BAND[0] <= a <= ALT_BAND[1]:
+                            continue
+                        fair = consensus(engine, cands, market, side, c.handicap, d, tot_h, spr_h)
+                        if fair is None or value(*fair, dec) <= 0:
+                            continue
+                        close = consensus(engine, cands, market, side, c.handicap, close_t, c_tot, c_spr)
+                        if close is None:
+                            continue
+                        rows.append({"h": h, "book": book, "market": market, "side": side, "line": c.handicap,
+                                     "main": main.point, "distance": abs(c.handicap - main.point),
+                                     "key": market == "spreads" and spans_key(main.point, c.handicap),
+                                     "price": a, "value_d": value(*fair, dec), "value": value(*close, dec)})
+    return pd.DataFrame(rows, columns=["h", "book", "market", "side", "line", "main", "distance", "key", "price",
+                                       "value_d", "value"])

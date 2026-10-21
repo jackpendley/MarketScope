@@ -74,3 +74,24 @@ def test_no_sharp_source_means_no_position():
     lad = ladder(rows("fanduel", "spreads", -3.0, 2.0, 1.83))
     _a, b = cm.fixture_positions(lad, KICK, ENGINE, horizons=(24,))
     assert b.empty
+
+
+def test_alt_positions_skip_the_main_line_and_flag_key_numbers():
+    lad = ladder(rows("pinnacle", "spreads", -3.0, 1.909, 1.909),
+                 rows("draftkings", "spreads", -3.0, 1.909, 1.909),       # main
+                 rows("draftkings", "spreads", -2.5, 1.80, 2.05),         # alt across 3: away +2.5 at +105
+                 rows("draftkings", "spreads", -6.5, 3.2, 1.36))          # alt far away
+    alt = cm.alt_positions(lad, KICK, ENGINE, horizons=(24,))
+    assert (alt["line"] != -3.0).all()
+    if len(alt):
+        assert alt.loc[alt["line"] == -2.5, "key"].all() and (alt["value_d"] > 0).all()
+
+
+def test_engine_pmf_cache_returns_the_same_object():
+    m = ENGINE.margin
+    assert m.pmf(3.0, 44.0) is m.pmf(3.0, 44.0)
+
+
+def test_spans_key():
+    assert cm.spans_key(-3.0, -2.5) and cm.spans_key(-2.5, -3.5) and cm.spans_key(-6.5, -7.5)
+    assert not cm.spans_key(-3.5, -4.5) and not cm.spans_key(-3.0, -3.0)

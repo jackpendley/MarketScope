@@ -49,6 +49,14 @@ class KernelModel:
     base_bucket: callable
 
     def pmf(self, s: float, t: float) -> pd.Series:
+        """Cached per (s, t): lines come in half-points, so studies hit a small set of inputs."""
+        cache = self.__dict__.setdefault("_cache", {})
+        key = (round(float(s), 2), round(float(t), 2))
+        if key not in cache:
+            cache[key] = self._pmf(*key)
+        return cache[key]
+
+    def _pmf(self, s: float, t: float) -> pd.Series:
         w = np.exp(-0.5 * (((self.train["s"] - s) / self.h_s) ** 2 + ((self.train["t"] - t) / self.h_t) ** 2))
         w = w.to_numpy()
         y = self.train[self.outcome].to_numpy()
