@@ -538,3 +538,43 @@ better. Those numbers motivated this addendum and are not evidence for it.
   mean price-aware value per unit, game bootstrap (5,000, seed 2026); claim if the interval lies above 0. **Secondary:** the same for all S2 events.
 - **Unchanged:** Addenda C, D and G, including the S2 event definition, the close, and the margin
   model.
+
+## Addendum I (2026-10-21): MS-047 injury-report windows and the line
+
+Committed before any MS-047 code was written or any outcome computed. Looked at before writing this:
+R2w (+0.40 points of consensus move per newly-out starter, 6 days out to the close, weeks 2–6); MS-043
+and MS-046 discovery reports (stale retail numbers −2.0% price-aware value overall); counts of injury
+rows by week (point-in-time snapshots exist only from 2026-10-18, so they are not used here).
+
+**The report window.** Clubs file game-status designations (Out, Doubtful, Questionable) by 4 pm ET
+on the day before a Thursday game and two days before any other game (Friday for Sunday, Saturday for
+Monday, Thursday for Saturday). For each game, R = 4 pm ET on that day, and the window is
+[R − 4 h, R + 2 h]: teams usually file after practice, and books react afterwards.
+
+**Events (R2w's definition, unchanged).** A player listed Out on his team's final report who
+averaged at least 50% of offensive or defensive snaps over the previous three game weeks and played
+the team's previous game. Per game, N = away events − home events (positive: news against the road
+team). Week 1 has no previous game and is excluded.
+
+**Games.** 2026 regular-season games with Pinnacle on the board at both window edges (`line_moves`).
+**Discovery:** weeks 2–6 (kickoff before 2026-10-21). **Confirmation:** weeks 7–14 (to 2026-12-16),
+with the same code.
+
+**I1 (primary): does Pinnacle price the news inside the window?** Game-level OLS of Pinnacle's move
+across the window (margin orientation, points: line at R − 4 h minus line at R + 2 h) on N. Game
+bootstrap (5,000, seed 2026). Claim if the slope's interval lies above 0. Exploratory: the share of
+each game's full move (6 days out to the close) that happens inside the window, for games with
+N ≠ 0.
+
+**I2 (primary): are retail books slower on injury news?** S2 events (Addendum C: a retail book still
+posting Pinnacle's old number 60 s after Pinnacle moved, side Pinnacle moved toward, −125 or better)
+whose Pinnacle change falls inside the window of a game with N ≠ 0, in the direction of the news
+(toward home if N > 0, toward away if N < 0). Outcome: Addendum G's price-aware value per unit.
+**Primary:** mean value of these news-window cases, game bootstrap; claim if the interval lies above 0. **Secondary:** the difference from all other S2 cases (game bootstrap of the difference in
+means); claim if it lies above 0. Exploratory: how long the old number stayed up, news-window versus
+other cases.
+
+**Gates.** I1: at least 30 events in qualifying games. I2: at least 50 news-window cases.
+
+**What this can't see.** The minute a designation became public (only the deadline is known); news
+from practice reports earlier in the week; Questionable and Doubtful designations (only Out counts).
