@@ -131,6 +131,18 @@ def main() -> None:
     coef1 = ridge_coefficients(d1, ml.G1_FEATURES, "y", True)
     coef2 = ridge_coefficients(d2, ml.G1_FEATURES + ml.G2_EXTRA, "value", False)
 
+    # Exploratory (added after the first run): S2 stale numbers re-scored with price-aware value.
+    phase_games = games[games["kickoff"] < sm.DISCOVERY_END] if args.phase == "discovery" else \
+        games[games["kickoff"] >= sm.DISCOVERY_END]
+    kicks = games.set_index("event_id")["kickoff"]
+    tl_p = {e: b for e, b in tl.items() if e in set(phase_games["event_id"])}
+    closes = {e: x for e, b in tl_p.items() if (x := sm.close_line(b.get("pinnacle"), kicks[e])) is not None}
+    s2ev = sm.s2_events(tl_p, kicks, closes)
+    s2ev["value"] = ml.price_aware_values(s2ev, tl_p, kicks, tables)
+    s2_rows = [[label, len(d), f"{d['clv'].mean():+.2f}", mean_ci(d, "value")] for label, d in (
+        ("All stale numbers", s2ev), ("At −110 or better", s2ev[s2ev["price"] >= -110]),
+        ("At −111 to −125", s2ev[s2ev["price"] < -110]), ("Crossing or landing on 3 or 7", s2ev[s2ev["key"]]))]
+
     commit = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], text=True).strip()
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     parts = [
@@ -161,6 +173,12 @@ def main() -> None:
         table(by_book, ["Retail book", "Model positions", "Value"]), "",
         "Exploratory, standardised ridge coefficients (G2, value per unit): "
         + ", ".join(f"{n} {v:+.3f}" for n, v in coef2) + ".", "",
+        "## Stale numbers re-scored with price (exploratory, added after the first run)", "",
+        "MS-043's S2 measured stale retail numbers in points, ignoring the price. Re-scored with the same "
+        "price-aware value as G2 (expected profit per unit at Pinnacle's no-vig close):", "",
+        table(s2_rows, ["S2 cases", "Count", "Points CLV", "Price-aware value per unit"]), "",
+        "Retail books keep the old number but charge for it: in points it looks like a head start, at the price it "
+        "is not. Registered as Addendum H for the confirmation weeks before any of them were played.", "",
         "## What this can't see", "",
         "Who bet; point-in-time injury news before 2026-10-18; exchange order books; moves more than 14 days out. "
         "Value is closing-line value (expected profit at Pinnacle's no-vig close), not results. The margin model "

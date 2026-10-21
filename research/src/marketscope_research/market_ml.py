@@ -263,3 +263,19 @@ def walk_forward_g2(units: pd.DataFrame, weeks=WALK_WEEKS) -> pd.DataFrame:
             res[name] = m.predict(test[feats].to_numpy(float))
         rows.append(res)
     return pd.concat(rows, ignore_index=True) if rows else pd.DataFrame()
+
+
+def price_aware_values(events: pd.DataFrame, tl: dict[str, dict[str, sm.Book]], kickoffs: pd.Series,
+                       tables: list[pd.Series]) -> pd.Series:
+    """Price-aware value (expected profit per unit at Pinnacle's no-vig close) of S2 events."""
+    out = []
+    for r in events.itertuples():
+        cq = close_quote(tl[r.event_id]["pinnacle"], kickoffs[r.event_id])
+        if cq is None:
+            out.append(np.nan)
+            continue
+        line = r.line if r.side == "home" else -r.line
+        w, _pu, lo = side_probabilities(tables[bucket_of(cq.point)], cq.point, no_vig_home(cq.price1, cq.price2),
+                                        r.side, line)
+        out.append(expected_value(w, lo, r.price))
+    return pd.Series(out, index=events.index, dtype=float)
