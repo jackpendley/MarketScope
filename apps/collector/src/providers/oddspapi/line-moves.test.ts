@@ -205,6 +205,39 @@ describe("deriveLineMoves", () => {
     expect(kept.map((m) => [m.price1, m.limit1])).toEqual([[-200, null]]);
   });
 
+  it("stores sizes for recordLimitBooks without letting a size change create a row", () => {
+    const sizeOnly: OddsPapiHistory = {
+      bookmakers: {
+        "novig.us": {
+          markets: market(
+            141,
+            [e("2026-10-11T10:00:00Z", 1.5, true, 500), e("2026-10-11T11:00:00Z", 1.5, true, 900)],
+            [
+              e("2026-10-11T10:00:00Z", 2.75, true, 400),
+              e("2026-10-11T11:00:00Z", 2.75, true, 800),
+            ],
+          ),
+        },
+      },
+    };
+    const rows = deriveLineMoves(sizeOnly, MARKETS, {
+      kickoff: KICKOFF,
+      bookMap: { "novig.us": "novig" },
+      limitBooks: new Set(),
+      recordLimitBooks: new Set(["novig"]),
+    });
+    expect(rows.map((m) => [m.price1, m.limit1, m.limit2])).toEqual([[-200, 500, 400]]);
+  });
+
+  it("derives only the requested markets", () => {
+    const only = deriveLineMoves(history, MARKETS, {
+      kickoff: KICKOFF,
+      bookMap: BOOKS,
+      markets: ["spreads", "totals"],
+    });
+    expect(new Set(only.map((m) => m.market))).toEqual(new Set(["spreads", "totals"]));
+  });
+
   it("records a suspension that lasts until kickoff", () => {
     const pulled: OddsPapiHistory = {
       bookmakers: {

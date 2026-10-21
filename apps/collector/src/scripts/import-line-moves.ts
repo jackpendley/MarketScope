@@ -1,7 +1,7 @@
 // Minute-level line moves for completed NFL games, from OddsPapi history (MS-042, ADR-052).
 //
 //   pnpm --filter @marketscope/collector import:line-moves [--from 2026-09-01] [--to <now>]
-//        [--limit N] [--dry-run] [--check]
+//        [--limit N] [--dry-run] [--check] [--profile books|exchanges|all]
 //
 // Billable requests: 1 for fixtures (+1 for the market catalog when the local cache is
 // missing). History calls are free but rate-limited (5 s each, 3 per game). Games already
@@ -12,11 +12,11 @@ import { createDb } from "@marketscope/db";
 import { parseArgs } from "node:util";
 import { ConfigError, loadConfig, requireDatabaseUrl, requireOddsPapiKey } from "../config";
 import {
+  BOOKS_PROFILE,
   crossCheckSnapshots,
+  EXCHANGES_PROFILE,
   importLineMoves,
-  LINE_MOVE_BOOK_MAP,
-  LINE_MOVE_LIMIT_BOOKS,
-  LINE_MOVE_REQUEST_GROUPS,
+  type LineMoveProfile,
 } from "../line-moves-import";
 import { jsonLogger } from "../log";
 import { loadNflMarkets } from "../oddspapi-markets";
@@ -31,6 +31,7 @@ async function main() {
       limit: { type: "string" },
       "dry-run": { type: "boolean", default: false },
       check: { type: "boolean", default: false },
+      profile: { type: "string", default: "all" },
     },
   });
   const config = loadConfig();
@@ -49,6 +50,12 @@ async function main() {
     return;
   }
 
+  const profiles: LineMoveProfile[] =
+    values.profile === "books"
+      ? [BOOKS_PROFILE]
+      : values.profile === "exchanges"
+        ? [EXCHANGES_PROFILE]
+        : [BOOKS_PROFILE, EXCHANGES_PROFILE];
   const client = createOddsPapiClient({ apiKey: requireOddsPapiKey(config) });
   const before = await client.account();
   jsonLogger.info("oddspapi.quota", { ...before, when: "start" });
@@ -73,13 +80,16 @@ async function main() {
   if (values["dry-run"]) {
     const f = fixtures[0];
     if (!f) return;
+    const profile = profiles[0]!;
     const merged = { bookmakers: {} as Record<string, never> };
-    for (const g of LINE_MOVE_REQUEST_GROUPS)
+    for (const g of profile.requestGroups)
       Object.assign(merged.bookmakers, (await client.historicalOdds(f.fixtureId, g)).bookmakers);
     const rows = deriveLineMoves(merged, markets, {
       kickoff: f.startTime,
-      bookMap: LINE_MOVE_BOOK_MAP,
-      limitBooks: LINE_MOVE_LIMIT_BOOKS,
+      bookMap: profile.bookMap,
+      limitBooks: profile.limitBooks,
+      recordLimitBooks: profile.recordLimitBooks,
+      markets: profile.markets,
     });
     const perBook: Record<string, number> = {};
     for (const r of rows) perBook[r.bookmakerKey] = (perBook[r.bookmakerKey] ?? 0) + 1;
@@ -96,9 +106,17 @@ async function main() {
     const counts: Record<string, number> = {};
     let moves = 0;
     for (const [i, fixture] of fixtures.entries()) {
-      const outcome = await importLineMoves({ db, client, markets, log: jsonLogger }, fixture);
-      counts[outcome.status] = (counts[outcome.status] ?? 0) + 1;
-      if (outcome.status === "imported") moves += outcome.moves;
+      for (const profile of profiles) {
+        const outcome = await importLineMoves(
+          { db, client, markets, log: jsonLogger },
+          fixture,
+          profile,
+        );
+        const key = `${profile.name}_${outcome.status}`;
+        counts[key] = (counts[key] ?? 0) + 1;
+        if (outcome.status === "imported") moves += outcome.moves;
+        if (outcome.status === "failed") counts.failed = (counts.failed ?? 0) + 1;
+      }
       if ((i + 1) % 10 === 0)
         jsonLogger.info("line_moves.progress", { done: i + 1, of: fixtures.length, ...counts });
     }
