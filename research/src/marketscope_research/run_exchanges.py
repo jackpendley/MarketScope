@@ -96,6 +96,7 @@ def main() -> None:
                                                        "not distinguishable: no claim")
 
     e1, e2 = boot(k1), boot(k2)
+    nov, nov1000 = k1[k1["retail"] == "novig"], k1_1000[k1_1000["retail"] == "novig"]
     by_x = [[NAMES[x], len(d), f"{d['stale_min'].median():.0f} min", pct(boot(d))] for x, d in k1.groupby("retail")]
     by_m = [[m, len(d), f"{d['clv'].mean():+.2f}", pct(boot(d))] for m, d in k1.groupby("market")]
     k2_x = [[NAMES[x], len(d), pct(boot(d))] for x, d in k2.groupby("exchange")]
@@ -122,6 +123,13 @@ def main() -> None:
         table(by_m, ["Market", "Cases", "Points CLV", "Value"]), "",
         f"Exploratory: with a size floor of 1,000: {len(k1_1000)} cases, {pct(boot(k1_1000))}. "
         f"With ProphetX at 1%: {pct(boot(k1, 'value_px1'))}.", "",
+        "### K1n: Novig only (Addendum L; registered after discovery, tested on confirmation)", "",
+        (f"Novig cases: {len(nov)}, mean value {pct(boot(nov))}; with a size floor of 1,000: {len(nov1000)}, "
+         f"{pct(boot(nov1000))}. "
+         + ("**Primary (confirmation):** " + verdict(boot(nov), "stale Novig prices carry positive value").replace(
+             " (discovery result; confirmation on weeks 7–14 decides)", "")
+            if args.phase == "confirmation" else
+            "Discovery numbers motivated this hypothesis, so they are not evidence for it.")), "",
         "## K2: exchange prices better than Pinnacle's at fixed horizons (secondary)", "",
         f"{len(k2)} positions. Mean value after fees: {pct(e2)}. Secondary: "
         f"{verdict(e2, 'better-than-Pinnacle exchange prices carry positive value')}.", "",

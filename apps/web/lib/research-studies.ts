@@ -368,4 +368,24 @@ export const MARKET_STUDIES: Study[] = [
     ],
     report: `${REPO}/research/reports/openers-totals-discovery.md`,
   },
+  {
+    id: "X1",
+    title: "Stale exchange prices",
+    question:
+      "On Novig, ProphetX and Kalshi, where other traders set the price and margins are thin, is an old line left up after Pinnacle moves worth taking after fees?",
+    window: "2026 weeks 1–6, 1,715 cases with at least 100 available",
+    status: "no claim",
+    primary: {
+      label: "Mean value per unit after fees (Pinnacle's no-vig close)",
+      estimate: "−0.012",
+      interval: "−0.016 to −0.008",
+    },
+    finding:
+      "No, and the interval is below zero: exchange traders also price the lag in, and fees take the rest. Novig, which charges no fee, came closest at +0.4% (−0.2% to +0.9%), but only on thin quotes; with at least 1,000 available it was −0.1%. Its own test is pre-registered for the held-out weeks.",
+    exploratory: [
+      "Kalshi −2.6%, ProphetX −1.4% (its old line lasted a median of 32 minutes, against about five hours elsewhere).",
+      "Exchange prices better than Pinnacle's at fixed times before kickoff: −3.0%.",
+    ],
+    report: `${REPO}/research/reports/exchanges-discovery.md`,
+  },
 ];

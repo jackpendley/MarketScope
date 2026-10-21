@@ -64,7 +64,7 @@ flowchart LR
 
    OddsPapi history was imported once, as snapshots derived from its change log (ADR-026).
 
-   **Line moves** (`line-moves.yml`, nightly). For every finished game, OddsPapi's change logs become `line_moves`: one row per change to a book's main line, with the market makers (Pinnacle, Circa, Bookmaker.eu) alongside the retail books (ADR-052).
+   **Line moves** (`line-moves.yml`, nightly). For every finished game, OddsPapi's change logs become `line_moves`: one row per change to a book's main line, with the market makers (Pinnacle, Circa, Bookmaker.eu) alongside the retail books (ADR-052) and, for spreads and totals, the exchanges Novig, ProphetX and Kalshi (MS-051).
 
 2. **Football data** (`apps/football`, daily). Writes nflverse schedules and results (linked to odds events), team-game stats from play-by-play, snap counts and injury reports. Live injury reports are first-seen snapshots, twice a day. Game context and Open-Meteo forecasts come from the same job.
 3. **Ratings** (same job). The Kalman filter replays every week since 2012 with the frozen ratings-v1 parameters and writes the point-in-time `rating_snapshots`, in the KenPom contract: AdjEM, AdjO, AdjD, AdjST, AdjPace, luck and SOS.

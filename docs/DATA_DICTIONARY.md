@@ -168,6 +168,8 @@ RLS is enabled. Rows are replaced per (event, type, version) on recompute.
 
 Primary key `(event_id, bookmaker_key, market_type, changed_at)`, which also serves "one book's history in one game, in time order". `CHECK`s: prices are both set or both NULL; point matches market (NULL for moneylines and suspensions); valid American prices. RLS is enabled.
 
+**Exchanges** (`novig`, `prophetx`, `kalshi`; MS-051, Addendum K): spreads and totals only, top-of-book prices. `limit1`/`limit2` hold the size available at that price, recorded with each row; a size change alone never creates a row. They are imported under their own job key (`oddspapi-moves-ex:<fixture>:v1`) and never replace the books' rows.
+
 A row means the main line changed; the line stays in effect until the next row. Changes under 1 s apart are merged, suspensions under 60 s are ignored, and only the last 14 days before kickoff are kept (plus the line in effect at the start).
 
 ### `paper_positions`: hypothetical positions from pre-registered systems (MS-045b, ADR-056)

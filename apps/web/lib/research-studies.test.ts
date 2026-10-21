@@ -29,6 +29,7 @@ describe("research studies", () => {
       "I2",
       "O1",
       "T1",
+      "X1",
     ]);
   });
 
