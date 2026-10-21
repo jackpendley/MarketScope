@@ -119,3 +119,12 @@ def test_g2_walk_forward_recovers_value_from_the_line_difference():
                         "value": 0.1 * diff - 0.02})
     res = ml.walk_forward_g2(pd.DataFrame(out))
     assert np.corrcoef(res["ridge"], res["value"])[0, 1] > 0.99
+
+
+def test_price_aware_value_of_a_stale_number():
+    tl = {"g": base_books(extra_pin=[(ts("16:30"), -3.5, -110, -110, 9000)])}
+    ev = pd.DataFrame({"event_id": ["g", "g"], "side": ["home", "home"], "line": [-3.0, -3.0],
+                       "price": [-110, -140]})
+    v = ml.price_aware_values(ev, tl, pd.Series({"g": KICK}), [TABLE] * 4)
+    assert v.iloc[0] > v.iloc[1]  # the same number is worth less at a worse price
+    assert v.iloc[0] > ml.expected_value(0.5, 0.5, -110)  # -3 against a -3.5 close beats a coin flip
