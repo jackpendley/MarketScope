@@ -131,3 +131,37 @@ def win_probability(pmf: pd.Series) -> float:
     k, p = pmf.index.to_numpy(), pmf.to_numpy()
     win, tie = p[k > 0].sum(), p[k == 0].sum()
     return float(win / (1 - tie)) if tie < 1 else 0.5
+
+
+# --- the frozen engine (fair_value_params.json, written by run_fair_value) ---------------------
+
+@dataclass
+class Engine:
+    """Margin and total-points distributions fitted on 2016–25, plus the chosen devig method."""
+    margin: KernelModel | None
+    total: KernelModel | None
+    margin_bucket: callable
+    total_bucket: callable
+    devig_method: str
+
+    def margin_pmf(self, home_spread: float, total: float) -> pd.Series:
+        s = abs(home_spread)
+        return self.margin.pmf(s, total) if self.margin else self.margin_bucket(s, total)
+
+    def total_pmf(self, total: float, home_spread: float) -> pd.Series:
+        s = abs(home_spread)
+        return self.total.pmf(s, total) if self.total else self.total_bucket(s, total)
+
+
+def load_engine(history: pd.DataFrame, params_path=None) -> Engine:
+    """history: 2016–25 final games (home_line, total, margin, points, season)."""
+    import json
+    from pathlib import Path
+
+    p = json.loads(Path(params_path or Path(__file__).with_name("fair_value_params.json")).read_text())
+    f = favourite_frame(history)
+    m, t = p["margin"], p["total"]
+    return Engine(
+        margin=margin_model(f, m["h_s"], m["h_t"]) if m["model"] == "kernel" else None,
+        total=total_model(f, t["h_s"], t["h_t"]) if t["model"] == "kernel" else None,
+        margin_bucket=bucket_pmf(f, "k"), total_bucket=bucket_pmf(f, "pts"), devig_method=p["devig"])

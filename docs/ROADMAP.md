@@ -368,7 +368,7 @@ Jack doesn't write code for the project. These are the ideas he should be able t
 The phase is NFL only and free first. A criteria-based gate decides whether paid history is worth buying.
 
 - [ ] **MS-052** Research data lake: full spread, total and moneyline ladders for 10 books and exchanges as Parquet (DuckDB), streamed with no size limit, rebuilt on demand from free history; cross-checked against `line_moves`.
-- [ ] **MS-053** Fair-value engine v2: a joint margin–total model (2016–25) and a sharp-consensus devig (Pinnacle, Circa, Bookmaker.eu, Novig).
+- [x] **MS-053** Fair-value engine v2 (ADR-062): kernel margin model (−0.13 log loss; the total turned out not to help), kernel total model (−0.09), Shin devig; frozen parameters in `fair_value_params.json`.
 - [ ] **MS-054** Cross-market value: moneyline against the book's own spread; same-line retail prices against the consensus fair price.
 - [ ] **MS-055** Alternate lines and model-based teasers ("Wong 2.0").
 - [ ] **MS-056** Information timing: a faster injury and news feed and weather-forecast revisions, as event studies.

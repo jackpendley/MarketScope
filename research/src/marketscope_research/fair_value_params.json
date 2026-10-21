@@ -1,0 +1,15 @@
+{
+  "margin": {
+    "model": "kernel",
+    "h_s": 2.0,
+    "h_t": 1000.0
+  },
+  "total": {
+    "model": "kernel",
+    "h_s": 2.0,
+    "h_t": 6.0
+  },
+  "devig": "shin",
+  "mix": 0.02,
+  "train_seasons": "2016-2025"
+}
