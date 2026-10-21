@@ -225,8 +225,8 @@ The goal is to study the market for moves that indicate sharp betting and test w
   - Found and fixed a neutral-site context join in the catalogue loader; re-run unchanged at 0 of 10, and F10's earlier "worse than chance" claim withdrawn (ADR-055).
   - Production: 245 reconstructed positions for weeks 1–7, all graded; live placement starts with the next game inside the 6-hour window.
 
-- **MS-046 discovery (this PR, ADR-057): ML on minute-level market state.**
-  - Addendum G (`5b88278`) before code; code (`1fbd0ad`) before the first run; Addendum H (`c4d7ab6`) before any confirmation game. Rebase-merge, then fix the SHAs.
+- **MS-046 discovery (#64, rebase-merged; ADR-057): ML on minute-level market state.**
+  - Addendum G (`02360c6`) before code; code (`7a103bf`) before the first run; Addendum H (`b980392`) before any confirmation game (main's SHAs).
   - **G1** (Pinnacle direction): worse than the baseline, +0.417 log loss (+0.153 to +0.697). **G2** (price-aware retail value): model selections +0.0% (−1.9 to +2.0); the no-model rule −2.0%; all numbers −4.6%.
   - **Price-aware re-score of S2:** −2.0% (−2.7 to −1.3); at −110 or better −0.6% (−1.5 to +0.3). Points CLV overstated stale numbers.
   - `/research` adds M1 and M2 and the price-aware line on S2.
