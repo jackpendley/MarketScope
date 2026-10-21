@@ -256,8 +256,8 @@ Phase 13 tests what sharp bettors actually use: information timing, model versus
   - **K1** stale exchange prices −1.2% (−1.6 to −0.8) after fees; **K2** −3.0%. Novig +0.4% (−0.2 to +0.9), exploratory, registered as K1n.
   - `/research` adds X1.
 
-- **Phase 13 so far (this PR; ADRs 061–063).**
-  - Addenda M (`4141f12`) and N/O (`351afec`) were committed before their code (`be4de8c`, `9b4243b`). Rebase-merge, then fix the SHAs.
+- **Phase 13 so far (#73, rebase-merged; ADRs 061–063).**
+  - Addenda M (`9ccff2d`) and N/O (`0def715`) were committed before their code (`524f8cf`, `69ff544`); main's SHAs.
   - **MS-052 research lake** (`research/src/marketscope_research/lake/`):
     - streaming parse; Parquet per game plus DuckDB; a Python port of the main-line rules;
     - `lake build|check|status`;

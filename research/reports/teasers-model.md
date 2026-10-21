@@ -1,6 +1,6 @@
 # Model-priced teaser legs, "Wong 2.0" (MS-055a)
 
-_Generated 2026-10-21 23:41 UTC · commit `9b4243b` · reproduce with `research/src/marketscope_research/run_teasers_model.py`._
+_Generated 2026-10-21 23:41 UTC · commit `69ff544` · reproduce with `research/src/marketscope_research/run_teasers_model.py`._
 
 Design pre-registered in `research/PREREGISTRATION.md` (Addendum N, committed before this code). Each team's 6-point teased line is priced with the fair-value engine's margin distribution (fitted only on earlier seasons, calibrated so the nflverse close is the median); legs at or above the −125 break-even (74.54%) are selected, one per game. A push counts as a loss. Game bootstrap (5,000, seed 2026). **Hypothetical results on closing lines; not betting advice.**
 
