@@ -736,3 +736,39 @@ at short horizons (MS-046).
   only a slope of roughly 0.1 or more can be told from zero.
 - **Paid-data gate.** A positive slope that is not significant on one season is the case for buying
   2020–25 history (Phase 13 gate).
+
+## Addendum P (2026-10-22): MS-054 cross-market value on main markets
+
+Committed before any MS-054 code was written or any outcome computed. Known going in: retail numbers
+that merely beat Pinnacle's line are worth −2.0% (MS-046); the engine v2 and the Shin devig are frozen
+(ADR-062); the market moves toward the ratings early in the week (MS-057, unrelated to this test).
+
+**Data and timing.** The research lake (MS-052): every book's full ladders, pregame. Decision times
+d = kickoff − h for h ∈ {48, 24, 6, 1}. A book's line at d is its main line by the `line_moves` rule
+(`lake/mainline.pick_main`) from its entries at or before d. Retail books: DraftKings, FanDuel,
+Caesars, Hard Rock. Sharp sources: Pinnacle, Circa, Bookmaker.eu, Novig. Discovery weeks 1–6,
+confirmation weeks 7–14; game bootstrap (5,000, seed 2026). Prices −200 to +200 only (avoid extreme
+moneylines).
+
+**Sharp-consensus fair probability** (Addendum M): for a side and line, each sharp source on the board
+devigs its own main line (Shin) and converts the probability to the requested line with the engine's
+margin (spreads, moneylines) or total distribution, calibrated at the source's line; the consensus is
+the equal-weight mean. Value of a position = P(win) × payout − P(loss) under that probability
+(moneyline ties excluded).
+
+**A (primary): moneyline versus the book's own spread.** At each d, for each retail book with a main
+spread and a moneyline on the board: the moneyline probability implied by the book's own spread
+(engine margin distribution calibrated to the book's devigged spread price at its line, P(margin > 0),
+ties excluded). A side is a candidate when the book's moneyline price is worth more than 0 under that
+probability. Outcome: value at the sharp-consensus close. Claim if the mean's interval lies above 0.
+
+**B (primary): same-line value against the sharp consensus.** At each d, every retail main-line side
+(spreads, totals, moneylines) whose price is worth more than 0 under the consensus fair probability
+at d for that exact line. Outcome: value at the sharp-consensus close. Claim if the mean's interval
+lies above 0. Exploratory: by market, by book, by horizon.
+
+**Power.** Value at the close has a per-position spread of roughly 3–5%. With several hundred
+candidates over about 90 games, a mean of about 1% per unit is the smallest detectable.
+
+**What this can't see.** Alternate ladders (MS-055b); limits at retail books; whether the price would
+have been accepted at that size.
