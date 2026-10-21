@@ -4,7 +4,7 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-20 (sessio
 
 ## Current milestone
 
-**Phases 0–11 and the post-release projects are done. Phase 12, the Sharp-Market Lab (ADR-051): MS-041 (data sources) and MS-042 (minute-level line moves) are done; MS-043's discovery run is done (confirmation waits for weeks 7–14); MS-044 (Wong teasers), MS-045a (system catalogue) and MS-045b (paper portfolio, `/portfolio`) are done. MS-046's market-ML discovery (no exploitable value; ADR-057) and MS-047's injury-window discovery (news priced before the official report; ADR-058) are done. Next: MS-050, openers and totals, price-aware.**
+**Phases 0–11 and the post-release projects are done. Phase 12, the Sharp-Market Lab (ADR-051): MS-041 (data sources) and MS-042 (minute-level line moves) are done; MS-043's discovery run is done (confirmation waits for weeks 7–14); MS-044 (Wong teasers), MS-045a (system catalogue) and MS-045b (paper portfolio, `/portfolio`) are done. MS-046's market-ML discovery (no exploitable value; ADR-057) MS-047's injury-window discovery (news priced before the official report; ADR-058) and MS-050's openers and totals (no value; ADR-059) are done. Next: MS-051, exchanges.**
 
 The goal is to study the market for moves that indicate sharp betting and test whether any signals or systems are profitable. CLV is the yardstick; the ratings are context.
 
@@ -238,10 +238,15 @@ The goal is to study the market for moves that indicate sharp betting and test w
   - **Exploratory:** about two-thirds of the injury move is priced four days out, before the official designation.
   - `/research` adds I1 and I2.
 
+- **MS-050 discovery (this PR, ADR-059): openers and totals, price-aware.**
+  - Addendum J (`b8668cc`) before code; code (`f0263ed`) before the first run. Rebase-merge, then fix the SHAs.
+  - **J1 openers:** 21 cases, −2.3% (−6.3 to +1.8), no claim. **J2 stale totals:** −1.8% (−2.5 to −1.1). **J3 better-than-Pinnacle totals:** −3.0%.
+  - `/research` adds O1 and T1 and a summary paragraph for the market studies.
+
 ## Tests
 
 - **Football pytest:** 114 (unit tests, plus integration against the migrated test DB; includes validation of the committed coaching CSV and the 2016–24 seeding reproduction).
-- **Research pytest:** 95.
+- **Research pytest:** 102.
 - **TS:** db 54, shared 192, collector 66, web 148 (unit + integration), e2e 63.
 
 ## Quotas
@@ -276,13 +281,16 @@ Nothing blocking.
 
 ## Next task
 
-**MS-050: openers and totals, price-aware.** Every market study so far scored spreads close to kickoff. Two places remain where books may be softer:
+**MS-051: exchanges.** Every retail pattern so far is priced into the juice. Exchanges (Novig, ProphetX, Kalshi) have thin margins and prices set by other traders, so a lag behind Pinnacle there would not be charged for in the same way.
 
-1. **Pre-register** (Addendum J) before code:
-   - **Openers:** the price-aware value of each book's first number for a game (lookahead lines and Sunday-night openers, from `line_moves`, whose window starts 14 days out) against Pinnacle's no-vig close. Do some books open softer than others?
-   - **Totals:** extend the price-aware value model to totals. An empirical total-points distribution from 2016–25, calibrated to Pinnacle's no-vig closing total, with key totals such as 41, 44, 47 and 51. Then re-score S2's totals cases (+0.55 points in MS-043) and retail totals at fixed horizons.
-   - **Discovery** weeks 1–6, **confirmation** weeks 7–14, as before.
-2. **Meanwhile:** paper portfolio live placement, the nightly line-move import, and the MS-043/046/047 confirmation runs after 2026-12-16.
+1. **Measure first:**
+   - pull one game's exchange history from OddsPapi (free; about 1–2 million entries per game for Kalshi and Novig) and inspect its shape (`exchangeMeta`, top of book);
+   - reduce it to top-of-book main-line changes, as `line_moves` does for books;
+   - project the storage cost for a season (the database is about 135 MB of 500).
+2. **Pre-register** (Addendum K): the stale-number rule and price-aware value (Addendum G) applied to exchange prices, with exchange fees counted.
+3. **Then import** exchanges into `line_moves` (or a sibling table if their shape differs), with discovery on weeks 1–6 and confirmation on 7–14.
+
+**Meanwhile:** paper portfolio live placement; nightly line-move import; confirmation runs after 2026-12-16 for MS-043/046/047/050.
 
 **On hold (Jack, 2026-10-21):** the OddsPapi email about near-real-time polling (plan and questions in `docs/DATA_SOURCES.md`). Live market-signal tracking (MS-048) waits on it.
 

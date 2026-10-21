@@ -330,4 +330,42 @@ export const MARKET_STUDIES: Study[] = [
     ],
     report: `${REPO}/research/reports/injury-windows-discovery.md`,
   },
+  {
+    id: "O1",
+    title: "Retail openers",
+    question:
+      "When a retail book first posts a game at a better number than Pinnacle's at that moment, is it worth taking at its price?",
+    window: "2026 weeks 1–6, 21 openers (books mostly open at Pinnacle's number)",
+    status: "no claim",
+    primary: {
+      label: "Mean value per unit against Pinnacle's no-vig close",
+      estimate: "−0.023",
+      interval: "−0.063 to +0.018",
+    },
+    finding:
+      "No. Retail books rarely open off Pinnacle's number, and the few that did were not worth taking at their price.",
+    exploratory: [
+      "Openers more than a week before kickoff: −5.7% (8 cases); 2–7 days out: −0.2% (13 cases).",
+    ],
+    report: `${REPO}/research/reports/openers-totals-discovery.md`,
+  },
+  {
+    id: "T1",
+    title: "Stale totals",
+    question:
+      "A minute after Pinnacle moves a total, a retail book still shows the old one. Is it worth taking at its price?",
+    window: "2026 weeks 1–6, 1,286 cases",
+    status: "no claim",
+    primary: {
+      label: "Mean value per unit against Pinnacle's no-vig close",
+      estimate: "−0.018",
+      interval: "−0.025 to −0.011",
+    },
+    finding:
+      "No, and the interval is below zero. In points the old total looks half a point better (+0.55), but the books charge for it, exactly as with spreads.",
+    exploratory: [
+      "At −110 or better: −1.0% (−1.8% to −0.1%). Retail totals better than Pinnacle's at fixed times before kickoff: −3.0%.",
+    ],
+    report: `${REPO}/research/reports/openers-totals-discovery.md`,
+  },
 ];

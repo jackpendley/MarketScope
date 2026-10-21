@@ -314,7 +314,10 @@ The goal is to study the market for moves that indicate sharp betting, learn fro
   - [ ] Confirmation on weeks 7–14 (after 2026-12-16).
 - [ ] **MS-048** (needs a near-real-time feed: OddsPapi permission or a paid plan) Live collector and alerts; live paper positions for market-signal strategies.
 - [ ] **MS-049** (needs licensed splits) Reverse line movement.
-- [ ] **MS-050** Openers and totals, price-aware: are books' early numbers (lookahead and Sunday-night openers) or totals worth taking against Pinnacle's no-vig close?
+- [ ] **MS-050** Openers and totals, price-aware (pre-registered, Addendum J).
+  - [x] Discovery, weeks 1–6 (ADR-059): J1 openers no claim (21 cases); J2 stale totals −1.8% (below 0); J3 better-than-Pinnacle totals −3.0%.
+  - [ ] Confirmation on weeks 7–14 (after 2026-12-16).
+- [ ] **MS-051** Exchanges: do low-margin exchange prices (Novig, ProphetX, Kalshi; free OddsPapi history) lag Pinnacle in ways worth taking? Needs an exchange top-of-book import and a storage check first.
 
 ---
 
