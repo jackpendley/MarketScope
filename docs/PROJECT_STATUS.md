@@ -4,11 +4,18 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-20 (sessio
 
 ## Current milestone
 
-**Phases 0–11 and the post-release projects are done. Phase 12, the Sharp-Market Lab (ADR-051): MS-041 (data sources) and MS-042 (minute-level line moves) are done; MS-043's discovery run is done (confirmation waits for weeks 7–14); MS-044 (Wong teasers), MS-045a (system catalogue) and MS-045b (paper portfolio, `/portfolio`) are done. MS-046's market-ML discovery (no exploitable value; ADR-057) MS-047's injury-window discovery (news priced before the official report; ADR-058) MS-050's openers and totals (no value; ADR-059) and MS-051's exchanges (no value after fees; ADR-060) are done. The discovery phase and its write-up (case study, README, screenshots) are complete. Next: the confirmation runs after 2026-12-16.**
+**Phase 13 (ADR-061): finding real value on NFL spreads, totals and moneylines.** Phase 12 discovery is complete, with no value against the close (its confirmation runs after 2026-12-16).
 
-The goal is to study the market for moves that indicate sharp betting and test whether any signals or systems are profitable. CLV is the yardstick; the ratings are context.
+Phase 13 tests what sharp bettors actually use: information timing, model versus the early line, and cross-market pricing. It is free first, with a paid-data gate.
 
-- **Site:** live at https://marketscope-delta.vercel.app behind invite-only accounts (ADR-049). Jack's account is `jackpendley` / jackpendley9@gmail.com. Manage accounts with `pnpm --filter @marketscope/web users …` (DEPLOYMENT.md).
+- **Done:**
+  - MS-052 lake code (verified 100% against `line_moves` on two games; full build running);
+  - MS-053 fair-value engine v2;
+  - MS-055a Wong 2.0 (break-even);
+  - MS-057 (**the market moves toward the ratings model early in the week: +0.116 per point, a discovery claim**).
+- **Next:** MS-054 cross-market value and MS-055b alternate ladders, both on the lake; MS-056 information timing.
+
+- **Site:** live at https://marketscope-delta.vercel.app behind invite-only accounts (ADR-049). Jack's account is `jackpendley` / jackpendley9@gmail.com.
 
 ## Done so far
 
@@ -249,10 +256,20 @@ The goal is to study the market for moves that indicate sharp betting and test w
   - **K1** stale exchange prices −1.2% (−1.6 to −0.8) after fees; **K2** −3.0%. Novig +0.4% (−0.2 to +0.9), exploratory, registered as K1n.
   - `/research` adds X1.
 
+- **Phase 13 so far (this PR; ADRs 061–063).**
+  - Addenda M (`4141f12`) and N/O (`351afec`) were committed before their code (`be4de8c`, `9b4243b`). Rebase-merge, then fix the SHAs.
+  - **MS-052 research lake** (`research/src/marketscope_research/lake/`):
+    - streaming parse; Parquet per game plus DuckDB; a Python port of the main-line rules;
+    - `lake build|check|status`;
+    - local under `fixtures/oddspapi/local/lake` (rebuildable, gitignored; about 1 GB a season with exchanges).
+  - **MS-053 engine v2:** kernel margin model (−0.130 log loss; the total doesn't help margins), kernel total model (−0.094), Shin devig. Frozen in `fair_value_params.json`.
+  - **MS-055a:** model-priced teaser legs 74.5% on 2023–25, break-even. `wong-model` paper strategy added.
+  - **MS-057:** slope +0.116 (+0.048 to +0.189), a discovery claim; early-line value −1.0%. Paid-data gate: wait for confirmation.
+
 ## Tests
 
 - **Football pytest:** 114 (unit tests, plus integration against the migrated test DB; includes validation of the committed coaching CSV and the 2016–24 seeding reproduction).
-- **Research pytest:** 106.
+- **Research pytest:** 125.
 - **TS:** db 54, shared 192, collector 71, web 148 (unit + integration), e2e 63.
 
 ## Quotas
@@ -287,20 +304,21 @@ Nothing blocking.
 
 ## Next task
 
-**Confirmation runs, after 2026-12-16** (week 14 final and imported by the nightly job). Until then, nothing in the research needs code: the paper portfolio and the imports run on their own.
+**MS-054: cross-market value on main markets** (needs the lake build finished; check it with `python -m marketscope_research.lake status`, then `lake check` for all games).
 
-**Confirmation runbook (after 2026-12-16, once week 14 is imported).** Each with `--phase confirmation`:
+1. **Pre-register** (Addendum P) with a power statement:
+   - **Moneyline versus the same book's spread and total**, priced with engine v2. A moneyline better than its own spread implies is a candidate, especially for spreads of ±1 to ±3.
+   - **Same-line retail prices against the sharp-consensus fair price** (equal-weight Shin devig of Pinnacle, Circa, Bookmaker.eu and Novig; Addendum M) at 48, 24, 6 and 1 hours.
+   - **Outcome:** value at the consensus close. Discovery weeks 1–6, confirmation weeks 7–14.
+2. **Then:** MS-055b, alternate ladders scored by the engine (lake); MS-056, information timing.
 
-- `run_sharp_market` (S1–S3, S2b)
-- `run_market_ml` (G1, G2, S2c)
-- `run_injury_windows` (I1, I2)
-- `run_openers_totals` (J1–J3)
-- `run_exchanges` (K1, K2, K1n)
+**After a merge:** run `paper reconstruct` on production, which adds `wong-model` reconstructed positions for weeks 1–7.
 
-Publish every result; add signals only for what is established.
+**Confirmation runbook (after 2026-12-16).** `--phase confirmation` for:
 
-**Meanwhile:** paper portfolio live placement; nightly import of books and exchanges.
+- `run_sharp_market`, `run_market_ml`, `run_injury_windows`, `run_openers_totals`, `run_exchanges` (Phase 12);
+- `run_model_open` (MS-057, which decides the paid-data gate).
 
-**On hold (Jack, 2026-10-21):** the OddsPapi email about near-real-time polling (plan and questions in `docs/DATA_SOURCES.md`).
+**On hold (Jack, 2026-10-21):** the OddsPapi email (`docs/DATA_SOURCES.md`).
 
-**Waiting on Jack (optional):** a Sportradar Betting Splits quote or SharpAPI terms; approval of any data purchase.
+**Waiting on Jack (optional):** a Sportradar quote or SharpAPI terms; data purchases (gate in ADR-063).
