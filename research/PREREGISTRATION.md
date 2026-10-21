@@ -646,3 +646,16 @@ or better, size at least 100. Claim if the mean value's interval lies above 0.
 **What this can't see.** Depth beyond the top of book; whether an order would have been filled
 before the price changed; exchange account limits; fees on Kalshi rounded to cents (the exact
 formula is used).
+
+## Addendum L (2026-10-21): Novig stale prices, for confirmation only
+
+Committed after the MS-051 discovery run (`research/reports/exchanges-discovery.md`) and before any
+week 7–14 game was played. In discovery, stale exchange prices were −1.2% (−1.6 to −0.8) after fees
+overall, but Novig, which charges no pregame fee, was +0.4% (−0.2 to +0.9) over 635 cases. That
+breakdown was exploratory, so it motivates this addendum and is not evidence for it.
+
+- **K1n (confirmation, weeks 7–14):** Addendum K's K1 cases at Novig only (size ≥ 100, −125 or better,
+  spreads and totals pooled). **Primary:** mean value per unit at Pinnacle's no-vig close, game
+  bootstrap (5,000, seed 2026); claim if the interval lies above 0. **Secondary:** the same with a size
+  floor of 1,000.
+- **Unchanged:** every Addendum K rule.
