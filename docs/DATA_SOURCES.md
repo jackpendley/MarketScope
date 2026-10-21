@@ -72,6 +72,18 @@ Phase 12 needs to see the market at the resolution sharp action happens: minutes
 - **Sportradar:** use the contact form on developer.sportradar.com (Betting Splits), giving the use case: invite-only research site, percentages only, no redistribution.
 - **SharpAPI:** email to confirm whether DraftKings/Circa splits may be stored for research and shown as percentages on an invite-only site.
 
+## OddsPapi near-real-time history (found 2026-10-20; on hold)
+
+- **Tested:** `/v4/historical-odds` also returns the change log for upcoming fixtures. For an upcoming game, Pinnacle's latest entry was 17 seconds old, and Caesars and Circa were included. That would make it a free near-real-time feed for the sharp books and Caesars.
+- **Why it would be enough:** in MS-043 discovery, 79% of stale retail numbers were still posted 30 minutes later and 48% after 6 hours. A 15–30-minute sweep would see most of them.
+- **Terms:** OddsPapi's terms (oddspapi.io/legal/terms) forbid reselling or redistributing the data and mention fair-use monitoring for "exceeding limits … or scraping". They don't address polling. Responses are large (one three-book history call ran around 140 MB in the historical import).
+- **Plan (on hold at Jack's request, 2026-10-21):**
+  1. Before polling, email contact@55-tech.com (the contact on OddsPapi's terms page).
+  2. Describe the pattern: NFL only, games within 48 hours, Pinnacle, Circa, Bookmaker.eu and Caesars, one sweep every 30 minutes, private research with no redistribution.
+  3. Ask whether it is acceptable and what a paid or WebSocket tier costs.
+
+  MS-048 (live collector and live market-signal paper positions) waits on the answer.
+
 ## Security note
 
 The OddsPapi `/v4/account` endpoint **returns the API key in its response body**. MS-041's probe printed that response once into a working session. Jack rotated the key on 2026-10-19. Any account check must print selected fields only (the client's `account()` returns just the request limit and count).

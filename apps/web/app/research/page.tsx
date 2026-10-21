@@ -72,7 +72,7 @@ export default function ResearchPage() {
       <div className="space-y-2">
         <h1 className="text-xl font-semibold tracking-tight">Research</h1>
         <p className="max-w-3xl text-sm text-muted">
-          Fourteen pre-registered studies, each with one primary question: five on the betting
+          Sixteen pre-registered studies, each with one primary question: seven on the betting
           market itself and nine on football. The questions, data windows, decision rules and
           minimum sample sizes were{" "}
           <a href={PREREGISTRATION} className="text-accent hover:underline">
@@ -102,10 +102,10 @@ export default function ResearchPage() {
           <a href={PREREGISTRATION} className="text-accent underline">
             pre-registered
           </a>{" "}
-          (Addenda C, D, G and H). These are <strong className="text-fg">discovery</strong> results
-          from weeks 1–6; the same code re-runs on weeks 7–14, and a result counts only if it holds
-          there too. Timing describes which book changed first, not who placed wagers. Analysis, not
-          betting advice.
+          (Addenda C, D, G, H and I). These are <strong className="text-fg">discovery</strong>{" "}
+          results from weeks 1–6; the same code re-runs on weeks 7–14, and a result counts only if
+          it holds there too. Timing describes which book changed first, not who placed wagers.
+          Analysis, not betting advice.
         </p>
         <div className="grid gap-4 lg:grid-cols-2">
           {MARKET_STUDIES.map((s) => (

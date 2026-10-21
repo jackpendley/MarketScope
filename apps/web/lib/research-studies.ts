@@ -292,4 +292,42 @@ export const MARKET_STUDIES: Study[] = [
     exploratory: ["Value rose with the number's head start over Pinnacle and with a better price."],
     report: `${REPO}/research/reports/market-ml-discovery.md`,
   },
+  {
+    id: "I1",
+    title: "Injury news: the official report",
+    question:
+      "When teams file game-status designations (by 4 pm ET, two days before most games), does Pinnacle move on starters newly ruled Out?",
+    window: "2026 weeks 2–6, 76 games, 95 newly-out starters",
+    status: "no claim",
+    primary: {
+      label: "Pinnacle's move inside the report window per net newly-out starter (points)",
+      estimate: "+0.02",
+      interval: "−0.00 to +0.05",
+    },
+    finding:
+      "Barely. By the time the designation is filed, the market has already moved: about two-thirds of the injury-driven move happens by four days before kickoff, around the midweek practice reports, and the filing window itself holds almost none of it.",
+    exploratory: [
+      "The move toward the healthier side reached +0.24 points four days out and +0.36 at the close (29 games with net news; noisy).",
+    ],
+    report: `${REPO}/research/reports/injury-windows-discovery.md`,
+  },
+  {
+    id: "I2",
+    title: "Injury news: slow retail books?",
+    question:
+      "When Pinnacle moves on injury news inside the report window, are the retail numbers left behind worth taking at their price?",
+    window: "2026 weeks 2–6, 18 cases (gate: 50)",
+    status: "inconclusive",
+    primary: {
+      label: "Mean price-aware value per unit of the lagging numbers",
+      estimate: "−0.003",
+      interval: "−0.029 to +0.025",
+    },
+    finding:
+      "Too few cases to say: because Pinnacle rarely moves in the report window, only 18 qualified. The confirmation weeks add more.",
+    exploratory: [
+      "Those 18 numbers stayed up for a median of about 32 hours, against about 5 hours for other stale numbers.",
+    ],
+    report: `${REPO}/research/reports/injury-windows-discovery.md`,
+  },
 ];

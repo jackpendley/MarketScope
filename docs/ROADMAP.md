@@ -309,9 +309,12 @@ The goal is to study the market for moves that indicate sharp betting, learn fro
 - [ ] **MS-046** Machine learning on minute-level market state (pre-registered, Addenda G and H).
   - [x] Discovery, walk-forward on weeks 3–6 (ADR-057): G1 Pinnacle direction, no claim (worse than baseline); G2 retail value, no claim (break-even). Price-aware re-score of S2: −2.0%.
   - [ ] Confirmation on weeks 7–14, with MS-043's (after 2026-12-16).
-- [ ] **MS-047** Injury news and the line: how fast each book reacts to newly confirmed absences (point-in-time injury snapshots since 2026-10-18 plus `line_moves`).
+- [ ] **MS-047** Injury news and the line (pre-registered, Addendum I).
+  - [x] Discovery, weeks 2–6 (ADR-058): I1 no claim (the official report window holds almost none of the move; about two-thirds is priced four days out); I2 inconclusive (18 cases, gate 50).
+  - [ ] Confirmation on weeks 7–14 (after 2026-12-16).
 - [ ] **MS-048** (needs a near-real-time feed: OddsPapi permission or a paid plan) Live collector and alerts; live paper positions for market-signal strategies.
 - [ ] **MS-049** (needs licensed splits) Reverse line movement.
+- [ ] **MS-050** Openers and totals, price-aware: are books' early numbers (lookahead and Sunday-night openers) or totals worth taking against Pinnacle's no-vig close?
 
 ---
 

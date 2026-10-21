@@ -1111,3 +1111,19 @@ Caesars alone toggled its markets on and off about 900 times, mostly weeks befor
 - Neither the sharp book's path nor the retail numbers offered an exploitable advantage in weeks 1–6.
 
 The remaining candidates are information that reaches the market during the week, such as injury news (R2w, MS-047), and the confirmation weeks.
+
+## ADR-058 — Injury news is priced before the official report (MS-047) (2026-10-21)
+
+**Context.** R2w found the consensus moves +0.40 points per newly-out starter during the week. MS-047 asked whether that move happens when teams file game-status designations (4 pm ET, the day before Thursday games and two days before others), and whether retail books lag it. Addendum I (`5d03d20`) was committed before code (`b2297ad`).
+
+**Discovery results** (weeks 2–6, `research/reports/injury-windows-discovery.md`):
+
+- **I1:** Pinnacle's move inside the window [deadline − 4 h, deadline + 2 h] was **+0.02 points per net newly-out starter (−0.00 to +0.05)**. No claim; the window holds about 0% of the news-driven move.
+- **I2:** only 18 stale retail numbers followed a news-direction Pinnacle move in the window (gate 50). **Inconclusive**; their mean price-aware value was −0.3% (−2.9 to +2.5).
+- **When the move happens** (exploratory, added after the first run, 29 games): toward the healthier side, +0.24 points by 4 days out (67% of the move to the close), +0.28 by 2 days out, +0.36 at the close.
+
+**Decision.**
+
+- **Official designations are a lagging record.** The market prices injury news earlier in the week, from practice participation, coach comments and reporting that the project has no timestamped feed for.
+- **Live injury snapshots** (twice daily since 2026-10-18) keep accumulating. A timing study of practice-report changes (Wednesday and Thursday) is possible once enough weeks exist; it is not scheduled.
+- **No signals are added.** Confirmation runs with MS-043 and MS-046 after 2026-12-16.
