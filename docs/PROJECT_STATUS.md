@@ -232,8 +232,8 @@ The goal is to study the market for moves that indicate sharp betting and test w
   - `/research` adds M1 and M2 and the price-aware line on S2.
   - **OddsPapi:** its free history endpoint returns near-real-time logs for upcoming games (Pinnacle's latest entry was 17 s old). An email asking whether polling is acceptable is drafted for Jack (to contact@55-tech.com, from the OddsPapi terms page).
 
-- **MS-047 discovery (this PR, ADR-058): injury-report windows.**
-  - Addendum I (`5d03d20`) before code; code (`b2297ad`) before the first run. Rebase-merge, then fix the SHAs.
+- **MS-047 discovery (#66, rebase-merged; ADR-058): injury-report windows.**
+  - Addendum I (`50762d0`) before code; code (`9fb408f`) before the first run (main's SHAs).
   - **I1:** Pinnacle's move in the game-status filing window was +0.02 points per net newly-out starter (−0.00 to +0.05): no claim. **I2:** 18 cases against a gate of 50: inconclusive.
   - **Exploratory:** about two-thirds of the injury move is priced four days out, before the official designation.
   - `/research` adds I1 and I2.
