@@ -526,3 +526,15 @@ is better than Pinnacle's for the side at −125 or better" (no model), to show 
 **What this can't see.** Who bet; injuries before 2026-10-18 at decision time (point-in-time
 reports start then, so they are left out); exchange order books; moves more than 14 days out. Value
 is measured against Pinnacle's close (CLV), not results.
+
+## Addendum H (2026-10-20): price-aware value of stale numbers, for confirmation only
+
+Committed after the MS-046 discovery run and before any week 7–14 game was played. MS-046 re-scored
+the MS-043 S2 cases with Addendum G's price-aware value (expected profit per unit at Pinnacle's
+no-vig close): −2.0% (−2.7 to −1.3) for all 1,473 cases, −0.6% (−1.5 to +0.3) for the 641 at −110 or
+better. Those numbers motivated this addendum and are not evidence for it.
+
+- **S2c (confirmation, weeks 7–14):** S2 events (Addendum C definition) at −110 or better. **Primary:**
+  mean price-aware value per unit, game bootstrap (5,000, seed 2026); claim if the interval lies above 0. **Secondary:** the same for all S2 events.
+- **Unchanged:** Addenda C, D and G, including the S2 event definition, the close, and the margin
+  model.
