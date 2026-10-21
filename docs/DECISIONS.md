@@ -1170,3 +1170,26 @@ The remaining candidates are information that reaches the market during the week
 - **No signals.** Exchanges stay hidden by default in the replay panel; one click shows them.
 
 **Consequences.** The discovery phase of the Sharp-Market Lab is complete. Across spreads, totals, openers, retail books and exchanges, the market prices its own lags. What remains are the pre-registered confirmation tests (S2b/S2c, K1n and the rest) after 2026-12-16, and the forward paper portfolio.
+
+## ADR-061 — Phase 13: real value on main markets; a local research lake (MS-052) (2026-10-21)
+
+**Context.** Phase 12 found nothing worth taking once price was counted. Its intervals are tight (closing-line value has low variance), so these are real absences: more of the same data would only confirm them. Jack chose: NFL only, real value on spreads, totals and moneylines (alternate lines and teasers welcome), free first, with a redirect if paid data would significantly change the findings.
+
+**Decision: the Phase 13 plan.** Test what sharp bettors actually use (ROADMAP Phase 13):
+
+- information timing;
+- model versus opener;
+- cross-market mis-pricing: moneyline versus spread, alternate lines, teasers.
+
+These run on a better fair-value engine: a joint margin–total distribution and a sharp-consensus devig. Every pre-registration now states its power (the smallest detectable value per unit). A paid-data gate is written down in advance.
+
+**Decision: the lake (MS-052).**
+
+- **What it holds:** every book's full spread, total and moneyline ladders (all alternate lines), pregame, for Pinnacle, Circa, Bookmaker.eu, the retail books and the exchanges, as one Parquet file per game (zstd), queried with DuckDB.
+- **Size and speed:** about 300 KB per game, roughly 85 MB a season, against the 500 MB database that forced us to keep only main lines.
+- **Streaming parser:** `ijson` parses responses from disk, so there is no size limit (the collector skipped five Kalshi games over V8's 512 MB string limit).
+- **Lossless reduction:** a price-unchanged entry is dropped. Limit changes are kept for the market makers.
+- **Local, not cloud:** the lake is a reproducible cache of free provider history. `python -m marketscope_research.lake build` rebuilds it, so it lives under `fixtures/oddspapi/local/lake` (gitignored, so provider data never enters the public repo). No storage bucket or new secret is needed. Supabase Storage remains an option if the lake is ever needed in CI.
+- **Verified:** a Python port of the main-line rules (`lake/mainline.py`, JavaScript rounding included) reproduces `line_moves` on a 15-minute grid. On the first two games: 100% for nine books, 99.7% for Kalshi.
+
+**Consequences.** Cross-market and alternate-line studies become possible on free data. The website keeps reading Supabase only.
