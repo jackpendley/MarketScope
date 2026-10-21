@@ -694,3 +694,45 @@ multiplicative by more than its interval.
 the sharp sources on the board at the time: Pinnacle, Circa, Bookmaker.eu and Novig (Novig devigged
 too). Each source is converted to the common line with the adopted margin or total model. There are
 too few 2026 games to fit weights, so none are fitted.
+
+## Addendum N (2026-10-21): MS-055a model-priced teaser legs ("Wong 2.0")
+
+Committed before any MS-055 code was written or any outcome computed. Known going in: Wong's fixed
+ranges won 75.7% (72.5–78.9%) of legs over 2016–25 (ADR-054); the fair-value engine v2 was selected
+on 2016–22 and validated on 2023–25 (ADR-062).
+
+- **Legs.** Every team in every game, teased 6 points. Its fair win probability is the engine's
+  margin distribution, fitted only on seasons before the game's season (frozen bandwidths), calibrated
+  so the favourite's no-push cover probability at the nflverse closing spread is 0.5 (the close is
+  the market's median), and evaluated at the teased line. A push counts as a loss.
+- **Selection.** Legs whose fair win probability is at least the −125 break-even (74.54%); at most one
+  leg per game (the higher probability).
+- **Primary (2023–25, out of sample for both the model and its bandwidths):** the selected legs' win
+  rate, game bootstrap (5,000, seed 2026). Claim if the interval's lower bound is above 74.54%.
+- **Secondary:** the same for 2018–25 (the bandwidths were chosen on 2016–22, so 2018–22 is only
+  partly out of sample); chronological teasers at −125 and −120 (push loses); a comparison with Wong
+  V0 legs over the same seasons.
+- **Power:** about 150–250 selected legs over 2023–25 gives an interval of roughly ±6 points of win
+  rate, so only an advantage of about 6 points over break-even could be claimed.
+- **Forward:** a paper strategy `wong-model` is added to the portfolio regardless of the result.
+
+## Addendum O (2026-10-21): MS-057 does the market move toward the model from early in the week?
+
+Committed before any MS-057 code was written or any outcome computed. Known going in: rating gaps add
+nothing beyond the close (R4); 52% of Pinnacle lines do not change from the decision time to the close
+at short horizons (MS-046).
+
+- **Games.** 2026 regular season. Decision time d = kickoff − 6 days, with Pinnacle on the board at d
+  and a usable close (Addendum C). **Discovery:** weeks 1–6; **confirmation:** weeks 7–14.
+- **Model line.** The ratings-only home spread at d: −(AdjEM home − AdjEM away + 1.6 home advantage),
+  from the latest rating snapshot usable at d (`ml/football_features.rating_margin`), preseason
+  snapshot in week 1. No injury or QB information.
+- **Primary.** OLS of Pinnacle's move to the close (closing home line − line at d) on the model's
+  disagreement at d (model home spread − Pinnacle line at d). Game bootstrap; claim if the slope's
+  interval lies above 0 (the market moves toward the model).
+- **Secondary.** Taking the side the model prefers at Pinnacle's line at d when |disagreement| ≥ 1.5
+  points: mean price-aware value at Pinnacle's no-vig close (engine v2). Claim if above 0.
+- **Power:** about 90 discovery games; with disagreements of a few points and moves of about a point,
+  only a slope of roughly 0.1 or more can be told from zero.
+- **Paid-data gate.** A positive slope that is not significant on one season is the case for buying
+  2020–25 history (Phase 13 gate).
