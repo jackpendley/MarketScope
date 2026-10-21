@@ -578,3 +578,36 @@ other cases.
 
 **What this can't see.** The minute a designation became public (only the deadline is known); news
 from practice reports earlier in the week; Questionable and Doubtful designations (only Out counts).
+
+## Addendum J (2026-10-21): MS-050 openers and totals, price-aware
+
+Committed before any MS-050 code was written or any outcome computed. Looked at before writing this:
+MS-043 (S2 totals cases +0.55 points of CLV, exploratory), MS-046 (spread value model; stale retail
+spread numbers −2.0% price-aware) and MS-047. No opener or price-aware totals value has been computed.
+
+**Common rules.** `line_moves`, point-in-time (Addendum C). Value = expected profit per unit at
+Pinnacle's no-vig close (Addendum G). Discovery weeks 1–6, confirmation weeks 7–14 with the same code.
+Game bootstrap (5,000, seed 2026). Retail books as in Addendum C. Price bound −125.
+
+**Totals value model.** Total-points frequencies from 2016–25 regular-season games, bucketed by the
+nflverse closing total (≤ 40.5, 41–44.5, 45–48.5, ≥ 49). For a Pinnacle closing total C and a line L:
+the bucket's over probability at L, shifted so that at C it equals Pinnacle's no-vig over
+probability (pushes kept at the bucket's frequency), exactly as Addendum G does for spreads.
+
+**J1 (primary): openers.** For each game and retail book, the book's first available spread row in
+`line_moves` (time t0). A position is taken on each side whose opening line is better than
+Pinnacle's line at t0 for that side, at −125 or better, with Pinnacle on the board at t0. Outcome:
+spread value. Claim if the mean value's interval lies above 0. Exploratory: by book; by hours
+between t0 and kickoff.
+
+**J2 (primary): stale totals.** S2's rule applied to totals (Addendum C: a retail book still
+posting Pinnacle's old total 60 s after Pinnacle moved it, on the side Pinnacle moved toward, over if
+the total rose, at −125 or better). Outcome: totals value. Claim if the interval lies above 0.
+Exploratory: at −110 or better versus −111 to −125.
+
+**J3 (secondary): totals at fixed horizons.** At 48, 24, 6 and 1 hours before kickoff, each retail
+book's total that is better than Pinnacle's for the over or the under, at −125 or better. Mean
+totals value, game bootstrap; claim if above 0.
+
+**What this can't see.** Openers more than 14 days before kickoff appear as the line in effect 14
+days out (the store's window); exchange totals; who bet.
