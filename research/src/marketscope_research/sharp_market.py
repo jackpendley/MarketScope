@@ -42,6 +42,7 @@ class Quote:
     price1: int
     price2: int
     limit1: float | None
+    limit2: float | None = None
 
 
 class Book:
@@ -54,7 +55,8 @@ class Book:
         self.times = utc.dt.tz_localize(None).to_numpy("datetime64[ns]")
         self.quotes: list[Quote | None] = [
             None if pd.isna(r.price1) else
-            Quote(float(r.point), int(r.price1), int(r.price2), None if pd.isna(r.limit1) else float(r.limit1))
+            Quote(float(r.point), int(r.price1), int(r.price2), None if pd.isna(r.limit1) else float(r.limit1),
+                  None if pd.isna(getattr(r, "limit2", None)) else float(r.limit2))
             for r in rows.itertuples()
         ]
 
@@ -218,13 +220,18 @@ def follow_times(tl: dict[str, dict[str, Book]], kickoffs: pd.Series) -> pd.Data
 # --- S2: stale retail lines --------------------------------------------------------------------
 
 def s2_events(tl: dict[str, dict[str, Book]], kickoffs: pd.Series, closes: dict[str, float],
-              delay: pd.Timedelta = DECISION_DELAY, market: str = "spreads") -> pd.DataFrame:
+              delay: pd.Timedelta = DECISION_DELAY, market: str = "spreads", books: tuple = RETAIL,
+              min_size: float | None = None) -> pd.DataFrame:
+    """Stale numbers: `books` still posting Pinnacle's old line `delay` after it moved (Addendum C).
+    min_size (Addendum K, exchanges): the size at the top of book on the side taken must be at least
+    this much."""
+    lagging = books
     rows = []
-    for event, books in tl.items():
-        if "pinnacle" not in books or event not in closes:
+    for event, book_map in tl.items():
+        if "pinnacle" not in book_map or event not in closes:
             continue
         kick, close = kickoffs[event], closes[event]
-        for t, a, b, _ in books["pinnacle"].changes():
+        for t, a, b, _ in book_map["pinnacle"].changes():
             if t >= kick - DECISION_DELAY:
                 continue
             d = t + delay
@@ -232,13 +239,16 @@ def s2_events(tl: dict[str, dict[str, Book]], kickoffs: pd.Series, closes: dict[
                 side, use = ("over", "price1") if b > a else ("under", "price2")
             else:
                 side, use = ("home", "price1") if b < a else ("away", "price2")
-            for k in RETAIL:
-                if k not in books:
+            for k in lagging:
+                if k not in book_map:
                     continue
-                q = books[k].at(d)
+                q = book_map[k].at(d)
                 if q is None or q.point != a or not price_ok(getattr(q, use)):
                     continue
-                stale_until = next((tc for tc, qq in zip(books[k].stamps, books[k].quotes)
+                size = q.limit1 if use == "price1" else q.limit2
+                if min_size is not None and (size is None or size < min_size):
+                    continue
+                stale_until = next((tc for tc, qq in zip(book_map[k].stamps, book_map[k].quotes)
                                     if tc > d and (qq is None or qq.point != a)), kick)
                 end = min(stale_until, kick)
                 rows.append({"event_id": event, "retail": k, "side": side, "line": a, "pin_to": b, "pin_t": t,

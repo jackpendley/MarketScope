@@ -66,6 +66,15 @@ export const LINE_MOVE_ONLY_BOOKMAKERS: readonly BookmakerInfo[] = [
     regionHint: "oddspapi",
     paidPlanOnly: false,
   },
+  // Exchanges (MS-051): top-of-book prices set by other traders, low margin.
+  { key: "novig", displayName: "Novig (exchange)", regionHint: "oddspapi", paidPlanOnly: false },
+  {
+    key: "prophetx",
+    displayName: "ProphetX (exchange)",
+    regionHint: "oddspapi",
+    paidPlanOnly: false,
+  },
+  { key: "kalshi", displayName: "Kalshi (exchange)", regionHint: "oddspapi", paidPlanOnly: false },
 ];
 
 export interface BoardBook {

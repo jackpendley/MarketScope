@@ -34,6 +34,8 @@ export interface LineMoveBook {
   displayName: string;
   /** Market maker outside the board and consensus; drawn dashed. */
   reference: boolean;
+  /** Exchange (MS-051): hidden by default, since its prices update constantly. */
+  exchange?: boolean;
 }
 
 const ET = "America/New_York";
@@ -83,7 +85,9 @@ export function LineMovesPanel({
   priceLabel: string;
 }) {
   const [range, setRange] = useState<LineMoveRange>("48h");
-  const [hidden, setHidden] = useState<ReadonlySet<string>>(new Set());
+  const [hidden, setHidden] = useState<ReadonlySet<string>>(
+    () => new Set(books.filter((b) => b.exchange).map((b) => b.key)),
+  );
   const until = Date.parse(end);
   const byBook = useMemo(() => movesByBook(rows, market, selection), [rows, market, selection]);
   // Start at the range or at the first stored move, whichever is later (no empty stretch).

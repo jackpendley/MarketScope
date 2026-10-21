@@ -15,10 +15,11 @@ import {
   nflSeasonForKickoff,
   REFERENCE_BOOKMAKERS,
 } from "@marketscope/shared";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { silentLogger, type Logger } from "./log";
 import type { OddsPapiClient, OddsPapiFixture } from "./providers/oddspapi/client";
 import { deriveLineMoves } from "./providers/oddspapi/line-moves";
+import type { Market } from "@marketscope/shared";
 import type { OddsPapiHistory, OddsPapiMarketMeta } from "./providers/oddspapi/transform";
 
 export const LINE_MOVES_SOURCE = "oddspapi";
@@ -51,6 +52,40 @@ export const LINE_MOVE_REQUEST_GROUPS: readonly (readonly string[])[] = [
   ["hardrockbet"],
 ];
 
+/** A set of books imported together, with its own job key (so each set is idempotent on its own). */
+export interface LineMoveProfile {
+  name: "books" | "exchanges";
+  jobKey: (fixtureId: string) => string;
+  bookMap: Readonly<Record<string, string>>;
+  requestGroups: readonly (readonly string[])[];
+  limitBooks: ReadonlySet<string>;
+  recordLimitBooks?: ReadonlySet<string>;
+  markets?: readonly Market[];
+}
+
+export const BOOKS_PROFILE: LineMoveProfile = {
+  name: "books",
+  jobKey: (fixtureId) => `oddspapi-moves:${fixtureId}:v${LINE_MOVES_IMPORT_VERSION}`,
+  bookMap: LINE_MOVE_BOOK_MAP,
+  requestGroups: LINE_MOVE_REQUEST_GROUPS,
+  limitBooks: LINE_MOVE_LIMIT_BOOKS,
+};
+
+/**
+ * Exchanges (MS-051, Addendum K): top-of-book prices for spreads and totals. The size available
+ * is stored with each row but never creates a row by itself; moneylines are skipped (storage).
+ */
+export const EXCHANGES_PROFILE: LineMoveProfile = {
+  name: "exchanges",
+  jobKey: (fixtureId) => `oddspapi-moves-ex:${fixtureId}:v1`,
+  bookMap: { "novig.us": "novig", prophetx: "prophetx", kalshi: "kalshi" },
+  // One exchange per call: three together can exceed V8's maximum string length.
+  requestGroups: [["novig.us"], ["prophetx"], ["kalshi"]],
+  limitBooks: new Set(),
+  recordLimitBooks: new Set(["novig", "prophetx", "kalshi"]),
+  markets: ["spreads", "totals"],
+};
+
 export type LineMoveImportOutcome =
   | { status: "imported"; fixtureId: string; eventId: string; moves: number }
   | { status: "already-imported"; fixtureId: string }
@@ -64,16 +99,17 @@ export interface LineMoveImportDeps {
 }
 
 export function lineMovesJobKey(fixtureId: string): string {
-  return `oddspapi-moves:${fixtureId}:v${LINE_MOVES_IMPORT_VERSION}`;
+  return BOOKS_PROFILE.jobKey(fixtureId);
 }
 
 export async function importLineMoves(
   deps: LineMoveImportDeps,
   fixture: OddsPapiFixture,
+  profile: LineMoveProfile = BOOKS_PROFILE,
 ): Promise<LineMoveImportOutcome> {
   const { db, client, markets } = deps;
   const log = deps.log ?? silentLogger;
-  const jobKey = lineMovesJobKey(fixture.fixtureId);
+  const jobKey = profile.jobKey(fixture.fixtureId);
   const home = fixture.participant1Name; // participant1 = home (verified against live data)
   const away = fixture.participant2Name;
 
@@ -87,14 +123,26 @@ export async function importLineMoves(
   const startedAt = new Date().toISOString();
   try {
     const merged: OddsPapiHistory = { bookmakers: {} };
-    for (const group of LINE_MOVE_REQUEST_GROUPS) {
-      const part = await client.historicalOdds(fixture.fixtureId, group);
-      Object.assign(merged.bookmakers, part.bookmakers ?? {});
+    const tooLarge: string[] = [];
+    for (const group of profile.requestGroups) {
+      try {
+        const part = await client.historicalOdds(fixture.fixtureId, group);
+        Object.assign(merged.bookmakers, part.bookmakers ?? {});
+      } catch (err) {
+        // A busy exchange's full history can exceed V8's maximum string length (~512 MB). Skip
+        // that book for this game, record it on the run, and keep the others.
+        if (!(err instanceof Error) || !/longer than 0x[0-9a-f]+ characters/.test(err.message))
+          throw err;
+        tooLarge.push(...group);
+        log.warn("line_moves.too_large", { fixtureId: fixture.fixtureId, books: group });
+      }
     }
     const rows = deriveLineMoves(merged, markets, {
       kickoff: fixture.startTime,
-      bookMap: LINE_MOVE_BOOK_MAP,
-      limitBooks: LINE_MOVE_LIMIT_BOOKS,
+      bookMap: profile.bookMap,
+      limitBooks: profile.limitBooks,
+      recordLimitBooks: profile.recordLimitBooks,
+      markets: profile.markets,
     });
     const perBook: Record<string, number> = {};
     for (const r of rows) perBook[r.bookmakerKey] = (perBook[r.bookmakerKey] ?? 0) + 1;
@@ -145,9 +193,14 @@ export async function importLineMoves(
         id = created!.id;
       }
 
-      await tx
-        .delete(lineMoves)
-        .where(and(eq(lineMoves.eventId, id), eq(lineMoves.source, LINE_MOVES_SOURCE)));
+      await tx.delete(lineMoves).where(
+        and(
+          eq(lineMoves.eventId, id),
+          eq(lineMoves.source, LINE_MOVES_SOURCE),
+          // Only this profile's books: importing exchanges never touches the books' rows.
+          inArray(lineMoves.bookmakerKey, Object.values(profile.bookMap)),
+        ),
+      );
       for (let i = 0; i < rows.length; i += 1_000) {
         await tx.insert(lineMoves).values(
           rows.slice(i, i + 1_000).map((r) => ({
@@ -174,7 +227,10 @@ export async function importLineMoves(
         status: "completed",
         eventsSeen: 1,
         quotesSeen: rows.length,
-        issueCounts: Object.fromEntries(Object.entries(perBook).map(([k, v]) => [`moves_${k}`, v])),
+        issueCounts: {
+          ...Object.fromEntries(Object.entries(perBook).map(([k, v]) => [`moves_${k}`, v])),
+          ...Object.fromEntries(tooLarge.map((b) => [`too_large_${b}`, 1])),
+        },
       });
       return id;
     });

@@ -43,13 +43,17 @@ const VALID: Record<Market, Selection[]> = {
   totals: ["OVER", "UNDER"],
 };
 const shortName = (team: string) => team.split(" ").at(-1) ?? team;
-const REFERENCE_KEYS = [...REFERENCE_BOOKMAKERS, ...LINE_MOVE_ONLY_BOOKMAKERS].map((b) => b.key);
+const EXCHANGE_KEYS = ["novig", "prophetx", "kalshi"];
+const REFERENCE_KEYS = [...REFERENCE_BOOKMAKERS, ...LINE_MOVE_ONLY_BOOKMAKERS]
+  .map((b) => b.key)
+  .filter((k) => !EXCHANGE_KEYS.includes(k));
 const LINE_MOVE_BOOK_ORDER = [
   ...REFERENCE_KEYS,
   "draftkings",
   "fanduel",
   "williamhill_us",
   "hardrockbet",
+  ...EXCHANGE_KEYS,
 ];
 
 /** Books present in a game's line moves: market makers first, then retail. */
@@ -67,6 +71,7 @@ function lineMoveBooks(rows: readonly LineMoveRow[]): LineMoveBook[] {
         .replace(/ \(reference\)$/, "")
         .replace(/ \(IN feed\)$/, ""),
       reference: REFERENCE_KEYS.includes(key),
+      exchange: EXCHANGE_KEYS.includes(key),
     }));
 }
 

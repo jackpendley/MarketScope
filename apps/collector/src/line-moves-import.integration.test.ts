@@ -1,7 +1,12 @@
 import { createDb, events, ingestionRuns, lineMoves } from "@marketscope/db";
 import { resetDatabase, TEST_DATABASE_URL } from "@marketscope/db/testing";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { crossCheckSnapshots, importLineMoves, lineMovesJobKey } from "./line-moves-import";
+import {
+  crossCheckSnapshots,
+  EXCHANGES_PROFILE,
+  importLineMoves,
+  lineMovesJobKey,
+} from "./line-moves-import";
 import { importFixture } from "./oddspapi-import";
 import type { OddsPapiFixture } from "./providers/oddspapi/client";
 import type { OddsPapiHistory, OddsPapiMarketMeta } from "./providers/oddspapi/transform";
@@ -161,6 +166,61 @@ describe("importLineMoves", () => {
     });
     const runs = await db.select().from(ingestionRuns);
     expect(runs.map((r) => r.status)).toEqual(["completed"]);
+  });
+});
+
+describe("exchange profile", () => {
+  it("imports exchanges under their own job key and never deletes the books' rows", async () => {
+    await importLineMoves({ db, client: fakeClient(), markets }, fixture);
+    const books = await db.$count(lineMoves);
+    const client = fakeClient();
+    const outcome = await importLineMoves({ db, client, markets }, fixture, EXCHANGES_PROFILE);
+    // 3 exchanges x spreads (1 row each); moneylines are skipped for exchanges.
+    expect(outcome).toMatchObject({ status: "imported", moves: 3 });
+    expect(client.historicalOdds).toHaveBeenCalledTimes(3); // one exchange per call
+    expect(await db.$count(lineMoves)).toBe(books + 3);
+    const keys = await sql<{ job_key: string }[]>`SELECT job_key FROM ingestion_runs ORDER BY 1`;
+    expect(keys.map((k) => k.job_key)).toEqual([
+      "oddspapi-moves-ex:id1:v1",
+      lineMovesJobKey("id1"),
+    ]);
+    const [ex] = await sql`SELECT limit1 FROM line_moves WHERE bookmaker_key = 'novig'`;
+    expect(ex).toMatchObject({ limit1: 5000 }); // size stored with the row
+    // Re-importing the books leaves the exchanges alone.
+    await sql`DELETE FROM ingestion_runs WHERE job_key = ${lineMovesJobKey("id1")}`;
+    await importLineMoves({ db, client: fakeClient(), markets }, fixture);
+    expect(await db.$count(lineMoves)).toBe(books + 3);
+  });
+});
+
+describe("oversized responses", () => {
+  it("skips a book whose history is too large, records it, and keeps the others", async () => {
+    const client = {
+      historicalOdds: vi.fn(
+        async (_id: string, books: readonly string[]): Promise<OddsPapiHistory> => {
+          if (books.includes("kalshi"))
+            throw new Error("Cannot create a string longer than 0x1fffffe8 characters");
+          return { bookmakers: Object.fromEntries(books.map((b) => [b, book()])) };
+        },
+      ),
+    };
+    const outcome = await importLineMoves({ db, client, markets }, fixture, EXCHANGES_PROFILE);
+    expect(outcome).toMatchObject({ status: "imported", moves: 2 });
+    const [run] = await db.select().from(ingestionRuns);
+    expect(run!.issueCounts).toMatchObject({
+      too_large_kalshi: 1,
+      moves_novig: 1,
+      moves_prophetx: 1,
+    });
+  });
+
+  it("still fails the run on any other error", async () => {
+    const outcome = await importLineMoves(
+      { db, client: fakeClient(true), markets },
+      fixture,
+      EXCHANGES_PROFILE,
+    );
+    expect(outcome).toMatchObject({ status: "failed" });
   });
 });
 

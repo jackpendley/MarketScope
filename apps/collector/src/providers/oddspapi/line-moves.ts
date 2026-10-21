@@ -48,6 +48,11 @@ export interface LineMoveOptions {
    * alone never makes a row. Omitted = keep every book's limits.
    */
   limitBooks?: ReadonlySet<string>;
+  /** MarketScope keys whose limits are stored on each row but never create a row by themselves
+   * (exchanges: the size at the top of book changes constantly). */
+  recordLimitBooks?: ReadonlySet<string>;
+  /** Markets to derive (default: all three). */
+  markets?: readonly Market[];
 }
 
 export const LINE_MOVE_DEFAULTS = {
@@ -63,7 +68,7 @@ export function deriveLineMoves(
   markets: ReadonlyMap<number, OddsPapiMarketMeta>,
   options: LineMoveOptions,
 ): LineMove[] {
-  const { limitBooks, ...rest } = options;
+  const { limitBooks, recordLimitBooks, markets: only, ...rest } = options;
   const opts = { ...LINE_MOVE_DEFAULTS, ...rest };
   const kick = Date.parse(opts.kickoff);
   const out: LineMove[] = [];
@@ -76,13 +81,17 @@ export function deriveLineMoves(
       ["totals", totals],
       ["h2h", moneyline ? [moneyline] : []],
     ];
-    for (const [market, candidates] of byMarket)
+    for (const [market, candidates] of byMarket) {
+      if (only && !only.includes(market)) continue;
+      const triggers = !limitBooks || limitBooks.has(bookmakerKey);
       out.push(
         ...timeline(bookmakerKey, market, candidates, kick, {
           ...opts,
-          keepLimits: !limitBooks || limitBooks.has(bookmakerKey),
+          keepLimits: triggers || Boolean(recordLimitBooks?.has(bookmakerKey)),
+          limitsInKey: triggers,
         }),
       );
+    }
   }
   return out;
 }
@@ -92,8 +101,11 @@ function timeline(
   market: Market,
   candidates: readonly Candidate[],
   kick: number,
-  opts: Required<Omit<LineMoveOptions, "kickoff" | "bookMap" | "limitBooks">> & {
+  opts: Required<
+    Omit<LineMoveOptions, "kickoff" | "bookMap" | "limitBooks" | "recordLimitBooks" | "markets">
+  > & {
     keepLimits: boolean;
+    limitsInKey: boolean;
   },
 ): LineMove[] {
   const times = [...new Set(candidates.flatMap((c) => [...c.side1.times, ...c.side2.times]))].sort(
@@ -141,7 +153,11 @@ function timeline(
       limit1: limit(main.side1.limit),
       limit2: limit(main.side2.limit),
     };
-    const key = JSON.stringify([row.point, row.price1, row.price2, row.limit1, row.limit2]);
+    const key = JSON.stringify(
+      opts.limitsInKey
+        ? [row.point, row.price1, row.price2, row.limit1, row.limit2]
+        : [row.point, row.price1, row.price2],
+    );
     if (key !== lastKey) {
       rows.push(row);
       lastKey = key;

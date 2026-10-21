@@ -83,6 +83,10 @@ export const FEED_COLORS: Readonly<Record<string, string>> = {
   // Market makers in the minute-level panel only (drawn dashed, like Pinnacle there).
   circa: "#2fb3a6",
   bookmaker_eu: "#c7ced8",
+  // Exchanges (MS-051), hidden by default in the minute-level panel.
+  novig: "#e0a35b",
+  prophetx: "#b07cd8",
+  kalshi: "#7bc96f",
 };
 
 /**
