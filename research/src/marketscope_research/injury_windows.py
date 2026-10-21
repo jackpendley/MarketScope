@@ -98,3 +98,30 @@ def diff_bootstrap(df: pd.DataFrame, value: str, flag: str, resamples: int = RES
     lo, hi = np.nanquantile(boots, [0.025, 0.975])
     t = a.sum(axis=0)
     return Estimate(float(t[0] / t[1] - t[2] / t[3]), float(lo), float(hi), int(t[1]))
+
+
+TIMELINE = (("6 days", pd.Timedelta(days=6)), ("5 days", pd.Timedelta(days=5)), ("4 days", pd.Timedelta(days=4)),
+            ("3 days", pd.Timedelta(days=3)), ("2 days", pd.Timedelta(days=2)), ("1 day", pd.Timedelta(days=1)),
+            ("6 hours", pd.Timedelta(hours=6)))
+
+
+def news_timeline(tl: dict[str, dict[str, sm.Book]], games: pd.DataFrame, net: pd.Series) -> pd.DataFrame:
+    """For games with N != 0: Pinnacle's cumulative move since 6 days out, oriented by the news
+    (positive = toward the healthier side), at each point before kickoff and at the close."""
+    rows = []
+    for g in games.itertuples():
+        n = int(net.get(g.event_id, 0))
+        pin = tl.get(g.event_id, {}).get("pinnacle")
+        if n == 0 or pin is None:
+            continue
+        start = pin.at(g.kickoff - TIMELINE[0][1])
+        close = sm.close_line(pin, g.kickoff)
+        if start is None or close is None:
+            continue
+        row = {"event_id": g.event_id, "n": n}
+        for label, lead in TIMELINE[1:]:
+            q = pin.at(g.kickoff - lead)
+            row[label] = (start.point - q.point) * np.sign(n) if q is not None else np.nan
+        row["close"] = (start.point - close) * np.sign(n)
+        rows.append(row)
+    return pd.DataFrame(rows)

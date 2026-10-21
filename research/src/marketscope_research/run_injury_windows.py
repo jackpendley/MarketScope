@@ -116,6 +116,13 @@ def main() -> None:
     stale = [[label, len(d), f"{d['stale_min'].median():.0f} min" if len(d) else "–",
               f"{100 * d['value'].mean():+.1f}%" if len(d) else "–"]
              for label, d in (("News-window cases", nw), ("All other cases", cases[~cases["news"]]))]
+    # Exploratory (added after the first run): when during the week does Pinnacle price the news?
+    tline = iw.news_timeline(tl, games, net)
+    cols = [c for c in tline.columns if c not in ("event_id", "n")]
+    total = tline["close"].mean() if len(tline) else np.nan
+    tl_rows = [[c, f"{tline[c].mean():+.2f}", f"{tline[c].mean() / total:.0%}" if total else "–"] for c in cols]
+    deadline_lead = (games["kickoff"] - games["kickoff"].map(iw.report_deadline)).dt.total_seconds().median() / 3600
+
     commit = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], text=True).strip()
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     parts = [
@@ -144,6 +151,11 @@ def main() -> None:
         f"Difference from all other stale numbers: {pct(e2d)}. Secondary: "
         f"{verdict(e2d, gate2, 'news-window numbers are worth more than other stale numbers')}.", "",
         table(stale, ["Cases", "Count", "Median time the old number stayed up", "Mean value per unit"]), "",
+        "## When does Pinnacle price the news? (exploratory, added after the first run)", "",
+        f"Games with N ≠ 0 ({len(tline)}): Pinnacle's cumulative move since 6 days before kickoff, toward the side the "
+        f"news favours (points), and its share of the move to the close. The filing deadline is a median "
+        f"{deadline_lead:.0f} hours before kickoff.", "",
+        table(tl_rows, ["Before kickoff", "Mean move since 6 days out", "Share of the move to the close"]), "",
         "## What this can't see", "",
         "The minute each designation became public (only the deadline is known); practice-report news earlier in the "
         "week; Questionable and Doubtful designations.", "",
