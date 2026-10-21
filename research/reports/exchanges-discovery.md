@@ -1,6 +1,6 @@
 # Exchanges, price-aware with fees: discovery (MS-051)
 
-_Generated 2026-10-21 04:11 UTC · commit `86e9bf6` · reproduce with `research/src/marketscope_research/run_exchanges.py --phase discovery`._
+_Generated 2026-10-21 04:11 UTC · commit `6df5a39` · reproduce with `research/src/marketscope_research/run_exchanges.py --phase discovery`._
 
 Design pre-registered in `research/PREREGISTRATION.md` (Addendum K, committed before any exchange import or study code). Value is expected profit per unit at Pinnacle's no-vig close after fees (Novig none; ProphetX 2% of net winnings; Kalshi 0.07·p·(1−p) per contract). Size floor: 100 at the top of book. Intervals resample games (5,000 draws, seed 2026). **Analysis, not betting advice.**
 

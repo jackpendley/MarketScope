@@ -243,8 +243,8 @@ The goal is to study the market for moves that indicate sharp betting and test w
   - **J1 openers:** 21 cases, −2.3% (−6.3 to +1.8), no claim. **J2 stale totals:** −1.8% (−2.5 to −1.1). **J3 better-than-Pinnacle totals:** −3.0%.
   - `/research` adds O1 and T1 and a summary paragraph for the market studies.
 
-- **MS-051 (this PR, ADR-060): exchanges.**
-  - Addendum K (`9c53745`) before the import and code; code (`daa5b93`) before the first run; Addendum L (`86e9bf6`) before any confirmation game. Rebase-merge, then fix the SHAs.
+- **MS-051 (#70, rebase-merged; ADR-060): exchanges.**
+  - Addendum K (`32c2199`) before the import and code; code (`bb9d71d`) before the first run; Addendum L (`6df5a39`) before any confirmation game (main's SHAs).
   - **Import:** Novig, ProphetX and Kalshi spreads and totals, 217k rows, about 46 MB (database 181 MB). Five Kalshi histories and one Novig history were too large to parse; they are skipped and recorded.
   - **K1** stale exchange prices −1.2% (−1.6 to −0.8) after fees; **K2** −3.0%. Novig +0.4% (−0.2 to +0.9), exploratory, registered as K1n.
   - `/research` adds X1.
