@@ -659,3 +659,38 @@ breakdown was exploratory, so it motivates this addendum and is not evidence for
   bootstrap (5,000, seed 2026); claim if the interval lies above 0. **Secondary:** the same with a size
   floor of 1,000.
 - **Unchanged:** every Addendum K rule.
+
+## Addendum M (2026-10-21): MS-053 fair-value engine v2, model selection
+
+Committed before any MS-053 code was written. Nothing below has been fitted or scored. This is a
+model-building step, not a claim about value; it fixes how the engine is chosen so later studies
+can't tune it on their own outcomes.
+
+**Margin model.** The quantity is P(favourite margin = k | |closing spread|, closing total), with the
+home team as favourite at a pick'em. Data: nflverse closes and results, regular season and playoffs.
+
+- **Baseline (A):** today's spread-bucket tables (Addendum G).
+- **Candidate (B):** kernel-weighted empirical frequencies. Weights exp(−½((Δs/h_s)² + (ΔT/h_T)²))
+  over games, with Δs the spread difference and ΔT the total difference. Mixed with 2% of model (A)'s
+  distribution, so no value seen in training has zero probability.
+  - Bandwidths are chosen from h_s ∈ {0.5, 1, 1.5, 2} and h_T ∈ {2, 4, 6, 1000 (total ignored)}.
+  - The criterion is leave-one-season-out log loss on 2016–22.
+- **Validation, once, on 2023–25** with models fitted on 2016–22: the mean log loss of the exact
+  favourite margin, game bootstrap (5,000, seed 2026). **(B) is adopted if its log loss is lower than
+  (A)'s with the interval of the difference below 0.** Otherwise (A) stays and the engine keeps the
+  spread buckets.
+- **Reported alongside:** calibration of cover probabilities at the half-points around 3 and 7, and
+  how well the moneyline implied by the spread (P(margin > 0), ties excluded) matches the nflverse
+  closing moneylines (mean absolute probability difference).
+
+**Total-points model.** The same protocol for P(total points = k | closing total, |closing spread|),
+with model (A) being today's total buckets (Addendum J).
+
+**Devig method.** Multiplicative, power and Shin, chosen on nflverse closing moneylines: log loss of
+P(home win) on 2016–22, ties excluded. Confirmed on 2023–25, where it must not be worse than
+multiplicative by more than its interval.
+
+**Sharp consensus (fixed here, not fitted).** The equal-weight mean of the devigged probabilities of
+the sharp sources on the board at the time: Pinnacle, Circa, Bookmaker.eu and Novig (Novig devigged
+too). Each source is converted to the common line with the adopted margin or total model. There are
+too few 2026 games to fit weights, so none are fitted.
