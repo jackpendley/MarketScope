@@ -63,3 +63,13 @@ def test_diff_bootstrap():
                        "v": np.tile([0.1, 0.1, -0.02, -0.02], 30), "f": np.tile([True, True, False, False], 30)})
     e = iw.diff_bootstrap(df, "v", "f", resamples=200)
     assert e.value == pytest.approx(0.12) and e.low == pytest.approx(0.12) and e.n == 60
+
+
+def test_news_timeline_orients_by_the_news():
+    df = pd.DataFrame(rows("g", "pinnacle", (T("2026-10-12T10:00Z"), -3, -110, -110),
+                           (T("2026-10-15T12:00Z"), -4, -110, -110)))
+    games = pd.DataFrame({"event_id": ["g"], "kickoff": [KICK]})
+    t = iw.news_timeline(sm.timelines(df), games, pd.Series({"g": 1}))
+    assert t.loc[0, "4 days"] == 0 and t.loc[0, "2 days"] == 1.0 and t.loc[0, "close"] == 1.0
+    t2 = iw.news_timeline(sm.timelines(df), games, pd.Series({"g": -1}))
+    assert t2.loc[0, "close"] == -1.0  # the line moved against the news
