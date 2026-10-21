@@ -317,7 +317,10 @@ The goal is to study the market for moves that indicate sharp betting, learn fro
 - [ ] **MS-050** Openers and totals, price-aware (pre-registered, Addendum J).
   - [x] Discovery, weeks 1–6 (ADR-059): J1 openers no claim (21 cases); J2 stale totals −1.8% (below 0); J3 better-than-Pinnacle totals −3.0%.
   - [ ] Confirmation on weeks 7–14 (after 2026-12-16).
-- [ ] **MS-051** Exchanges: do low-margin exchange prices (Novig, ProphetX, Kalshi; free OddsPapi history) lag Pinnacle in ways worth taking? Needs an exchange top-of-book import and a storage check first.
+- [ ] **MS-051** Exchanges, price-aware with fees (pre-registered, Addenda K and L).
+  - [x] Exchange import (Novig, ProphetX, Kalshi spreads and totals; 217k rows, about 46 MB) and discovery, weeks 1–6 (ADR-060): K1 stale exchange prices −1.2% after fees (below 0); K2 −3.0%. Novig +0.4% (exploratory), registered as K1n.
+  - [ ] Confirmation on weeks 7–14 (after 2026-12-16).
+- [ ] **Phase 12 write-up:** `docs/CASE_STUDY.md` and the README updated with the market findings (portfolio).
 
 ---
 

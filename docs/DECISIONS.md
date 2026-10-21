@@ -1144,3 +1144,29 @@ The remaining candidates are information that reaches the market during the week
 - `/research` summarises the market studies together.
 - **The next candidate is exchanges (MS-051).** Their margins are thin and their prices are set by other traders rather than a book's risk team, so a lag there would not be priced into juice. OddsPapi's free history covers Novig, ProphetX and Kalshi, but at order-book volume (about 1–2 million entries per game), so storage is measured first.
 - **Confirmation** of MS-043/046/047/050 runs after 2026-12-16.
+
+## ADR-060 — Exchanges: imported, and no value after fees (MS-051) (2026-10-21)
+
+**Context.** Every retail pattern was priced into the juice (ADR-057, ADR-059). Exchanges have thin margins (median spread overround about 1%, against about 4.5% at retail books) and prices set by other traders, so a lag there might not be charged for. Addendum K (`9c53745`) was committed before any import or study code (`daa5b93`).
+
+**Import.**
+
+- Novig, ProphetX and Kalshi spreads and totals go into `line_moves` under their own job key (`oddspapi-moves-ex:<fixture>:v1`).
+- The size at the top of book is stored with each row but never creates a row by itself; moneylines are left out.
+- Each exchange is a separate request. A history too large to parse (over V8's 512 MB string limit: five Kalshi games and one Novig game) is skipped for that game and recorded on the run.
+- Result: 217k rows for 93 games, about 46 MB. The database is 181 MB of 500, and a full season adds about 140 MB.
+- The nightly job imports both profiles.
+
+**Discovery results** (weeks 1–6, `research/reports/exchanges-discovery.md`):
+
+- **K1, stale exchange prices** (size ≥ 100, −125 or better): **−1.2% (−1.6 to −0.8)** after fees, over 1,715 cases. The opposite of the hypothesis.
+  - **By exchange:** Kalshi −2.6%, ProphetX −1.4% (its old line lasted a median 32 minutes), **Novig +0.4% (−0.2 to +0.9)**.
+  - **With a 1,000 size floor:** −1.6% overall, and Novig −0.1%.
+- **K2, exchange prices better than Pinnacle's** at fixed horizons: −3.0% (−3.4 to −2.6).
+
+**Decision.**
+
+- **Novig, the no-fee exchange, is the only cell above zero.** That was exploratory and rests on thin quotes, so it is registered as **K1n (Addendum L, `86e9bf6`)** for the confirmation weeks before any was played.
+- **No signals.** Exchanges stay hidden by default in the replay panel; one click shows them.
+
+**Consequences.** The discovery phase of the Sharp-Market Lab is complete. Across spreads, totals, openers, retail books and exchanges, the market prices its own lags. What remains are the pre-registered confirmation tests (S2b/S2c, K1n and the rest) after 2026-12-16, and the forward paper portfolio.

@@ -4,7 +4,7 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-20 (sessio
 
 ## Current milestone
 
-**Phases 0–11 and the post-release projects are done. Phase 12, the Sharp-Market Lab (ADR-051): MS-041 (data sources) and MS-042 (minute-level line moves) are done; MS-043's discovery run is done (confirmation waits for weeks 7–14); MS-044 (Wong teasers), MS-045a (system catalogue) and MS-045b (paper portfolio, `/portfolio`) are done. MS-046's market-ML discovery (no exploitable value; ADR-057) MS-047's injury-window discovery (news priced before the official report; ADR-058) and MS-050's openers and totals (no value; ADR-059) are done. Next: MS-051, exchanges.**
+**Phases 0–11 and the post-release projects are done. Phase 12, the Sharp-Market Lab (ADR-051): MS-041 (data sources) and MS-042 (minute-level line moves) are done; MS-043's discovery run is done (confirmation waits for weeks 7–14); MS-044 (Wong teasers), MS-045a (system catalogue) and MS-045b (paper portfolio, `/portfolio`) are done. MS-046's market-ML discovery (no exploitable value; ADR-057) MS-047's injury-window discovery (news priced before the official report; ADR-058) MS-050's openers and totals (no value; ADR-059) and MS-051's exchanges (no value after fees; ADR-060) are done. The discovery phase is complete; confirmation runs after 2026-12-16. Next: the Phase 12 write-up.**
 
 The goal is to study the market for moves that indicate sharp betting and test whether any signals or systems are profitable. CLV is the yardstick; the ratings are context.
 
@@ -243,11 +243,17 @@ The goal is to study the market for moves that indicate sharp betting and test w
   - **J1 openers:** 21 cases, −2.3% (−6.3 to +1.8), no claim. **J2 stale totals:** −1.8% (−2.5 to −1.1). **J3 better-than-Pinnacle totals:** −3.0%.
   - `/research` adds O1 and T1 and a summary paragraph for the market studies.
 
+- **MS-051 (this PR, ADR-060): exchanges.**
+  - Addendum K (`9c53745`) before the import and code; code (`daa5b93`) before the first run; Addendum L (`86e9bf6`) before any confirmation game. Rebase-merge, then fix the SHAs.
+  - **Import:** Novig, ProphetX and Kalshi spreads and totals, 217k rows, about 46 MB (database 181 MB). Five Kalshi histories and one Novig history were too large to parse; they are skipped and recorded.
+  - **K1** stale exchange prices −1.2% (−1.6 to −0.8) after fees; **K2** −3.0%. Novig +0.4% (−0.2 to +0.9), exploratory, registered as K1n.
+  - `/research` adds X1.
+
 ## Tests
 
 - **Football pytest:** 114 (unit tests, plus integration against the migrated test DB; includes validation of the committed coaching CSV and the 2016–24 seeding reproduction).
-- **Research pytest:** 102.
-- **TS:** db 54, shared 192, collector 66, web 148 (unit + integration), e2e 63.
+- **Research pytest:** 106.
+- **TS:** db 54, shared 192, collector 71, web 148 (unit + integration), e2e 63.
 
 ## Quotas
 
@@ -256,7 +262,7 @@ The goal is to study the market for moves that indicate sharp betting and test w
 
 ## Data (production, Supabase)
 
-- **Size:** 133 MB of Supabase's 500 MB: `line_moves` 23 MB, the other odds tables ≈ 75 MB, football tables ≈ 20 MB, auth and the rest small.
+- **Size:** 181 MB of Supabase's 500 MB: `line_moves` 69 MB (books 23 MB, exchanges about 46 MB), the other odds tables ≈ 75 MB, football tables ≈ 20 MB, auth and the rest small.
 - **Migrations:** 0000–0018 (0017/0018 apply on merge of MS-045b).
 
 ## Waiting on Jack
@@ -281,17 +287,27 @@ Nothing blocking.
 
 ## Next task
 
-**MS-051: exchanges.** Every retail pattern so far is priced into the juice. Exchanges (Novig, ProphetX, Kalshi) have thin margins and prices set by other traders, so a lag behind Pinnacle there would not be charged for in the same way.
+**Phase 12 write-up.** The discovery phase is complete.
 
-1. **Measure first:**
-   - pull one game's exchange history from OddsPapi (free; about 1–2 million entries per game for Kalshi and Novig) and inspect its shape (`exchangeMeta`, top of book);
-   - reduce it to top-of-book main-line changes, as `line_moves` does for books;
-   - project the storage cost for a season (the database is about 135 MB of 500).
-2. **Pre-register** (Addendum K): the stale-number rule and price-aware value (Addendum G) applied to exchange prices, with exchange fees counted.
-3. **Then import** exchanges into `line_moves` (or a sibling table if their shape differs), with discovery on weeks 1–6 and confirmation on 7–14.
+1. Update `docs/CASE_STUDY.md` and the README with the Sharp-Market Lab findings:
+   - the data pipeline: minute-level `line_moves` for sharp books, retail books and exchanges;
+   - the research method: pre-registration, discovery and confirmation, price-aware CLV;
+   - the main results: Pinnacle leads; retail books and exchanges price the lag into their juice or fees; no exploitable pattern in discovery; injury news is priced before the official report;
+   - the paper portfolio.
+2. Refresh the docs screenshots (`/research`, `/systems`, `/portfolio`, line-move panel).
 
-**Meanwhile:** paper portfolio live placement; nightly line-move import; confirmation runs after 2026-12-16 for MS-043/046/047/050.
+**Confirmation runbook (after 2026-12-16, once week 14 is imported).** Each with `--phase confirmation`:
 
-**On hold (Jack, 2026-10-21):** the OddsPapi email about near-real-time polling (plan and questions in `docs/DATA_SOURCES.md`). Live market-signal tracking (MS-048) waits on it.
+- `run_sharp_market` (S1–S3, S2b)
+- `run_market_ml` (G1, G2, S2c)
+- `run_injury_windows` (I1, I2)
+- `run_openers_totals` (J1–J3)
+- `run_exchanges` (K1, K2, K1n)
+
+Publish every result; add signals only for what is established.
+
+**Meanwhile:** paper portfolio live placement; nightly import of books and exchanges.
+
+**On hold (Jack, 2026-10-21):** the OddsPapi email about near-real-time polling (plan and questions in `docs/DATA_SOURCES.md`).
 
 **Waiting on Jack (optional):** a Sportradar Betting Splits quote or SharpAPI terms; approval of any data purchase.
