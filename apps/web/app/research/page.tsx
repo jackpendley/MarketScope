@@ -72,7 +72,7 @@ export default function ResearchPage() {
       <div className="space-y-2">
         <h1 className="text-xl font-semibold tracking-tight">Research</h1>
         <p className="max-w-3xl text-sm text-muted">
-          Sixteen pre-registered studies, each with one primary question: seven on the betting
+          Eighteen pre-registered studies, each with one primary question: nine on the betting
           market itself and nine on football. The questions, data windows, decision rules and
           minimum sample sizes were{" "}
           <a href={PREREGISTRATION} className="text-accent hover:underline">
@@ -102,16 +102,24 @@ export default function ResearchPage() {
           <a href={PREREGISTRATION} className="text-accent underline">
             pre-registered
           </a>{" "}
-          (Addenda C, D, G, H and I). These are <strong className="text-fg">discovery</strong>{" "}
-          results from weeks 1–6; the same code re-runs on weeks 7–14, and a result counts only if
-          it holds there too. Timing describes which book changed first, not who placed wagers.
-          Analysis, not betting advice.
+          (Addenda C, D and G–J). These are <strong className="text-fg">discovery</strong> results
+          from weeks 1–6; the same code re-runs on weeks 7–14, and a result counts only if it holds
+          there too. Timing describes which book changed first, not who placed wagers. Analysis, not
+          betting advice.
         </p>
         <div className="grid gap-4 lg:grid-cols-2">
           {MARKET_STUDIES.map((s) => (
             <StudyCard key={s.id} s={s} />
           ))}
         </div>
+        <p className="max-w-3xl text-sm text-muted">
+          What the market studies say together: information flows from the market makers to the
+          retail books (S1), but the retail books charge for the lag. Numbers that look half a point
+          better are worth less than Pinnacle&apos;s close once the price is counted, for spreads
+          (S2) and totals (T1) alike, and neither a model of Pinnacle&apos;s next move (M1) nor a
+          model of which retail numbers to take (M2) found value. Injury news is priced days before
+          the official report (I1).
+        </p>
       </section>
       <section className="space-y-3" aria-labelledby="football">
         <h2 id="football" className="text-lg font-semibold tracking-tight">

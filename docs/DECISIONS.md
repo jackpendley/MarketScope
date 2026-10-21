@@ -1127,3 +1127,20 @@ The remaining candidates are information that reaches the market during the week
 - **Official designations are a lagging record.** The market prices injury news earlier in the week, from practice participation, coach comments and reporting that the project has no timestamped feed for.
 - **Live injury snapshots** (twice daily since 2026-10-18) keep accumulating. A timing study of practice-report changes (Wednesday and Thursday) is possible once enough weeks exist; it is not scheduled.
 - **No signals are added.** Confirmation runs with MS-043 and MS-046 after 2026-12-16.
+
+## ADR-059 — Openers and totals: no value against Pinnacle's no-vig close (MS-050) (2026-10-21)
+
+**Context.** After MS-046 showed stale retail spread numbers are worth −2.0% once priced, two places remained where books might be softer: their first numbers (openers) and totals. Addendum J (`b8668cc`) was committed before code (`f0263ed`). It adds a totals value model: 2016–25 total-points frequencies by closing-total bucket, calibrated to Pinnacle's no-vig closing total.
+
+**Discovery results** (weeks 1–6, `research/reports/openers-totals-discovery.md`):
+
+- **J1, openers:** only 21 retail openers beat Pinnacle's concurrent line at −125 or better, at −2.3% (−6.3 to +1.8). No claim. Retail books mostly open at Pinnacle's number.
+- **J2, stale totals:** −1.8% (−2.5 to −1.1), interval below zero, against +0.55 points of CLV. At −110 or better: −1.0% (−1.8 to −0.1).
+- **J3, retail totals better than Pinnacle's** at 48/24/6/1 hours: −3.0% (−3.5 to −2.4).
+
+**Decision.**
+
+- **The discovery picture is complete.** Across spreads and totals, closing lines, openers and stale numbers, retail books price their lag into the juice. No public or market-structure pattern in weeks 1–6 offered positive value against Pinnacle's no-vig close.
+- `/research` summarises the market studies together.
+- **The next candidate is exchanges (MS-051).** Their margins are thin and their prices are set by other traders rather than a book's risk team, so a lag there would not be priced into juice. OddsPapi's free history covers Novig, ProphetX and Kalshi, but at order-book volume (about 1–2 million entries per game), so storage is measured first.
+- **Confirmation** of MS-043/046/047/050 runs after 2026-12-16.
