@@ -1,6 +1,6 @@
 # Injury-report windows and the line: discovery (MS-047)
 
-_Generated 2026-10-21 02:54 UTC · commit `659ab20` · reproduce with `research/src/marketscope_research/run_injury_windows.py --phase discovery`._
+_Generated 2026-10-21 02:54 UTC · commit `82f3d8a` · reproduce with `research/src/marketscope_research/run_injury_windows.py --phase discovery`._
 
 Design pre-registered in `research/PREREGISTRATION.md` (Addendum I, committed before this code). The window runs from 4 hours before to 2 hours after the 4 pm ET game-status deadline (the day before Thursday games, two days before others). Events: starters newly listed Out (R2w's definition). Intervals resample games (5,000 draws, seed 2026). Value is closing-line value at Pinnacle's no-vig close. **Analysis, not betting advice.**
 

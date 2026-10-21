@@ -1114,7 +1114,7 @@ The remaining candidates are information that reaches the market during the week
 
 ## ADR-058 — Injury news is priced before the official report (MS-047) (2026-10-21)
 
-**Context.** R2w found the consensus moves +0.40 points per newly-out starter during the week. MS-047 asked whether that move happens when teams file game-status designations (4 pm ET, the day before Thursday games and two days before others), and whether retail books lag it. Addendum I (`5d03d20`) was committed before code (`b2297ad`).
+**Context.** R2w found the consensus moves +0.40 points per newly-out starter during the week. MS-047 asked whether that move happens when teams file game-status designations (4 pm ET, the day before Thursday games and two days before others), and whether retail books lag it. Addendum I (`50762d0`) was committed before code (`9fb408f`).
 
 **Discovery results** (weeks 2–6, `research/reports/injury-windows-discovery.md`):
 
