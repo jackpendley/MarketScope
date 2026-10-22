@@ -1,0 +1,91 @@
+{
+  "model_version": "ratings-v1",
+  "params_sha256": "c2f6ed74f6c7e32a57899b0080815ec48b7cace82dfe9ad9a2240624340cbe2e",
+  "target": "home margin of victory (points), full game including overtime",
+  "outputs": {
+    "expected_margin": "sum of weight x feature, plus home_field when the site is not neutral",
+    "p_home": "P(home wins) from the fitted margin distribution (key numbers), a tie counted as half",
+    "expected_total": "total_a + total_b x expected drives x expected points per drive (both offenses)"
+  },
+  "home_field": {
+    "weight": 0.34004085122695715,
+    "unit": "points",
+    "applies": "not a neutral site"
+  },
+  "features": [
+    {
+      "name": "pass",
+      "weight": 0.20266164502634998,
+      "description": "Expected net pass EPA per game: home minus away (offense vs opposing defense) EPA per dropback times league dropbacks per team-game",
+      "unit": "points",
+      "available": "filtered state after every completed game before the prediction (point in time)"
+    },
+    {
+      "name": "rush",
+      "weight": 0.2631284665979258,
+      "description": "Expected net rush EPA per game, built the same way from rushing plays",
+      "unit": "points",
+      "available": "filtered state after every completed game before the prediction (point in time)"
+    },
+    {
+      "name": "succ",
+      "weight": 53.63072490761073,
+      "description": "Expected success-rate difference (home offense vs away defense minus the reverse)",
+      "unit": "share",
+      "available": "filtered state after every completed game before the prediction (point in time)"
+    },
+    {
+      "name": "ppd",
+      "weight": 0.5057071883326687,
+      "description": "Expected net points from drives: points-per-drive difference times league drives per team-game",
+      "unit": "points",
+      "available": "filtered state after every completed game before the prediction (point in time)"
+    },
+    {
+      "name": "st",
+      "weight": 0.9038765802175199,
+      "description": "Expected net special-teams EPA per game",
+      "unit": "points",
+      "available": "filtered state after every completed game before the prediction (point in time)"
+    },
+    {
+      "name": "qb",
+      "weight": 0.4857212995319151,
+      "description": "Expected starting quarterback's rating relative to the team's baseline quarterback, net of the opponent's",
+      "unit": "points",
+      "available": "latest depth charts, injury reports and snaps published before the prediction"
+    },
+    {
+      "name": "avail_ol",
+      "weight": -0.729109197143381,
+      "description": "Expected missing offensive-line starters, net (home minus away)",
+      "unit": "starters",
+      "available": "latest depth charts, injury reports and snaps published before the prediction"
+    },
+    {
+      "name": "avail_skill",
+      "weight": -0.8974390461060874,
+      "description": "Expected missing skill-position starters, net",
+      "unit": "starters",
+      "available": "latest depth charts, injury reports and snaps published before the prediction"
+    },
+    {
+      "name": "avail_front7",
+      "weight": -0.5882778654925503,
+      "description": "Expected missing front-seven starters, net",
+      "unit": "starters",
+      "available": "latest depth charts, injury reports and snaps published before the prediction"
+    },
+    {
+      "name": "avail_db",
+      "weight": -0.5812927721758289,
+      "description": "Expected missing defensive-back starters, net",
+      "unit": "starters",
+      "available": "latest depth charts, injury reports and snaps published before the prediction"
+    }
+  ],
+  "rules": [
+    "A game's result never feeds its own features (ADR-028).",
+    "The displayed rating uses no market inputs."
+  ]
+}
