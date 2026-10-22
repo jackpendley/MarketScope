@@ -395,15 +395,15 @@ Prompted by an external review (of commit `7a62f87`), reconciled against the loc
 
 - [x] **Timestamps and reconstruction** (ADR-067): instants, not text; zone required; per-outcome order asserted; ties kept in provider order. Measured impact on existing data: none.
 - [x] **Evaluation boundaries** (Addenda V and W, ADR-069): frozen-first subsets, week-block bootstrap, declared confirmation family with a Holm sensitivity, and MS-057's shared-line check (a market baseline and permutation nulls).
-- [x] **Dataset identity and reproducible runs** (ADR-070; dataset `lake-2d40bfbafd04b8f2`; durable private copy still needs approval): lake manifest v2 (schema and transform versions, file and catalog hashes, coverage), dataset ID independent of build time, atomic resumable builds, run records per report, peak-memory measurement, and a snapshot/restore command. Durable private copy: needs approval (a Supabase Storage bucket).
+- [x] **Dataset identity and reproducible runs** (ADR-070; dataset `lake-2d40bfbafd04b8f2`; private Supabase Storage copy, ADR-073): lake manifest v2 (schema and transform versions, file and catalog hashes, coverage), dataset ID independent of build time, atomic resumable builds, run records per report, peak-memory measurement, and a snapshot/restore command. Durable private copy: needs approval (a Supabase Storage bucket).
 - [x] **Generated results** (ADR-072): five cards (C1, C2, A1, M3, F1) read runner output; the older cards move over when their runners next run.
-- [ ] **Operations:**
+- [x] **Operations:**
   - [x] partial imports marked `partial` and retryable; gap-based freshness per dataset in `/api/health/data` (ADR-071);
-  - [ ] backup and restore of the serving database demonstrated;
-  - [ ] streaming JSON in the TypeScript importer, so `--retry-partial` can succeed.
-- [ ] **One complete ML workflow:** ratings-v1 with a versioned dataset, feature schema, reloadable artifact, prediction provenance, and a generated model card.
+  - [x] backup and restore of the serving database demonstrated (ADR-075);
+  - [x] streaming JSON in the TypeScript importer (ADR-076); the 5 partial games were re-imported.
+- [x] **One complete ML workflow** (ADR-074): ratings-v1 with a versioned dataset, feature schema, reloadable artifact, prediction provenance, and a generated model card.
 - [x] **Data and service gap analysis** in `docs/DATA_SOURCES.md` (no purchases).
-- [ ] **Reviewer documentation:** README, case study and architecture around three stories, plus a synthetic walkthrough.
+- [x] **Reviewer documentation:** README, case study and architecture around three stories, plus a synthetic walkthrough.
 
 ## Out of scope until the core works
 

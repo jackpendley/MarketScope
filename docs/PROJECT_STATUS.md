@@ -1,6 +1,6 @@
 # Project Status
 
-_Rewrite this file at the end of every session. Last updated: 2026-10-22 (session 1, continued; MS-058, MS-059, MS-056 discovery, Phase 14 items 1–5 and 7)._
+_Rewrite this file at the end of every session. Last updated: 2026-10-22 (session 1, continued; MS-058, MS-059, MS-056 discovery, Phase 14 complete)._
 
 ## Current milestone
 
@@ -11,9 +11,13 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-22 (sessio
 - lake dataset identity, snapshots and run records (ADR-070);
 - partial imports and gap-based freshness (ADR-071; production shows 5 partial imports, 0 finals without moves);
 - generated `/research` numbers (ADR-072);
-- data gap analysis (`docs/DATA_SOURCES.md`).
+- data gap analysis (`docs/DATA_SOURCES.md`);
+- private lake snapshot bucket (ADR-073); serving-database backup with a restore check (ADR-075);
+- ratings-v1 ML workflow: feature schema, prediction provenance, generated model card (ADR-074);
+- streaming OddsPapi history in the collector (ADR-076); the 5 partial imports were re-imported, 0 left;
+- reviewer docs: case study stories, `docs/WALKTHROUGH.md`, architecture.
 
-Next: the ratings-v1 ML workflow.
+Phase 14 is complete except the first `lake push`, which waits for `SUPABASE_STORAGE_KEY` in `research/.env.local`.
 
 **Phase 13 (ADR-061): finding real value on NFL spreads, totals and moneylines.** Phase 12 discovery is complete, with no value against the close (its confirmation runs after 2026-12-16).
 
@@ -299,9 +303,9 @@ Next: the ratings-v1 ML workflow.
 
 ## Tests
 
-- **Football pytest:** 114 (unit tests, plus integration against the migrated test DB; includes validation of the committed coaching CSV and the 2016–24 seeding reproduction).
-- **Research pytest:** 219.
-- **TS:** db 59, shared 192, collector 85, web 149 (unit + integration), e2e 63.
+- **Football pytest:** 125 (unit tests, plus integration against the migrated test DB; includes validation of the committed coaching CSV and the 2016–24 seeding reproduction).
+- **Research pytest:** 223.
+- **TS:** db 59, shared 192, collector 92, web 149 (unit + integration), e2e 63.
 
 ## Quotas
 
@@ -311,12 +315,12 @@ Next: the ratings-v1 ML workflow.
 ## Data (production, Supabase)
 
 - **Size:** 186 MB of Supabase's 500 MB (2026-10-22: `line_moves` 69 MB, `odds_observations` 57 MB); earlier breakdown: 181 MB: `line_moves` 69 MB (books 23 MB, exchanges about 46 MB), the other odds tables ≈ 75 MB, football tables ≈ 20 MB, auth and the rest small.
-- **Migrations:** 0000–0020 (0020 adds the `partial` ingestion status; applied 2026-10-22).
+- **Migrations:** 0000–0021 (0020 adds the `partial` ingestion status; 0021 adds prediction provenance; both applied 2026-10-22).
 - **Research lake (local):** dataset `lake-2d40bfbafd04b8f2`, 93 fixtures, 37.3M rows, 154 MB; `lake verify` checks every file hash.
 
 ## Waiting on Jack
 
-Nothing blocking. One approval would add a durable copy of the research lake: a private Supabase Storage bucket (see Next task).
+Nothing blocking. The bucket exists (approved 2026-10-22); the first push needs the project's secret key in `research/.env.local` (Jack adds it locally, never in chat).
 
 ## Known issues / open decisions
 
@@ -336,28 +340,24 @@ Nothing blocking. One approval would add a durable copy of the research lake: a 
 
 ## Next task
 
-**Phase 14, item 6: one complete ML workflow on ratings-v1** (the plan: `~/.claude/plans/pasted-content-id-32f6-marketscope-zany-stonebraker.md`; ROADMAP Phase 14).
+1. **When `SUPABASE_STORAGE_KEY` is in `research/.env.local`:**
 
-- A versioned training dataset (ID and hash) built from the nflverse tables.
-- A feature schema saved beside `apps/football/.../ratings/params.json`.
-- A reload-and-predict test.
-- `model_runs` and `model_predictions` gain `dataset_id`, `feature_schema_sha` and `code_sha` (a migration, with RLS kept).
-- Chronological evaluation and calibration as structured JSON, with `MODEL_CARD.md` and the report generated from it.
-- A synthetic demo that needs no production credentials.
-- Keep the evaluation history honest: 2023–24 validation has already shaped the model, 2025 was evaluated once, and the 2026 forward test is the prospective evidence.
+   ```sh
+   cd research && SUPABASE_URL=$(grep '^SUPABASE_URL=' .env.local | cut -d= -f2-) \
+     SUPABASE_STORAGE_KEY=$(grep '^SUPABASE_STORAGE_KEY=' .env.local | cut -d= -f2-) \
+     PYTHONPATH=src .venv/bin/python -m marketscope_research.lake push
+   ```
 
-**Then:**
+   Then `lake pull --dataset lake-2d40bfbafd04b8f2 --to /tmp/x` to prove the restore.
 
-- serving-database backup and restore (`pg_dump` of serving tables into the local test DB, plus `lake restore`);
-- streaming JSON in the TypeScript importer;
-- reviewer docs (README, case study, architecture: three stories plus a synthetic walkthrough).
+2. **Lake upkeep:** `lake build` for weeks 7–14 (before 2026-12-16), then `lake verify` and `lake push`.
+3. **Before the confirmation runbook (2026-12-16),** every confirmation runner adds:
+   - Addendum V's frozen-first subset, week-block interval and Holm summary (`evaluation.py`);
+   - `results.record_result` and a run record.
 
-**Before the 2026-12-16 confirmation runbook:**
+   PRs with run records are merged with a merge commit (ADR-070).
 
-- every confirmation runner adds Addendum V's frozen-first subset, week-block interval and Holm summary (`evaluation.py`), plus `results.record_result` and a run record;
-- PRs that commit run records are merged with a merge commit (ADR-070).
-
-**Waiting on Jack (approval):** a private Supabase Storage bucket for `lake snapshot` archives (161 MB, free tier, existing project), after checking OddsPapi's terms on private storage.
+4. **Model card:** re-run `ratings.model_card` (read-only) as forward-test games accumulate.
 
 **Pre-registration default from now on:** confirm on weeks 7–18 (plus playoffs where the question allows), not 7–14.
 
