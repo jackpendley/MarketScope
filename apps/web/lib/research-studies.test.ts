@@ -35,6 +35,7 @@ describe("research studies", () => {
       "C1",
       "C2",
       "A1",
+      "F1",
     ]);
   });
 

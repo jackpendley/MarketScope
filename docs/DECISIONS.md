@@ -1378,3 +1378,25 @@ These run on a better fair-value engine: a joint margin–total distribution and
 - **TypeScript (`transform.ts`):** `instantMs` rejects timestamps without a zone. `bookCandidates` filters and sorts by instant instead of comparing text; JavaScript's sort is stable, so ties keep provider order.
 
 **What a timestamp means.** `createdAt` is the provider's record of when a book's price changed, not when we or anyone else could have seen it. Every lake-based study reconstructs availability from it, retrospectively. The Odds API snapshots are the only prices with our own receipt time (`observed_at`). That is why Addendum S corroborates against them.
+
+## ADR-068 — Weather-forecast revisions and totals: discovery (MS-056) (2026-10-22)
+
+**Context.** Phase 13's information-timing milestone asked whether markets lag information that is already public. Addendum U (`c4e4ad2`) registered the weather half before any code. The code came before the first run. The injury half was not registered: no free source gives news with minute-level publication times. nflverse snapshots twice a day (already tested in MS-047), and ESPN's endpoints are undocumented, with unclear terms.
+
+**Key enabler: forecasts reconstructed after the fact, for free.**
+
+- Open-Meteo's Single Runs API serves archived ECMWF IFS, GFS and HRRR runs by their initialisation time, back to April 2026.
+- The archive keeps 00, 06, 12 and 18 UTC runs only, including for HRRR.
+- This needs no polling cron and no database storage. Weeks 1–6 were testable immediately, and weeks 7–18 will be too.
+- Point in time: a run counts as available 6 hours after it starts (Open-Meteo states 4–6 hours for global models).
+- Runs are cached as Parquet in `fixtures/open-meteo/local/` (gitignored). Weather data by Open-Meteo.com (CC BY 4.0).
+
+**Results** (`research/reports/weather-timing-discovery.md`; 77 outdoor and retractable-roof games):
+
+- **Primary: inconclusive.** Only 2 games (3 runs) had a qualifying revision (at least 4 mph, with at least 12 mph wind, 72–1 h out), against the 6–14 guessed in the power statement. Early-season wind was calm. The registered rule prints "the opposite" (−5.45% over 15 positions), but a game bootstrap over 2 games cannot support any conclusion. The placebo, the same positions 3 hours before the run existed, is just as negative (−5.68%). So the line simply moved against the forecast side in those two games for other reasons. The report now says this, as a reporting addition after the first run.
+- **Reaction (908 runs):** Pinnacle's total moved +0.004 points per mph of revision within 6 hours (−0.008 to +0.016) and −0.020 by the close (−0.063 to +0.021). There is no detectable reaction to ECMWF wind revisions. Either the market prices forecasts from faster or private sources, or 6-hourly revisions of this size are too small to matter.
+- **Exploratory:** GFS, HRRR and precipitation revisions are all negative, from 2–15 games. The median time from availability to Pinnacle's next total change is about 17 hours for ordinary runs.
+
+**Engineering.** The first run took 22 minutes, because each game's lake candidates were rebuilt eight times. Building them once per game cut it to 4.3 minutes, with peak memory of 2.0 GB, and the numbers are identical (checked by regenerating the report).
+
+**Next.** Confirmation runs on weeks 7–18 with the same code (`run_weather_timing --phase confirmation`), after week 18, with Addendum V's frozen-first and week-block sensitivities. More wind events are expected late in the season.

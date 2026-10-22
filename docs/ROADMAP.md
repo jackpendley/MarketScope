@@ -377,7 +377,10 @@ The phase is NFL only and free first. A criteria-based gate decides whether paid
 - [ ] **MS-055** Alternate lines and model-based teasers ("Wong 2.0").
   - [x] MS-055a model-priced teaser legs (ADR-063): 74.5% on 2023–25, break-even, no claim; `wong-model` paper strategy.
   - [x] MS-055b alternate ladders (ADR-064): +4.3% as registered, withdrawn as an engine-tail artifact. Against the sharp books' own same-line prices it is −3.6%. Confirmation on weeks 7–14 under Addendum R.
-- [ ] **MS-056** Information timing: a faster injury and news feed and weather-forecast revisions, as event studies.
+- [ ] **MS-056** Information timing (Addendum U, ADR-068): weather-forecast revisions from archived Open-Meteo runs, as event studies.
+  - [x] Discovery: inconclusive (2 games with events); Pinnacle shows no detectable reaction to ECMWF wind revisions (908 runs).
+  - [ ] Confirmation on weeks 7–18 (after week 18).
+  - Injury half not registered: no free source with minute-level publication times (a paid-data case).
 - [ ] **MS-057** Does the market move toward the MarketScope model from the open?
   - [x] Discovery (ADR-063): slope +0.116 (+0.048 to +0.189), a discovery claim; early-line value −1.0%, no claim.
   - [ ] Confirmation on weeks 7–14; then the paid-data decision.
