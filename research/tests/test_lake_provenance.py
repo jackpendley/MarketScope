@@ -172,3 +172,82 @@ def test_record_result_upserts_cards(tmp_path):
     data = json.loads(path.read_text())
     assert list(data) == ["C1", "M3"] and data["M3"]["value"] == 0.2 and data["C1"]["digits"] == 3
     assert len(data["C1"]["commit"]) == 7
+
+
+class FakeStorage:
+    """The three Storage calls, in memory."""
+
+    def __init__(self):
+        self.objects, self.puts = {}, 0
+
+    def list(self, prefix):
+        return {k for k in self.objects if k.startswith(prefix.rstrip("/") + "/")}
+
+    def put(self, path, data, upsert=False):
+        if path in self.objects and not upsert:
+            raise RuntimeError("409 exists")
+        self.objects[path], self.puts = data, self.puts + 1
+
+    def get(self, path):
+        return self.objects[path]
+
+
+def test_push_and_pull_round_trip_with_content_addressed_objects(tmp_path):
+    from marketscope_research.lake import remote
+    m = build(tmp_path / "lake")
+    fake = FakeStorage()
+    first = remote.push(fake, tmp_path / "lake")
+    assert first["dataset_id"] == store.dataset_id(m) and first["uploaded"] == first["files"]
+    again = remote.push(fake, tmp_path / "lake")
+    assert again["uploaded"] == 0 and again["already_stored"] == first["files"]  # nothing re-sent
+    assert remote.snapshots(fake) == [store.dataset_id(m)]
+    assert remote.pull(fake, store.dataset_id(m), tmp_path / "back") == store.dataset_id(m)
+
+
+def test_pull_refuses_a_corrupted_object(tmp_path):
+    from marketscope_research.lake import remote
+    m = build(tmp_path / "lake")
+    fake = FakeStorage()
+    remote.push(fake, tmp_path / "lake")
+    key = next(k for k in fake.objects if k.startswith("objects/"))
+    fake.objects[key] = b"corrupted"
+    with pytest.raises(ValueError, match="differs"):
+        remote.pull(fake, store.dataset_id(m), tmp_path / "back")
+
+
+def test_push_refuses_an_unverified_lake(tmp_path):
+    from marketscope_research.lake import remote
+    build(tmp_path)
+    store.write_fixture("f1", entries(shift=0.5), tmp_path)
+    with pytest.raises(ValueError, match="does not verify"):
+        remote.push(FakeStorage(), tmp_path)
+
+
+def test_storage_client_puts_the_key_in_headers_not_urls(monkeypatch):
+    from marketscope_research.lake import remote
+    seen = []
+
+    class Resp:
+        def __init__(self, body):
+            self.body = body
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def read(self):
+            return self.body
+
+    def fake_urlopen(req, timeout):
+        seen.append(req)
+        return Resp(b"[]" if "/list/" in req.full_url else b"ok")
+
+    monkeypatch.setattr(remote.urllib.request, "urlopen", fake_urlopen)
+    c = remote.StorageClient("https://example.supabase.co", "sekrit")
+    c.put("objects/abc", b"x")
+    assert c.list("objects") == set()
+    assert all("sekrit" not in r.full_url for r in seen)
+    assert seen[0].get_header("Authorization") == "Bearer sekrit" and seen[0].get_header("X-upsert") == "false"
+    assert seen[0].full_url == "https://example.supabase.co/storage/v1/object/lake-snapshots/objects/abc"

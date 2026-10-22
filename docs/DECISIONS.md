@@ -1501,3 +1501,18 @@ OddsPapi's terms need checking for private storage of history before any upload.
 - **Tests.** A unit test fails if a generated result has no card, if a card's report link differs from the runner's report, or if a result came from a dirty tree.
 
 **Not yet generated:** the Phase 10–12 cards (R1–R7, S1–S3, M1–M2, I1–I2, O1, T1, X1, W2). Their runners predate this. Each moves to generated results the next time it runs, at the latest in the confirmation runbook.
+
+## ADR-073 — Private Supabase Storage bucket for lake snapshots (2026-10-22)
+
+**Context.** ADR-070 made the lake verifiable, but its only copy was on one laptop. Re-downloading is not a guarantee: OddsPapi can revise, drop or stop serving history, and its terms allow access to be revoked (section 6). Jack approved a private Supabase Storage bucket in the existing project on 2026-10-22.
+
+**Terms checked first.** OddsPapi's terms (section 3) prohibit reselling, repackaging or redistributing the data as a standalone product. They say nothing about private storage or caching. A bucket that nobody else can read is consistent with that. The data never goes into the public repository or onto the site.
+
+**Decision.**
+
+- **Bucket `lake-snapshots`:** created with SQL on the existing connection, private, 50 MB per file (the free-tier limit), with no `storage.objects` policies. The anon and authenticated roles cannot read or write it; only a secret key can.
+- **Content-addressed layout.** Free-tier objects are limited to 50 MB and the snapshot archive is 161 MB, so the archive is not uploaded whole. Each file goes to `objects/<sha256>` (fixture files are a few MB), and `snapshots/<dataset id>.json` lists a dataset's files. A later snapshot uploads only new or changed files. Pulling checks every hash, then the dataset ID and `store.verify`.
+- **Client.** `lake/remote.py` makes three Storage REST calls over the standard library. There is no `supabase-js` and no SDK, so ADR-018 (Supabase as managed Postgres plus nothing else unless a feature needs it) holds; this is that feature. The key travels only in headers, never in a URL or a log (tested).
+- **Commands:** `lake push`, `lake snapshots`, `lake pull --dataset ID --to DIR`. They need `SUPABASE_URL` (in `research/.env.local`; not secret) and `SUPABASE_STORAGE_KEY`, the project's secret key, which Jack adds to the same gitignored file.
+
+**Cost.** 161 MB of the free tier's 1 GB. That is separate from the 500 MB database.
