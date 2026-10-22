@@ -1237,3 +1237,50 @@ These run on a better fair-value engine: a joint margin–total distribution and
 - The gate says to buy history only for a positive result too uncertain to decide on one season. So: **wait for the free weeks 7–14 confirmation (after 2026-12-16).**
 - **If the slope confirms,** buying The Odds API's 2020–25 history ($119, one month) is worthwhile. It would test value at the early line over about 1,400 games, ideally with the full model (QB and availability), not only the ratings.
 - **If it doesn't confirm,** don't buy.
+
+## ADR-064 — Cross-market and alternate-line discovery: ghost markets, engine tails and corroborated prices (MS-052, MS-054, MS-055b) (2026-10-22)
+
+**Context.**
+
+- **The research lake (MS-052) is built:** all 93 finished 2026 games, 37.3 million entries, 151 MB of Parquet. It reproduces `line_moves` at 100% for nine books and 99.93% for Kalshi, on a 15-minute grid.
+- **Pre-registration:**
+  - MS-054 is Addendum P and MS-055b is Addendum Q.
+  - The code (`89907bb`, `0c1cd71`) was committed before the first runs.
+  - Reports: `research/reports/cross-market-discovery.md` and `alt-ladders-discovery.md`.
+
+**As registered (weeks 1–6):**
+
+- **A, moneyline against the book's own spread:** −4.9% (−6.3 to −3.5), 51 positions. The opposite of the hypothesis; the spread was the number out of line.
+- **B, retail main-line price above the sharp consensus:** **+3.6% (+2.3 to +4.8)**, 131 positions. A discovery claim on the letter of Addendum P.
+- **MS-055b, retail alternates above the sharp consensus:** **+4.3% (+3.5 to +5.1)**, 6,278 alternates. Also a discovery claim on the letter.
+
+**Post-hoc checks.** The first positive primaries in the project were checked before being believed, and both had measurement problems.
+
+1. **Engine tails.**
+   - **The flaw:** the engine moves a probability from a sharp book's main line to another line by adding the main-line calibration shift unchanged at every line. Far from the main line that overstates the chances.
+   - **Why the design missed it:** the same engine scored the close, so the error showed up as value at both ends.
+   - **The test:** scored against Pinnacle's, Circa's and Bookmaker.eu's own prices at the same alternate line, MS-055b's candidates are worth **−3.6% (−4.9 to −2.3)**. That is −5.1% beyond 3 points from the main line and +1.6% within 1 point.
+   - **What it explains:** Wong 2.0's overconfidence (76.7% predicted, 74.5% won).
+2. **Ghost markets.**
+   - **The flaw:** OddsPapi sometimes keeps a sportsbook market marked active after the book stopped updating it. Example: Caesars' −10, last updated on 1 September, still "active" at kickoff on 18 October, when the real line was −7.
+   - **How it got in:** the main-line rule picks whatever is closest to even, so it took the ghost.
+   - **Where it shows:** the production `line_moves` table and the replay page, which share the rule.
+   - **In B:** positions on prices unchanged for more than a day averaged +4.7%, against +1.7% for the rest.
+3. **No independent record of the prices.** Our own collector (The Odds API) only started on 2026-10-16. It saw 6 of the B prices, and all 6 matched.
+
+**Decision.**
+
+- **Withdrawn.** MS-055b's claim is a measurement artifact, the same treatment ADR-055 gave F10. B is "inconclusive" on `/research`. MS-054 A is "no claim".
+- **Addendum R (`a5e0f9d`), registered before any confirmation game:**
+  - A coherence rule for ghost markets: a market is kept only if its price is monotone with the book's fresher markets. Exchanges are exempt.
+  - Direct scoring against the sharp books' own same-line prices, on half-point lines.
+  - With both applied, B is +3.0% engine-scored and **+2.2% (−0.1 to +4.3) direct-scored** (descriptive only).
+- **Addendum S (`4a37fad`):**
+  - **Why:** the coherence rule misses ghosts priced almost level with the real line (the Caesars −10 survives it).
+  - **Rejected:** a minimum-slope rule, without using any outcome. Hard Rock prices adjacent lines in equal pairs and real ladders flatten in the tails.
+  - **The B confirmation primary instead:** only prices our own collector also saw while they were in effect (DraftKings, FanDuel, Hard Rock), with both engine- and direct-scored intervals above 0.
+  - **Power:** about 3% per unit is detectable, so an inconclusive result is likely and is reported as no claim.
+- **Two follow-ups:**
+  - **MS-058:** the collector adopts a ghost-market rule, `line_moves` is re-derived, and the replay page is corrected.
+  - **MS-059, engine v3:** calibrate line conversion against the sharp books' own alternate ladders, an outcome-free target that the lake now provides.
+- **The paid-data gate gains a second reason.** If B holds, or is positive but inconclusive, The Odds API's 2020–25 snapshots would test it over about 1,400 games, with retail prices observed independently.

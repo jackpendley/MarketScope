@@ -72,7 +72,7 @@ export default function ResearchPage() {
       <div className="space-y-2">
         <h1 className="text-xl font-semibold tracking-tight">Research</h1>
         <p className="max-w-3xl text-sm text-muted">
-          Twenty-one pre-registered studies, each with one primary question: twelve on the betting
+          Twenty-four pre-registered studies, each with one primary question: fifteen on the betting
           market itself and nine on football. The questions, data windows, decision rules and
           minimum sample sizes were{" "}
           <a href={PREREGISTRATION} className="text-accent hover:underline">

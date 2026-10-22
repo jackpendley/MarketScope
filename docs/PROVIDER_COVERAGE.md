@@ -161,3 +161,14 @@ nflverse publishes one closing spread, total and moneyline per game. Its `spread
 | Totals within 1                      | 100%                  |
 
 **Conclusion:** the sign convention is confirmed, and the nflverse close is a sound benchmark for seasons we hold no odds for (2016–2025). Only one game differed by more than 1 point (2026 Week 3 LA @ DEN, 2.75). Live-collected games join this check as they complete.
+
+## OddsPapi ghost markets (found 2026-10-22, ADR-064)
+
+- **What happens:** OddsPapi sometimes keeps a sportsbook market marked `active` after the book has stopped updating it.
+- **Example:** Caesars' −10 spread for one week-7 game was last updated on 1 September, a look-ahead line. It was still "active" at −115/−115 at kickoff on 18 October, when Caesars' real line was −7.
+- **Why it matters:** our main-line rule (`pickMain`: both sides active, closest to even) picks such a ghost whenever it is closer to even than the real line. That affects `line_moves` and the replay page.
+- **How often:** in the lake (93 games, final 7 days, 15-minute grid), a monotone-coherence rule changes the chosen main line at 0.2–0.9% of points for the retail books (5–14 games each) and almost never for Pinnacle, Circa or Bookmaker.eu.
+- **What it misses:** a ghost priced almost level with the real line passes the rule.
+- **What we do about it:**
+  - Studies use the coherence rule plus corroboration against our own The Odds API snapshots (Addenda R and S).
+  - MS-058 will fix the collector.
