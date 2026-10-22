@@ -18,7 +18,8 @@ import {
 } from "drizzle-orm";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import type { Database } from "../client";
-import { events, ingestionRuns, ingestionStatus, oddsObservations } from "../schema";
+import { events, ingestionRuns, oddsObservations } from "../schema";
+import type { ingestionStatus } from "../schema";
 
 const isoUtc = (value: AnyPgColumn | SQL) =>
   sql<string>`to_char(${value} at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')`;
