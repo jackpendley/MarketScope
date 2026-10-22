@@ -1553,3 +1553,19 @@ OddsPapi's terms need checking for private storage of history before any upload.
 **Measured.** 186 MB → 11.2 MB dump in 22 s (indexes are rebuilt, not dumped). Restore and check of 27 tables and 626,813 rows in 3–5 s, every count matching.
 
 **Open.** Backups stay on the laptop in `backups/` (gitignored; they contain password hashes and session tokens). A durable off-machine copy needs separate approval. The `lake-snapshots` bucket was approved for lake snapshots, not for credentials data.
+
+## ADR-076 — Streaming parse of OddsPapi history in the collector (2026-10-22)
+
+**Context.** ADR-071 made skipped books visible (`partial`) and retryable, but a retry failed the same way. The client called `res.json()`, which materialises the whole body as one string, and V8 strings stop at about 537 million characters. A busy exchange's full history for one game exceeds that: 5 production imports are partial because of it. The Python lake never had this problem, because it streams with `ijson`.
+
+**Decision.**
+
+- **`parseHistoryStream`** (`providers/oddspapi/stream.ts`) parses the response byte stream incrementally with `@streamparser/json` (0.0.26, MIT, no dependencies). It emits each entry at `bookmakers.*.markets.*.outcomes.*.players.0.*` and keeps only the requested markets. Memory therefore grows with full-game spread, total and moneyline entries, not with the response.
+- **`historicalOdds(..., { markets })`** streams. The line-move import always passes its main markets (`mainMarkets`). Without a filter the client behaves exactly as before.
+- **A truncated body throws** (tested). It never returns partial data as if complete.
+
+**Measured.** A synthetic 598 MB body, larger than V8's maximum string, streamed in 14 s with a 14 MB heap and 182 MB peak RSS, keeping one market of 200. The old path cannot parse it at all.
+
+**Alternative rejected.** Asking OddsPapi for narrower time windows: the history endpoint has no time filter. A larger `--max-old-space-size` would not help, because the limit is the string, not the heap.
+
+**Follow-up.** `import:line-moves --profile exchanges --retry-partial` re-imports the 5 partial games once this is deployed.
