@@ -484,4 +484,24 @@ export const MARKET_STUDIES: Study[] = [
     ],
     report: `${REPO}/research/reports/alt-ladders-discovery.md`,
   },
+  {
+    id: "F1",
+    title: "Weather-forecast revisions and totals",
+    question:
+      "When a new weather-model run raises or lowers a game's wind forecast, do totals lag a forecast that is already public?",
+    window: "2026 weeks 1–6, 77 outdoor games; 2 games with a qualifying revision, 15 positions",
+    status: "no claim",
+    primary: {
+      label:
+        "Mean value per unit at the sharp-consensus close, forecast side taken 10 minutes after the run is public",
+      estimate: "−0.055",
+      interval: "−0.083 to −0.040",
+    },
+    finding:
+      "Inconclusive despite the interval: only 2 games had a qualifying revision (early-season wind was calm), and a game bootstrap over 2 games cannot support a conclusion. The same positions 3 hours before the run existed were just as negative, so those lines moved for other reasons. Across all 908 model runs, Pinnacle's total did not visibly react to ECMWF wind revisions (+0.004 points per mph within 6 hours, −0.008 to +0.016). Confirmation covers weeks 7–18, where more wind is expected.",
+    exploratory: [
+      "Forecasts are archived ECMWF runs (Open-Meteo, CC BY 4.0), counted as public 6 hours after each run starts, rebuilt after the fact for every game.",
+    ],
+    report: `${REPO}/research/reports/weather-timing-discovery.md`,
+  },
 ];
