@@ -173,3 +173,79 @@ def load_engine(history: pd.DataFrame, params_path=None) -> Engine:
         margin=margin_model(f, m["h_s"], m["h_t"]) if m["model"] == "kernel" else None,
         total=total_model(f, t["h_s"], t["h_t"]) if t["model"] == "kernel" else None,
         margin_bucket=bucket_pmf(f, "k"), total_bucket=bucket_pmf(f, "pts"), devig_method=p["devig"])
+
+
+# --- line conversion (MS-059, research/PREREGISTRATION.md Addendum T) ---------------------------
+#
+# A pmf over an outcome x where side 1 wins at threshold t when x > t and pushes when x == t:
+# x = home margin and t = -(home spread) for spreads; x = total points and t = the total for totals.
+# Each method calibrates the pmf so side 1's no-push probability at the main threshold equals the
+# devigged main-line price, and returns t -> (win, push) for side 1 at any other threshold.
+
+CONVERSIONS = ("v2", "logit", "location", "scale")
+BETAS = tuple(round(0.70 + 0.02 * i, 2) for i in range(31))
+_CLIP = 1e-9
+
+
+def home_margin_pmf(fav_pmf: pd.Series, home_spread: float) -> pd.Series:
+    """The engine's favourite-margin pmf re-indexed to the home margin (home favourite at a pick'em)."""
+    if home_spread <= 0:
+        return fav_pmf
+    return pd.Series(fav_pmf.to_numpy()[::-1], index=-fav_pmf.index.to_numpy()[::-1])
+
+
+def _tail(x: np.ndarray, p: np.ndarray, t: float) -> tuple[float, float]:
+    return float(p[x > t].sum()), float(p[x == t].sum())
+
+
+def _no_push(win: float, push: float) -> float:
+    return win / (1 - push) if push < 1 else 0.5
+
+
+def _logit(p: float) -> float:
+    p = min(max(p, _CLIP), 1 - _CLIP)
+    return float(np.log(p / (1 - p)))
+
+
+def _sigmoid(z: float) -> float:
+    return float(1 / (1 + np.exp(-z)))
+
+
+def calibrate(pmf: pd.Series, t_main: float, p_main: float, method: str, beta: float = 1.0):
+    """t -> (win, push) for side 1, calibrated so the no-push probability at t_main is p_main."""
+    x, p = pmf.index.to_numpy(float), pmf.to_numpy(float)
+
+    if method == "v2":  # the additive shift of market_ml.side_probabilities
+        delta = p_main - _no_push(*_tail(x, p, t_main))
+
+        def v2(t: float) -> tuple[float, float]:
+            w, pu = _tail(x, p, t)
+            return min(max(w + delta * (1 - pu), 0.0), 1 - pu), pu
+        return v2
+
+    if method in ("logit", "scale"):
+        b = 1.0 if method == "logit" else beta
+        delta = _logit(p_main) - b * _logit(_no_push(*_tail(x, p, t_main)))
+
+        def shifted(t: float) -> tuple[float, float]:
+            w, pu = _tail(x, p, t)
+            return _sigmoid(b * _logit(_no_push(w, pu)) + delta) * (1 - pu), pu
+        return shifted
+
+    if method == "location":
+        def at(mu: float, t: float) -> tuple[float, float]:
+            # pmf moved by mu: a mixture of the integer shifts floor(mu) and floor(mu) + 1
+            n = np.floor(mu)
+            f = mu - n
+            w0, pu0 = _tail(x, p, t - n)
+            w1, pu1 = _tail(x, p, t - n - 1)
+            return (1 - f) * w0 + f * w1, (1 - f) * pu0 + f * pu1
+
+        def gap(mu: float) -> float:
+            return _no_push(*at(mu, t_main)) - p_main
+
+        lo, hi = -40.0, 40.0
+        mu = brentq(gap, lo, hi) if gap(lo) < 0 < gap(hi) else (lo if gap(lo) >= 0 else hi)
+        return lambda t: at(mu, t)
+
+    raise ValueError(method)
