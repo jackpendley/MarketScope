@@ -1400,3 +1400,19 @@ These run on a better fair-value engine: a joint margin–total distribution and
 **Engineering.** The first run took 22 minutes, because each game's lake candidates were rebuilt eight times. Building them once per game cut it to 4.3 minutes, with peak memory of 2.0 GB, and the numbers are identical (checked by regenerating the report).
 
 **Next.** Confirmation runs on weeks 7–18 with the same code (`run_weather_timing --phase confirmation`), after week 18, with Addendum V's frozen-first and week-block sensitivities. More wind events are expected late in the season.
+
+## ADR-069 — Evaluation boundaries and the MS-057 shared-line check (Addenda V and W) (2026-10-22)
+
+**Context.** An external review asked whether confirmation samples respect decision times, and whether MS-057's "the market moves toward the model" could be an artifact. Addendum V (`1f07746`) registered sensitivities before any confirmation run. A planted-data test then showed that V's joint regression still credits a useless model when the baseline is noisy, so Addendum W (`8c66dfa`) added a permutation null before any real-data run. Code: `f9598a7`.
+
+**What was found.**
+
+- **Decisions before the rule.** Confirmation samples are selected by kickoff, but MS-057 decides 6 days out, MS-054 and MS-055b 48 hours out, and MS-056 72 hours out. A few week-7 decisions, and part of their labels, came before their addendum was committed. Each confirmation report now adds a "frozen-first" subset. The registered sample still decides. Every one of these analyses is a retrospective reconstruction. "Frozen first" means only that the rule existed before the decision.
+- **MS-057's shared early line.** y = close − L and x = model − L share Pinnacle's early line L. Discovery numbers, descriptive only:
+  - **Permutation:** model lines shuffled within weeks give +0.020 (−0.006 to +0.046), against the observed +0.116. The shared line explains only a small part.
+  - **Joint regression on the 50 games that have a market baseline** (team ratings fitted to Pinnacle's earlier 2026 closes; none in week 1): model coefficient +0.100 (−0.008 to +0.238); baseline −0.006. The model coefficient beats the Addendum W null (97.5th percentile +0.053), but its interval includes 0, so it is not established at discovery.
+  - **Week-block bootstrap of the primary:** +0.040 to +0.189 (6 weeks).
+- **Wording.** Addendum V suggested "the market moves toward the model, but no more than toward its own earlier lines" whenever the joint claim fails. That overstates when the baseline coefficient is itself near 0 and the model's interval is merely wide, as here. The report uses neutral wording instead ("not established beyond the market's own earlier closes"). This is a language change, not a decision rule.
+- **Confirmation family** (Addendum V §4): 13 rows. Holm adjustment is reported as a sensitivity. `evaluation.py` provides `frozen_first`, `mean_bootstrap` (game or week clusters, with bootstrap p-values), `ols_ci` and `holm`. Each confirmation runner adds these when it runs after 2026-12-16.
+
+**Why it matters.** Predicting where a line moves is not the same as earning at an available price. MS-057's price-aware secondary is −1.0% (−2.8 to +0.8). The slope survives the shared-line check better than expected, and confirmation on weeks 7–14 decides.

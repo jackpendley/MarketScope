@@ -1,8 +1,10 @@
 # Project Status
 
-_Rewrite this file at the end of every session. Last updated: 2026-10-22 (session 1, continued; MS-058, MS-059)._
+_Rewrite this file at the end of every session. Last updated: 2026-10-22 (session 1, continued; MS-058, MS-059, MS-056 discovery, Phase 14 items 1–2)._
 
 ## Current milestone
+
+**Phase 14 (ROADMAP): evidence, reproducibility and operations**, from an external review reconciled against the local state. Done: timestamp correctness (ADR-067; no impact on existing data) and evaluation boundaries (Addenda V and W, ADR-069). Next: dataset identity and reproducible runs.
 
 **Phase 13 (ADR-061): finding real value on NFL spreads, totals and moneylines.** Phase 12 discovery is complete, with no value against the close (its confirmation runs after 2026-12-16).
 
@@ -12,6 +14,8 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-22 (sessio
   - MS-057 (**the market moves toward the ratings early in the week, +0.116 per point: a discovery claim**);
   - MS-054 and MS-055b discovery (ADR-064);
   - MS-058 ghost markets in the collector (ADR-065): corrections in `line_move_fixes` (backfilled: 10,887 rows, 44 of 2,409 book-market timelines in 33 games, 3.1% of `line_moves` rows), shown on the replay page; `line_moves` unchanged for the registered studies (fingerprint checked);
+  - MS-056 discovery (ADR-068): weather-forecast revisions from archived Open-Meteo runs; primary inconclusive (2 games with events); no detectable Pinnacle reaction to ECMWF wind revisions (908 runs). Confirmation on weeks 7–18;
+  - MS-057 shared-line check (ADR-069): the slope is not mostly the shared early line (permutations +0.020 against +0.116); against the market's own earlier closes the model coefficient is +0.100 (−0.008 to +0.238), not established at discovery;
   - MS-059 engine v3 (ADR-066): logit-scale line conversion fitted to the sharp books' own alternate prices, outcome-free; adopted for spreads (KL −19%) and totals (−46%), moneylines stay v2. Registered primaries stay on v2; confirmation reports add v3 secondaries.
 - **ADR-064 in one paragraph:**
   - **The positives:** both lake studies had positive primaries as registered: B +3.6% and alternates +4.3%.
@@ -20,7 +24,7 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-22 (sessio
     - OddsPapi keeps some dead sportsbook markets "active" (ghost markets), and the main-line rule picks them.
   - **Alternates:** withdrawn. Against the sharp books' own same-line prices they are −3.6%.
   - **B:** after corrections +2.2% (−0.1 to +4.3), inconclusive. Confirmation counts only prices our own collector also saw (Addenda R and S, registered before week 7).
-- **Next:** MS-056 (information timing), using engine v3.
+- **Phase 13 remaining:** confirmation runs only (after 2026-12-16; MS-056 after week 18).
 
 - **Site:** live at https://marketscope-delta.vercel.app behind invite-only accounts (ADR-049). Jack's account is `jackpendley` / jackpendley9@gmail.com.
 
@@ -287,8 +291,8 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-22 (sessio
 ## Tests
 
 - **Football pytest:** 114 (unit tests, plus integration against the migrated test DB; includes validation of the committed coaching CSV and the 2016–24 seeding reproduction).
-- **Research pytest:** 182.
-- **TS:** db 55, shared 192, collector 80, web 148 (unit + integration), e2e 63.
+- **Research pytest:** 206.
+- **TS:** db 55, shared 192, collector 83, web 148 (unit + integration), e2e 63.
 
 ## Quotas
 
@@ -322,7 +326,29 @@ Nothing blocking.
 
 ## Next task
 
-**MS-056: information timing.** Hourly Open-Meteo forecast revisions (ingest exists in `apps/football`); ESPN's injury JSON only if its terms allow, otherwise a faster cadence of nflverse report snapshots. Event studies: how long until Pinnacle moves after a threshold crossing, which books lag, and the value of the lagging numbers (engine v3). Pre-register first.
+**Phase 14, item 3: dataset identity and reproducible runs** (the plan: `~/.claude/plans/pasted-content-id-32f6-marketscope-zany-stonebraker.md`, mirrored in ROADMAP Phase 14).
+
+- **Lake manifest v2:**
+  - schema and transform versions;
+  - request groups and books present or missing;
+  - first and last entry;
+  - file SHA-256 and market-catalog SHA-256.
+- **Dataset ID:** a hash of the sorted (fixture, file hash) pairs plus the catalog hash and versions, independent of `built_at`.
+- **Builds:** the manifest is written atomically (temp file plus rename), and a resumed build skips matching hashes.
+- **Run records:** each runner writes `reports/<name>.run.json` (dataset ID, fixtures, parameter hash, git SHA and dirty flag, package versions, corrections applied).
+- **Memory:** measure peak RSS while building the largest fixture. The MS-056 runner peaked at 2.0 GB, mostly from lake candidates.
+- **Snapshot:** a `lake snapshot` / `restore --verify` command against a local target; then ask Jack about a private Supabase Storage bucket.
+- **Accept:** the ID is stable across rebuilds; a kill-mid-build test resumes to the same ID; run records exist for MS-054, 055b, 056, 057 and 059.
+
+**Then (Phase 14):**
+
+- generated `/research` numbers;
+- partial imports (`too_large` books currently end in `completed`) and freshness per dataset;
+- the ratings-v1 ML workflow;
+- the data-gap analysis;
+- reviewer docs.
+
+**Confirmation runners** must add Addendum V's frozen-first subset, week-block interval and the Holm summary (`evaluation.py`) before the 2026-12-16 runbook.
 
 **Pre-registration default from now on:** confirm on weeks 7–18 (plus playoffs where the question allows), not 7–14.
 
