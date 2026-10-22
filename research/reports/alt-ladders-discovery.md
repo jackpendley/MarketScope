@@ -1,6 +1,6 @@
 # Alternate ladders: discovery (MS-055b)
 
-_Generated 2026-10-22 21:11 UTC · commit `103e2bc` · reproduce with `research/src/marketscope_research/run_alt_ladders.py --phase discovery`._
+_Generated 2026-10-22 21:46 UTC · commit `08edb64` · reproduce with `research/src/marketscope_research/run_alt_ladders.py --phase discovery`._
 
 Design pre-registered in `research/PREREGISTRATION.md` (Addendum Q, committed before this code; corrections in Addendum R). Every retail alternate spread and total (−300 to +300) priced against the sharp-consensus fair probability at its exact line (engine v2, Shin devig); candidates are the ones worth more than 0 at decision time, scored at the sharp-consensus close. Game bootstrap (5,000, seed 2026). **Analysis, not betting advice.**
 

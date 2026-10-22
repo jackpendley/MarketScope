@@ -18,6 +18,7 @@ import pandas as pd
 
 from . import evaluation as ev
 from . import provenance
+from . import results
 from . import fair_value as fv
 from . import injury_windows as iw
 from . import model_open as mo
@@ -169,6 +170,9 @@ def main() -> None:
     ]
     with open(args.out, "w") as fh:
         fh.write("\n".join(parts))
+    if e1 is not None:
+        results.record_result("M3", e1.value, e1.low, e1.high, positions=len(frame), games=len(frame),
+                              weeks=int(frame["week"].nunique()), report=args.out)
     provenance.write_run_record(args.out, provenance.run_record(
         "MS-057 model and the open", [{"kind": "db", "table": "line_moves (pinnacle spreads)", "rows": len(moves), "sha256": provenance.frame_sha256(moves)}, {"kind": "db", "table": "rating_snapshots", "rows": len(ratings), "sha256": provenance.frame_sha256(ratings)}],
         [Path(fv.__file__).with_name("fair_value_params.json")], ["sorted before the seeded bootstrap (ADR-066)", "Addenda V and W sensitivities"], {"phase": getattr(args, "phase", None)}))

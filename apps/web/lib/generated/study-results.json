@@ -1,0 +1,67 @@
+{
+  "A1": {
+    "value": 0.042921,
+    "low": 0.03474,
+    "high": 0.051043,
+    "digits": 3,
+    "positions": 6278,
+    "games": 93,
+    "weeks": null,
+    "commit": "08edb64",
+    "dirty": false,
+    "dataset": "lake-2d40bfbafd04b8f2",
+    "report": "reports/alt-ladders-discovery.md"
+  },
+  "C1": {
+    "value": -0.048705,
+    "low": -0.062936,
+    "high": -0.035247,
+    "digits": 3,
+    "positions": 51,
+    "games": 22,
+    "weeks": null,
+    "commit": "08edb64",
+    "dirty": false,
+    "dataset": "lake-2d40bfbafd04b8f2",
+    "report": "reports/cross-market-discovery.md"
+  },
+  "C2": {
+    "value": 0.035643,
+    "low": 0.022801,
+    "high": 0.047845,
+    "digits": 3,
+    "positions": 131,
+    "games": 50,
+    "weeks": null,
+    "commit": "08edb64",
+    "dirty": false,
+    "dataset": "lake-2d40bfbafd04b8f2",
+    "report": "reports/cross-market-discovery.md"
+  },
+  "F1": {
+    "value": -0.05446,
+    "low": -0.082914,
+    "high": -0.040233,
+    "digits": 3,
+    "positions": 15,
+    "games": 2,
+    "weeks": 2,
+    "commit": "08edb64",
+    "dirty": false,
+    "dataset": "lake-315a013853065fc9",
+    "report": "reports/weather-timing-discovery.md"
+  },
+  "M3": {
+    "value": 0.116009,
+    "low": 0.050678,
+    "high": 0.189407,
+    "digits": 3,
+    "positions": 66,
+    "games": 66,
+    "weeks": 6,
+    "commit": "60b7473",
+    "dirty": false,
+    "dataset": null,
+    "report": "reports/model-open-discovery.md"
+  }
+}

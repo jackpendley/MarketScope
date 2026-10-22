@@ -1,7 +1,7 @@
 {
   "corrections": ["MS-058 ghost rule", "engine v3 totals conversion (ADR-066)"],
-  "generated_at": "2026-10-22T21:00:49+00:00",
-  "git_commit": "103e2bc515b9bce93cc47eb6be33cbad4d9ca398",
+  "generated_at": "2026-10-22T21:35:37+00:00",
+  "git_commit": "08edb64d7fb703604c99c621234b1f0b82631826",
   "git_dirty": false,
   "inputs": [
     {

@@ -18,6 +18,7 @@ from pathlib import Path
 import pandas as pd
 
 from . import provenance
+from . import results
 from . import cross_market as cm
 from . import fair_value as fv
 from . import sharp_market as sm
@@ -184,6 +185,13 @@ def main() -> None:
     ]
     with open(args.out, "w") as fh:
         fh.write("\n".join(parts))
+    did = provenance.lake_dataset(manifest["fixture_id"])["dataset_id"]
+    if ea is not None:
+        results.record_result("C1", ea.value, ea.low, ea.high, positions=len(a), games=int(a["event_id"].nunique()),
+                              dataset=did, report=args.out)
+    if eb is not None:
+        results.record_result("C2", eb.value, eb.low, eb.high, positions=len(b), games=int(b["event_id"].nunique()),
+                              dataset=did, report=args.out)
     provenance.write_run_record(args.out, provenance.run_record(
         "MS-054 cross-market value", [provenance.lake_dataset(manifest["fixture_id"]), {"kind": "db", "table": "odds_observations (the-odds-api)", "rows": len(obs), "sha256": provenance.frame_sha256(obs)}],
         [Path(fv.__file__).with_name("fair_value_params.json")], ["coherence rule (Addendum R)", "corroboration (Addendum S)", "engine v2 registered; v3 secondary (Addendum T)"], {"phase": getattr(args, "phase", None)}))
