@@ -6,6 +6,10 @@ B: is a retail main-line price worth more than the sharp-consensus fair probabil
 Both are scored at the sharp-consensus close. Sharp sources devig their own main line (Shin) and are
 converted to the requested line with the fair-value engine; moneyline targets use the sources' own
 moneylines.
+
+Addendum R (after the registered discovery run): `coherent=True` drops ghost markets at sportsbooks
+(mainline.coherent), and `value_direct` scores spreads and totals on half-point lines against the sharp
+books' own prices at that exact line, with no engine conversion.
 """
 
 from __future__ import annotations
@@ -29,6 +33,8 @@ def spans_key(main: float, alt: float) -> bool:
 
 RETAIL = ("draftkings", "fanduel", "caesars", "hardrockbet")
 SHARP = ("pinnacle", "circasports", "bookmaker.eu", "novig.us")
+DIRECT = ("pinnacle", "circasports", "bookmaker.eu")
+EXCHANGES = ("novig.us", "prophetx", "kalshi")
 HORIZONS = (48, 24, 6, 1)
 PRICE_BAND = (-200, 200)
 MARKETS = ("spreads", "totals", "moneyline")
@@ -50,8 +56,13 @@ def book_candidates(ladder: pd.DataFrame) -> dict[tuple[str, str], list[mainline
     return out
 
 
-def line_at(cands: dict, book: str, market: str, t: pd.Timestamp) -> Line | None:
-    best = mainline.pick_main(cands.get((book, market), []), t)
+def markets(cands: dict, book: str, market: str, t: pd.Timestamp, coherent: bool) -> list[mainline.Candidate]:
+    cs = cands.get((book, market), [])
+    return mainline.coherent(cs, t, market) if coherent and book not in EXCHANGES else cs
+
+
+def line_at(cands: dict, book: str, market: str, t: pd.Timestamp, coherent: bool = False) -> Line | None:
+    best = mainline.pick_main(markets(cands, book, market, t, coherent), t)
     if best is None:
         return None
     _, c, i, j = best
@@ -90,10 +101,10 @@ def side_win_loss(engine: fv.Engine, market: str, src: Line, side: str, target: 
 
 
 def consensus(engine, cands, market: str, side: str, target: float, t: pd.Timestamp,
-              total_hint: float, spread_hint: float) -> tuple[float, float] | None:
+              total_hint: float, spread_hint: float, coherent: bool = False) -> tuple[float, float] | None:
     probs = []
     for src_book in SHARP:
-        src = line_at(cands, src_book, market, t)
+        src = line_at(cands, src_book, market, t, coherent)
         if src is not None:
             probs.append(side_win_loss(engine, market, src, side, target, total_hint, spread_hint))
     if not probs:
@@ -105,26 +116,52 @@ def value(win: float, loss: float, decimal: float) -> float:
     return win * (decimal - 1) - loss
 
 
-def hints(cands, t: pd.Timestamp) -> tuple[float, float]:
+def value_direct(cands, market: str, side: str, line: float, t: pd.Timestamp, decimal: float,
+                 coherent: bool = False) -> float | None:
+    """Value under the mean Shin-devigged price of the sharp books' own market at exactly this line
+    (Addendum R). Half-point spreads and totals only, so no push model is needed."""
+    if market == "moneyline" or line % 1 == 0:
+        return None
+    probs = []
+    for b in DIRECT:
+        for c in markets(cands, b, market, t, coherent):
+            if c.handicap != line:
+                continue
+            i, j = c.side1.at(t), c.side2.at(t)
+            if i < 0 or j < 0 or not c.side1.active[i] or not c.side2.active[j]:
+                continue
+            p1 = shin(Line(line, c.side1.prices[i], c.side2.prices[j]))
+            probs.append(p1 if side in ("home", "over") else 1 - p1)
+    if not probs:
+        return None
+    p = sum(probs) / len(probs)
+    return value(p, 1 - p, decimal)
+
+
+def hints(cands, t: pd.Timestamp, coherent: bool = False) -> tuple[float, float]:
     """A total for the margin model (ignored by the adopted model) and a spread for the totals model."""
-    tot = line_at(cands, "pinnacle", "totals", t)
-    spr = line_at(cands, "pinnacle", "spreads", t)
+    tot = line_at(cands, "pinnacle", "totals", t, coherent)
+    spr = line_at(cands, "pinnacle", "spreads", t, coherent)
     return (tot.point if tot else 44.0), (spr.point if spr else 0.0)
 
 
 def fixture_positions(ladder: pd.DataFrame, kickoff: pd.Timestamp, engine: fv.Engine,
-                      horizons=HORIZONS) -> tuple[pd.DataFrame, pd.DataFrame]:
+                      horizons=HORIZONS, coherent: bool = False) -> tuple[pd.DataFrame, pd.DataFrame]:
     """(A positions, B positions) for one fixture, each with value at d and at the consensus close."""
     cands = book_candidates(ladder)
     close_t = kickoff - pd.Timedelta(microseconds=1)
-    c_tot, c_spr = hints(cands, close_t)
+    c_tot, c_spr = hints(cands, close_t, coherent)
+
+    def cons(market, side, target, t, tot, spr):
+        return consensus(engine, cands, market, side, target, t, tot, spr, coherent)
+
     a_rows, b_rows = [], []
     for h in horizons:
         d = kickoff - pd.Timedelta(hours=h)
-        tot_h, spr_h = hints(cands, d)
+        tot_h, spr_h = hints(cands, d, coherent)
         for book in RETAIL:
             # A: moneyline against the book's own spread
-            spr, mlq = line_at(cands, book, "spreads", d), line_at(cands, book, "moneyline", d)
+            spr, mlq = line_at(cands, book, "spreads", d, coherent), line_at(cands, book, "moneyline", d, coherent)
             if spr is not None and mlq is not None:
                 pmf = engine.margin_pmf(spr.point, tot_h)
                 w, _pu, lo = ml.side_probabilities(pmf, spr.point, shin(spr), "home", 0.0)
@@ -132,7 +169,7 @@ def fixture_positions(ladder: pd.DataFrame, kickoff: pd.Timestamp, engine: fv.En
                 for side, dec, p in (("home", mlq.d1, p_home), ("away", mlq.d2, 1 - p_home)):
                     if not in_band(dec) or value(p, 1 - p, dec) <= 0:
                         continue
-                    close = consensus(engine, cands, "moneyline", side, 0.0, close_t, c_tot, c_spr)
+                    close = cons("moneyline", side, 0.0, close_t, c_tot, c_spr)
                     if close is not None:
                         a_rows.append({"h": h, "book": book, "side": side, "price": american(dec),
                                        "spread": spr.point, "value_d": value(p, 1 - p, dec),
@@ -140,23 +177,25 @@ def fixture_positions(ladder: pd.DataFrame, kickoff: pd.Timestamp, engine: fv.En
             # B: same-line value against the sharp consensus
             for market, sides in (("spreads", ("home", "away")), ("totals", ("over", "under")),
                                   ("moneyline", ("home", "away"))):
-                q = line_at(cands, book, market, d)
+                q = line_at(cands, book, market, d, coherent)
                 if q is None:
                     continue
                 for side in sides:
                     dec = q.d1 if side in ("home", "over") else q.d2
                     if not in_band(dec):
                         continue
-                    fair = consensus(engine, cands, market, side, q.point, d, tot_h, spr_h)
+                    fair = cons(market, side, q.point, d, tot_h, spr_h)
                     if fair is None or value(*fair, dec) <= 0:
                         continue
-                    close = consensus(engine, cands, market, side, q.point, close_t, c_tot, c_spr)
+                    close = cons(market, side, q.point, close_t, c_tot, c_spr)
                     if close is not None:
                         b_rows.append({"h": h, "book": book, "market": market, "side": side, "line": q.point,
                                        "price": american(dec), "value_d": value(*fair, dec),
-                                       "value": value(*close, dec)})
+                                       "value": value(*close, dec),
+                                       "value_direct": value_direct(cands, market, side, q.point, close_t, dec,
+                                                                    coherent)})
     cols_a = ["h", "book", "side", "price", "spread", "value_d", "value"]
-    cols_b = ["h", "book", "market", "side", "line", "price", "value_d", "value"]
+    cols_b = ["h", "book", "market", "side", "line", "price", "value_d", "value", "value_direct"]
     return pd.DataFrame(a_rows, columns=cols_a), pd.DataFrame(b_rows, columns=cols_b)
 
 
@@ -164,22 +203,22 @@ ALT_BAND = (-300, 300)
 
 
 def alt_positions(ladder: pd.DataFrame, kickoff: pd.Timestamp, engine: fv.Engine,
-                  horizons=HORIZONS) -> pd.DataFrame:
+                  horizons=HORIZONS, coherent: bool = False) -> pd.DataFrame:
     """MS-055b (Addendum Q): retail alternate spreads and totals worth more than the sharp-consensus fair
     probability at their exact line, scored at the consensus close."""
     cands = book_candidates(ladder)
     close_t = kickoff - pd.Timedelta(microseconds=1)
-    c_tot, c_spr = hints(cands, close_t)
+    c_tot, c_spr = hints(cands, close_t, coherent)
     rows = []
     for h in horizons:
         d = kickoff - pd.Timedelta(hours=h)
-        tot_h, spr_h = hints(cands, d)
+        tot_h, spr_h = hints(cands, d, coherent)
         for book in RETAIL:
             for market, sides in (("spreads", ("home", "away")), ("totals", ("over", "under"))):
-                main = line_at(cands, book, market, d)
+                main = line_at(cands, book, market, d, coherent)
                 if main is None:
                     continue
-                for c in cands.get((book, market), []):
+                for c in markets(cands, book, market, d, coherent):
                     if c.handicap == main.point:
                         continue
                     i, j = c.side1.at(d), c.side2.at(d)
@@ -189,15 +228,17 @@ def alt_positions(ladder: pd.DataFrame, kickoff: pd.Timestamp, engine: fv.Engine
                         a = american(dec)
                         if not ALT_BAND[0] <= a <= ALT_BAND[1]:
                             continue
-                        fair = consensus(engine, cands, market, side, c.handicap, d, tot_h, spr_h)
+                        fair = consensus(engine, cands, market, side, c.handicap, d, tot_h, spr_h, coherent)
                         if fair is None or value(*fair, dec) <= 0:
                             continue
-                        close = consensus(engine, cands, market, side, c.handicap, close_t, c_tot, c_spr)
+                        close = consensus(engine, cands, market, side, c.handicap, close_t, c_tot, c_spr, coherent)
                         if close is None:
                             continue
                         rows.append({"h": h, "book": book, "market": market, "side": side, "line": c.handicap,
                                      "main": main.point, "distance": abs(c.handicap - main.point),
                                      "key": market == "spreads" and spans_key(main.point, c.handicap),
-                                     "price": a, "value_d": value(*fair, dec), "value": value(*close, dec)})
+                                     "price": a, "value_d": value(*fair, dec), "value": value(*close, dec),
+                                     "value_direct": value_direct(cands, market, side, c.handicap, close_t, dec,
+                                                                  coherent)})
     return pd.DataFrame(rows, columns=["h", "book", "market", "side", "line", "main", "distance", "key", "price",
-                                       "value_d", "value"])
+                                       "value_d", "value", "value_direct"])

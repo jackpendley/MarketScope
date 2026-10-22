@@ -123,3 +123,40 @@ def test_grid_compare_ignores_settle_timing():
     worse = b.assign(price1=[-110, -120])
     m2, c2 = check.compare(a, worse, K)
     assert m2 < c2
+
+
+def ghost_ladder():
+    # Caesars-style ghost: -10 last updated weeks ago at -115/-115, still active; the real -7 is fresher.
+    return ladder(
+        (100, "spreads", -10, "1", "2026-09-01T02:00:00Z", 1.87, True, None),
+        (100, "spreads", -10, "2", "2026-09-01T02:00:00Z", 1.87, True, None),
+        (110, "spreads", -7, "1", "2026-10-18T13:00:00Z", 1.909, True, None),
+        (110, "spreads", -7, "2", "2026-10-18T13:00:00Z", 1.926, True, None),
+        (120, "spreads", -7.5, "1", "2026-10-18T13:00:00Z", 2.0, True, None),
+        (120, "spreads", -7.5, "2", "2026-10-18T13:00:00Z", 1.83, True, None),
+    )
+
+
+def test_coherence_rule_drops_a_ghost_main_line():
+    cands = mainline.candidates(ghost_ladder(), "spreads")
+    t = pd.Timestamp("2026-10-18T16:00Z")
+    assert mainline.pick_main(cands, t)[1].handicap == -10  # the registered rule picks the ghost
+    kept = mainline.coherent(cands, t, "spreads")
+    assert sorted(c.handicap for c in kept) == [-7.5, -7]
+    assert mainline.pick_main(kept, t)[1].handicap == -7
+
+
+def test_coherence_rule_keeps_a_monotone_ladder_and_ties():
+    lad = ladder(
+        (200, "totals", 44, "Over", "2026-10-10T10:00:00Z", 1.909, True, None),
+        (200, "totals", 44, "Under", "2026-10-10T10:00:00Z", 1.909, True, None),
+        (210, "totals", 47, "Over", "2026-10-01T10:00:00Z", 2.4, True, None),   # older, coherent: P(over) lower
+        (210, "totals", 47, "Under", "2026-10-01T10:00:00Z", 1.57, True, None),
+        (220, "totals", 44.5, "Over", "2026-10-02T10:00:00Z", 1.909, True, None),  # tie with 44: allowed
+        (220, "totals", 44.5, "Under", "2026-10-02T10:00:00Z", 1.909, True, None),
+        (230, "totals", 41, "Over", "2026-09-01T10:00:00Z", 2.2, True, None),   # stale, P(over 41) < P(over 44)
+        (230, "totals", 41, "Under", "2026-09-01T10:00:00Z", 1.7, True, None),
+    )
+    cands = mainline.candidates(lad, "totals")
+    kept = mainline.coherent(cands, pd.Timestamp("2026-10-18T16:00Z"), "totals")
+    assert sorted(c.handicap for c in kept) == [44, 44.5, 47]

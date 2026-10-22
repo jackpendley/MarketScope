@@ -95,3 +95,29 @@ def test_engine_pmf_cache_returns_the_same_object():
 def test_spans_key():
     assert cm.spans_key(-3.0, -2.5) and cm.spans_key(-2.5, -3.5) and cm.spans_key(-6.5, -7.5)
     assert not cm.spans_key(-3.5, -4.5) and not cm.spans_key(-3.0, -3.0)
+
+
+def test_coherent_option_ignores_a_ghost_retail_main_line():
+    lad = ladder(rows("pinnacle", "spreads", -7.0, 1.909, 1.909, at="2026-10-17T12:00Z"),
+                 rows("caesars", "spreads", -10.0, 1.87, 1.87, at="2026-09-01T02:00Z"),   # ghost
+                 rows("caesars", "spreads", -7.0, 1.909, 1.926, at="2026-10-17T12:00Z"),
+                 rows("caesars", "spreads", -7.5, 2.0, 1.83, at="2026-10-17T12:00Z"))
+    cands = cm.book_candidates(lad)
+    assert cm.line_at(cands, "caesars", "spreads", D).point == -10.0
+    assert cm.line_at(cands, "caesars", "spreads", D, coherent=True).point == -7.0
+    _a, b = cm.fixture_positions(lad, KICK, ENGINE, horizons=(24,), coherent=True)
+    assert (b.loc[b["book"] == "caesars", "line"] != -10.0).all()
+
+
+def test_value_direct_uses_the_sharp_books_own_price_at_that_line():
+    lad = ladder(rows("pinnacle", "spreads", -3.5, 1.909, 1.909), rows("pinnacle", "spreads", -6.5, 2.6, 1.5),
+                 rows("bookmaker.eu", "spreads", -6.5, 2.5, 1.55))
+    cands = cm.book_candidates(lad)
+    p_pin = cm.shin(cm.Line(-6.5, 2.6, 1.5))
+    p_bm = cm.shin(cm.Line(-6.5, 2.5, 1.55))
+    p = (p_pin + p_bm) / 2
+    got = cm.value_direct(cands, "spreads", "home", -6.5, KICK, 2.8)
+    assert got == pytest.approx(p * 1.8 - (1 - p))
+    assert cm.value_direct(cands, "spreads", "home", -7.0, KICK, 2.8) is None  # integer line
+    assert cm.value_direct(cands, "spreads", "home", -9.5, KICK, 2.8) is None  # no sharp price there
+    assert cm.value_direct(cands, "moneyline", "home", 0.0, KICK, 2.0) is None
