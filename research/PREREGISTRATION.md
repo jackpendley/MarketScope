@@ -790,3 +790,44 @@ consensus, engine and samples as Addendum P (MS-054), which has not yet been run
   within a game; the game bootstrap accounts for that. The smallest detectable mean is about 1% per
   unit.
 - **What this can't see.** Retail limits on alternates (usually lower than on main lines).
+
+## Addendum R (2026-10-22): corrections to MS-054 and MS-055b before confirmation
+
+Written after the registered discovery runs (commit `0c1cd71`; `reports/cross-market-discovery.md`,
+`reports/alt-ladders-discovery.md`) and before any confirmation game (weeks 7–14, kickoff from
+2026-10-21) has been played. Post-hoc checks found two measurement problems. The discovery numbers
+already seen cannot support any claim; this addendum fixes the rules confirmation will use.
+
+1. **Ghost markets.** The feed sometimes leaves a sportsbook market marked active long after the book
+   stopped updating it. Example: a Caesars −10 spread last updated on 1 September and still "active"
+   at kickoff on 18 October, when Caesars' real line was −7. The main-line rule picks such a market
+   whenever it is priced closer to even than the real line. **Coherence rule** (no outcomes involved):
+   at time t, rank a sportsbook's active markets of one type by their latest entry, freshest first.
+   Keep a market only if its no-vig probability is monotone with every market already kept: for
+   spreads, P(home covers) is non-decreasing in the home handicap; for totals, P(over) is
+   non-increasing in the total; ties are allowed. Exchanges (Novig, ProphetX, Kalshi) are exempt,
+   because their resting orders could be traded. The rule applies to main-line picking and to
+   alternate candidates for every sportsbook. `line_moves` keeps the old rule until the collector
+   adopts this one (MS-058).
+2. **Engine tails.** The engine converts a source's probability to another line by adding the
+   main-line calibration shift unchanged at every line, which misprices lines far from the main
+   line. Against the sharp books' own prices at the same line, MS-055b's discovery candidates were
+   worth −3.6%, not the engine's +4.5%. **Direct value:** value under the equal-weight mean of the
+   Shin-devigged prices of Pinnacle, Circa and Bookmaker.eu at exactly that line at the
+   sharp-consensus close. Half-point lines only, so pushes need no model.
+
+**Confirmation (weeks 7–14).**
+
+- **MS-054 B and MS-055b.** Positions are selected as in Addenda P and Q, with the coherence rule.
+  A claim requires both of these intervals to lie above 0 (game bootstrap, 5,000 draws, seed 2026):
+  - the engine-scored mean;
+  - the direct-scored mean, over positions that have a direct price.
+- **MS-054 A** is unchanged apart from the coherence rule.
+- The reports also show the as-registered results (no coherence rule) for comparison.
+- **Secondary, confirmation-only:** retail alternates within 1 point of the book's main line (direct
+  value; discovery, post hoc: +2.0%).
+- **Power:** in discovery, 54 of 131 B positions over 34 of 93 games had a direct price. Weeks 7–14
+  hold about 120 games, so about 70 direct positions. A mean of about 2% per unit is the smallest
+  detectable.
+- **Phase 12 confirmations** run on `line_moves` as it stands at confirmation. If MS-058 has
+  re-derived it with the coherence rule by then, the reports say so.
