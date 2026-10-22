@@ -1,13 +1,14 @@
 // Minute-level line moves for completed NFL games, from OddsPapi history (MS-042, ADR-052).
 //
 //   pnpm --filter @marketscope/collector import:line-moves [--from 2026-09-01] [--to <now>]
-//        [--limit N] [--dry-run] [--check] [--profile books|exchanges|fixes|all]
+//        [--limit N] [--dry-run] [--check] [--profile books|exchanges|fixes|all] [--retry-partial]
 //
 // Billable requests: 1 for fixtures (+1 for the market catalog when the local cache is
 // missing). History calls are free but rate-limited (5 s each, 3 per game). Games already
 // imported are skipped without any call, so the nightly run only fetches new finals.
 // --check prints how well the stored moves reproduce the stored OddsPapi snapshots.
 // fixes: ghost-market corrections (ADR-065), written to line_move_fixes; line_moves is untouched.
+// --retry-partial re-attempts games whose last run was partial (a book skipped as too large, ADR-071).
 
 import { createDb } from "@marketscope/db";
 import { parseArgs } from "node:util";
@@ -34,6 +35,7 @@ async function main() {
       "dry-run": { type: "boolean", default: false },
       check: { type: "boolean", default: false },
       profile: { type: "string", default: "all" },
+      "retry-partial": { type: "boolean", default: false },
     },
   });
   const config = loadConfig();
@@ -111,9 +113,12 @@ async function main() {
           { db, client, markets, log: jsonLogger },
           fixture,
           profile,
+          { retryPartial: values["retry-partial"] },
         );
         const key = `${profile.name}_${outcome.status}`;
         counts[key] = (counts[key] ?? 0) + 1;
+        if (outcome.status === "imported" && outcome.missingBooks.length)
+          counts.partial = (counts.partial ?? 0) + 1;
         if (outcome.status === "imported") moves += outcome.moves;
         if (outcome.status === "failed") counts.failed = (counts.failed ?? 0) + 1;
       }

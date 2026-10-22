@@ -122,6 +122,8 @@ test("data health endpoint reports the seeded runs", async ({ request }) => {
   const { data } = await res.json();
   expect(data.status).toBe("ok");
   expect(data.recentRuns.length).toBeGreaterThan(0);
+  expect(data.datasets.lineMoves.status).toMatch(/^(ok|gaps)$/);
+  expect(typeof data.datasets.results.pastKickoffWithoutScore).toBe("number");
 });
 
 test.describe("market replay", () => {

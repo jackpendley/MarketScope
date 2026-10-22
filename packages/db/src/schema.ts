@@ -41,6 +41,9 @@ export const ingestionStatus = pgEnum("ingestion_status", [
   "completed",
   "failed",
   "skipped",
+  // Finished, but some requested data is missing (e.g. a book's history too large to parse). Never
+  // reported as completed, so the gap stays visible and can be retried (ADR-071).
+  "partial",
 ]);
 
 /** One NFL game. Team orientation comes from the provider's home/away fields, never alphabetical. */
