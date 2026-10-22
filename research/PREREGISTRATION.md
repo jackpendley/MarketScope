@@ -960,3 +960,85 @@ difference of roughly 15% of V2's level. That figure is an informed guess; nothi
 **What this can't see.** Sharp alternates carry more margin than main lines, so Shin's fair price at an
 alternate is itself approximate. The books may share one pricing model, so agreement with them is
 agreement with the market's ladder, not with outcomes.
+
+## Addendum U (2026-10-22): MS-056 information timing, weather-forecast revisions
+
+Committed before any MS-056 code was written or any outcome computed, and before the first kickoff of
+week 7 (2026-10-23 00:15 UTC). Before writing this, only availability was checked: Open-Meteo's
+Single Runs API serves archived runs of ECMWF IFS HRES, GFS and HRRR at 00, 06, 12 and 18 UTC for
+every 2026 game, from 2 April 2026. No forecast was related to any line or result. Known going in:
+injury-report windows showed no value (MS-047); Phase 12 found nothing that beats the close.
+
+**The question.** When a new weather-model run materially changes the wind forecast for a game, do the
+totals markets lag a forecast that is already public? If they do, taking the forecast's side at the
+moment it became available is worth something at the sharp close.
+
+**Scope.** Weather only. The injury half of MS-056 is not registered here. No free source gives
+injury and news items with minute-level publication times:
+
+- nflverse's injury reports are snapshotted twice a day, already used in MS-047;
+- ESPN's JSON endpoints are undocumented and their terms are unclear.
+
+A timestamped news feed is a paid-data case.
+
+**Games.** 2026 regular season at outdoor and retractable-roof venues (`apps/football/data/venues.csv`),
+excluding international games without venue coordinates.
+
+- **Discovery:** weeks 1–6 (kickoffs before 2026-10-21).
+- **Confirmation:** weeks 7–18 (kickoffs from 2026-10-21 through week 18, whose Sunday is 2027-01-10), under the new default.
+
+**Forecasts.**
+
+- **Model:** ECMWF IFS HRES (`ecmwf_ifs`), from the Single Runs API.
+- **Game-window wind w(r):** the mean of `wind_speed_10m` (mph) over the kickoff hour and the 3
+  hours after it, at the venue's coordinates, from run r.
+- **Availability:** a(r) = r + 6 hours. That is conservative: Open-Meteo states 4–6 hours for global
+  models.
+- **Revision:** Δw(r) = w(r) − w(r − 6 h).
+- **Event:** a run with all of these:
+  - |Δw| ≥ 4 mph;
+  - max(w(r), w(r − 6 h)) ≥ 12 mph;
+  - a(r) between kickoff − 72 h and kickoff − 1 h.
+
+  Every qualifying run of a game is an event.
+
+**Markets.** The research lake. Main lines under the MS-058 rule (`mainline.without_ghosts`, then
+`pick_main`), which the earlier lake studies did not use. The sharp-consensus fair probability is the
+one in Addendum P: Pinnacle, Circa, Bookmaker.eu and Novig, Shin devig. It uses engine v3's totals
+conversion (ADR-066).
+
+**Primary.**
+
+- **Positions:** at each event, at d = a(r) + 10 minutes, take the forecast's side of each book's
+  main total. That is the under when Δw > 0, the over when Δw < 0. The books are Pinnacle,
+  DraftKings, FanDuel, Caesars and Hard Rock, with prices from −200 to +200.
+- **Outcome:** mean value per unit at the sharp-consensus close (kickoff − 1 µs), game bootstrap
+  (5,000 draws, seed 2026). Claim if the interval lies above 0.
+
+**Secondary.**
+
+- **Placebo:** the same positions at a(r) − 3 hours, before the run existed. Value there as well
+  would mean the drift is not caused by the run becoming available.
+- **Reaction:** OLS of Pinnacle's main-total change from a(r) to a(r) + 6 h on Δw, over every run
+  with a(r) in the 72 h window (not only events), game bootstrap. A negative slope means the market
+  follows the forecast within 6 hours. Also reported: the same change to the close.
+- **By book:** the primary split by book, plus Pinnacle against the retail books.
+
+**Exploratory.**
+
+- GFS and HRRR as the event source (HRRR within 48 h);
+- precipitation revisions (≥ 0.1 in over the window);
+- the time from a(r) to Pinnacle's first total change, against the same measure at random times.
+
+**Power, stated honestly.** About 60% of games are outdoors. An event within 72 h may occur in roughly
+10–25% of those, so discovery has perhaps 6–14 games with events, and is very likely inconclusive.
+Weeks 7–18 have about 190 games and windier weather: perhaps 25–45 games. Value at the close
+varies by about 3% per unit, and positions within a game are correlated. So only a mean of about
+2% per unit or more is detectable at confirmation. An inconclusive result is "no claim".
+
+**What this can't see.**
+
+- forecasts the market saw before Open-Meteo's archive did (private or faster sources);
+- runs other than 00, 06, 12 and 18 UTC;
+- whether a retail price would have been accepted at size;
+- stadium-specific wind effects (the forecast is for the location, not inside the bowl).
