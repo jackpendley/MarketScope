@@ -130,7 +130,11 @@ export interface LineMoveImportDeps {
 export function mainMarkets(markets: ReadonlyMap<number, OddsPapiMarketMeta>): Set<number> {
   const out = new Set<number>();
   for (const [id, m] of markets)
-    if (m.period === "result" && !m.playerProp && ["spreads", "totals", "moneyline"].includes(m.marketType))
+    if (
+      m.period === "result" &&
+      !m.playerProp &&
+      ["spreads", "totals", "moneyline"].includes(m.marketType)
+    )
       out.add(id);
   return out;
 }
