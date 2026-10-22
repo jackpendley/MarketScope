@@ -18,7 +18,7 @@ import {
 } from "drizzle-orm";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import type { Database } from "../client";
-import { events, ingestionRuns, oddsObservations } from "../schema";
+import { events, ingestionRuns, ingestionStatus, oddsObservations } from "../schema";
 
 const isoUtc = (value: AnyPgColumn | SQL) =>
   sql<string>`to_char(${value} at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')`;
@@ -151,7 +151,7 @@ export async function gameObservationStats(
 export interface RunSummary {
   id: string;
   jobKey: string;
-  status: "started" | "completed" | "failed" | "skipped";
+  status: (typeof ingestionStatus.enumValues)[number];
   startedAt: string;
   finishedAt: string | null;
   eventsSeen: number;
