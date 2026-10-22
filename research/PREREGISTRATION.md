@@ -862,3 +862,101 @@ the tails, so it would drop genuine markets. A feed-independent check replaces i
 - **If B holds or is inconclusive but positive:** The Odds API's historical snapshots (retail books
   plus Pinnacle, 2020–25) would test it over about 1,400 games with independently observed prices.
   That joins MS-057 as the second reason for the paid-data decision.
+
+## Addendum T (2026-10-22): MS-059 fair-value engine v3, line conversion fitted to sharp ladders
+
+Committed before any MS-059 code was written and before the first confirmation kickoff
+(2026-10-23 00:15 UTC). Nothing below has been fitted or scored. Before writing this, only data
+counts were looked at: the lake holds 93 games (48 in weeks 1–3, 45 in weeks 4–6), and the sharp
+books list about 15 spread and 19 total lines a game (Pinnacle), 14 and 16 (Bookmaker.eu, 63 games)
+and 4 and 5 (Circa). Known going in: engine v2 moves a probability to another line by adding the
+main-line calibration shift unchanged at every line, and it disagreed with the sharp books' own
+alternate prices on MS-055b's candidates (+4.5% engine-scored against −3.6% direct, Addendum R).
+
+This is a model-building step, not a claim about value. The target is the sharp books' own prices,
+so it uses no game outcomes.
+
+**Observations.**
+
+- **Books:** Pinnacle, Circa and Bookmaker.eu.
+- **Times:** at d = kickoff − h for h ∈ {48, 24, 6, 1}, and at the close (kickoff − 1 µs).
+- **Main line:** the book's main line under the MS-058 rule (`mainline.pick_main` after
+  `mainline.without_ghosts`), devigged with Shin: p_main = P(home covers) for spreads, P(over) for
+  totals, no-push for an integer line.
+- **Alternates:** every other spread or total market of the same book that survives the coherence
+  rule (`mainline.coherent`, Addendum R) at d. It must also meet all of these:
+  - both sides are active;
+  - it is a half-point line;
+  - it is within 10 points of the main line;
+  - its Shin no-vig probability p* of side 1 lies in [0.10, 0.90].
+- **Moneylines:** the book's own moneyline (Shin, ties excluded) is a third target, predicted from
+  the same book's main spread.
+
+**What is predicted.** Each candidate converts p_main into a probability q at the alternate's line, or
+into P(home wins) for a moneyline, using the frozen engine v2 distributions:
+
+- the margin pmf `engine.margin_pmf` for spreads and moneylines;
+- the total-points pmf `engine.total_pmf` for totals, with the same book's main spread at d as its
+  spread input (Pinnacle's if the book has none, else 0).
+
+Let m(L) be the uncalibrated model's no-push probability of side 1 at line L.
+
+**Candidates.**
+
+- **V2 (baseline):** today's additive shift, `market_ml.side_probabilities` and
+  `openers_totals.total_side_probabilities`.
+- **L (logit shift):** q(L) = σ(logit m(L) + δ), with δ chosen so q(main) = p_main.
+- **M (location shift):** the pmf moved by a continuous μ, as the mixture (1 − f)·pmf shifted by ⌊μ⌋ plus
+  f·pmf shifted by ⌈μ⌉, with f = μ − ⌊μ⌋. μ is solved so the no-push probability at the main line
+  equals p_main, and q is read off the shifted pmf.
+- **S (logit scale):** q(L) = σ(β·logit m(L) + δ_β), with δ_β calibrated as in L. A single β per market
+  type (spreads, totals) is chosen from {0.70, 0.72, …, 1.30} by the lowest mean loss on the selection
+  games. Moneylines use the spreads β.
+
+For an integer target line, L and S keep the uncalibrated pmf's push probability, as V2 does.
+
+**Loss.** The binary Kullback–Leibler divergence KL(p* ‖ q) in nats, averaged over observations. Each
+game's observations are resampled together: a game bootstrap with 5,000 draws, seed 2026. The mean
+absolute probability error is reported alongside.
+
+**Selection (weeks 1–3, kickoffs before 2026-10-01, 48 games).** For each target (spreads, totals,
+moneylines), the candidate with the lowest mean KL among V2, L, M and S(β̂) is chosen.
+
+**Adoption (weeks 4–6, kickoffs from 2026-10-01 to 2026-10-20, 45 games).** For each target, the
+chosen candidate is adopted as engine v3 if both of these hold:
+
+- its mean KL is lower than V2's;
+- the interval of the difference (chosen − V2) lies below 0.
+
+Otherwise V2 stays for that target. If V2 is the chosen candidate, nothing changes. Choices and β are
+frozen in `fair_value_params.json` under `conversion`.
+
+**Reported, not decisive.** Each target's results are broken down:
+
+- by distance from the main line (0.5–1, 1.5–3, more than 3 points);
+- for spread alternates that span 3 or 7 against the rest;
+- by book;
+- by time.
+
+When weeks 7–14 are in the lake, the runner re-scores them as a stability check. A v3 that is worse
+than V2 there, with the interval above 0, is flagged in the reports, but the adoption is not
+reversed.
+
+**Use in registered studies (fixed now, before any confirmation outcome).**
+
+- **Registered primaries are unchanged.** MS-054 A and B, MS-055b and MS-057's secondary keep
+  engine v2, as registered.
+- **v3 secondaries.** Their confirmation reports add a secondary, scored with v3 conversion for
+  every target where v3 was adopted. Positions are selected and scored with v3, both at decision
+  time and at the close.
+- **Studies registered from now on** (MS-056 onward) use v3 for line conversion by default, and their
+  pre-registrations say so.
+
+**Power.** About 45 games validate each target, and observations within a game are strongly
+correlated. A candidate's error is mostly systematic (the shape of the conversion), not noise, so
+between-game variation dominates. With 45 game clusters, the interval should resolve a mean KL
+difference of roughly 15% of V2's level. That figure is an informed guess; nothing has been computed.
+
+**What this can't see.** Sharp alternates carry more margin than main lines, so Shin's fair price at an
+alternate is itself approximate. The books may share one pricing model, so agreement with them is
+agreement with the market's ladder, not with outcomes.
