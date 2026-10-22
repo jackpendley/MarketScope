@@ -55,3 +55,88 @@ def model_side_values(frame: pd.DataFrame, tl, kickoffs: pd.Series, engine) -> p
         rows.append({"event_id": r.event_id, "side": side, "line": line, "price": price,
                      "value": ml.expected_value(w, lo, price)})
     return pd.DataFrame(rows, columns=["event_id", "side", "line", "price", "value"])
+
+
+# --- Addendum V: the shared early line and a market-only baseline ---------------------------------
+#
+# y = close - L and x = model - L share L (Pinnacle's line at d). If L carries noise that later
+# reverses, the slope is positive for any reasonable estimate, informative or not. The baseline B is
+# what the market itself implied before d: team ratings fitted to Pinnacle's closing home spreads of
+# 2026 games already final at d.
+
+RIDGE = 1.0
+FINAL_AFTER = pd.Timedelta(hours=4)  # a game counts as final this long after kickoff
+
+
+def closes_frame(schedule: pd.DataFrame, tl: dict[str, dict[str, sm.Book]]) -> pd.DataFrame:
+    """Pinnacle's closing home spread for every game with one (Addendum C's close rule)."""
+    rows = []
+    for g in schedule.itertuples():
+        pin = tl.get(g.event_id, {}).get("pinnacle") if isinstance(g.event_id, str) else None
+        close = sm.close_line(pin, g.kickoff) if pin is not None else None
+        if close is not None:
+            rows.append({"home": g.home, "away": g.away, "neutral": bool(g.neutral), "kickoff": g.kickoff,
+                         "close": close})
+    return pd.DataFrame(rows, columns=["home", "away", "neutral", "kickoff", "close"])
+
+
+def market_ratings(closes: pd.DataFrame, t: pd.Timestamp) -> tuple[dict[str, float], float] | None:
+    """Ridge least squares of -(closing home spread) = r_home - r_away + h over games final before t.
+    The ratings are shrunk toward 0 (λ = 1 game); the home advantage h is not shrunk."""
+    past = closes[closes["kickoff"] + FINAL_AFTER <= t]
+    if not len(past):
+        return None
+    teams = sorted(set(past["home"]) | set(past["away"]))
+    col = {k: i for i, k in enumerate(teams)}
+    X = np.zeros((len(past), len(teams) + 1))
+    for i, r in enumerate(past.itertuples()):
+        X[i, col[r.home]], X[i, col[r.away]] = 1.0, -1.0
+        X[i, -1] = 0.0 if r.neutral else 1.0
+    y = -past["close"].to_numpy(float)
+    penalty = np.diag([RIDGE] * len(teams) + [0.0])
+    beta = np.linalg.solve(X.T @ X + penalty, X.T @ y)
+    return dict(zip(teams, beta[:-1])), float(beta[-1])
+
+
+def add_baseline(frame: pd.DataFrame, schedule: pd.DataFrame, closes: pd.DataFrame) -> pd.DataFrame:
+    """frame (model_frame output) plus the baseline line B at d and xb = B - L (NaN when either team has no
+    earlier closing line)."""
+    games = schedule.set_index("event_id")
+    lines = []
+    for r in frame.itertuples():
+        g = games.loc[r.event_id]
+        fit = market_ratings(closes, g.kickoff - LEAD)
+        if fit is None or g.home not in fit[0] or g.away not in fit[0]:
+            lines.append(np.nan)
+            continue
+        ratings, h = fit
+        lines.append(-(ratings[g.home] - ratings[g.away] + (0.0 if g.neutral else h)))
+    out = frame.assign(baseline_line=lines)
+    return out.assign(xb=out["baseline_line"] - out["pin_d"])
+
+
+def permutation_slopes(frame: pd.DataFrame, n: int = 1000, seed: int = 2026) -> np.ndarray:
+    """The primary slope with model lines shuffled across games within each week: what the shared early
+    line alone produces."""
+    rng = np.random.default_rng(seed)
+    y = frame["y"].to_numpy(float)
+    out = np.empty(n)
+    for i in range(n):
+        shuffled = frame.groupby("week")["model_line"].transform(lambda s: rng.permutation(s.to_numpy()))
+        x = shuffled.to_numpy(float) - frame["pin_d"].to_numpy(float)
+        out[i] = np.polyfit(x, y, 1)[0] if np.ptp(x) > 0 else np.nan
+    return out
+
+
+def joint_permutation(frame: pd.DataFrame, n: int = 1000, seed: int = 2026) -> np.ndarray:
+    """Addendum W: the joint regression's model coefficient (y on x and xb) with model lines shuffled
+    within each week. With a noisy baseline, x still carries the early line's leftover noise, so a model
+    with no information gets a positive coefficient; this is that coefficient's null distribution."""
+    rng = np.random.default_rng(seed)
+    y, xb, early = frame["y"].to_numpy(float), frame["xb"].to_numpy(float), frame["pin_d"].to_numpy(float)
+    out = np.empty(n)
+    for i in range(n):
+        shuffled = frame.groupby("week")["model_line"].transform(lambda s: rng.permutation(s.to_numpy()))
+        X = np.column_stack([np.ones(len(frame)), shuffled.to_numpy(float) - early, xb])
+        out[i] = np.linalg.lstsq(X, y, rcond=None)[0][1]
+    return out
