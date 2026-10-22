@@ -145,3 +145,6 @@ Ingestion health, with no credentials or infrastructure details.
 - `status`: `ok`, `behind` (no completed **live** run in 12 h), or `no-data`. Historical imports are excluded (ADR-027).
 - `latestCompletedRun`: `startedAt`, `ageMinutes`, counts, `creditsRemaining`, `issueCounts`.
 - `recentRuns[]`: status, start time, and error code for the last 10 runs.
+- `datasets`: gaps by dataset (ADR-071). A job that ran is not proof that the data arrived.
+  - `lineMoves`: `status` (`ok` or `gaps`), `latestImportAt`, `partialImports` (imports that skipped a book whose history was too large), `finalsWithoutMoves` (final games of the current season, older than 36 h, with no line moves at all) and `oldestMissingKickoff`.
+  - `results`: `status`, `latestFinalAt`, and `pastKickoffWithoutScore` (games more than 36 h after kickoff with no score).

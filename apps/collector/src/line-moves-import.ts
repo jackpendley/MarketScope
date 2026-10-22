@@ -108,7 +108,14 @@ export const FIXES_PROFILE: LineMoveProfile = {
 };
 
 export type LineMoveImportOutcome =
-  | { status: "imported"; fixtureId: string; eventId: string; moves: number }
+  | {
+      status: "imported";
+      fixtureId: string;
+      eventId: string;
+      moves: number;
+      /** Books requested but not imported (history too large to parse): the run is `partial`. */
+      missingBooks: string[];
+    }
   | { status: "already-imported"; fixtureId: string }
   | { status: "failed"; fixtureId: string; error: string };
 
@@ -123,10 +130,16 @@ export function lineMovesJobKey(fixtureId: string): string {
   return BOOKS_PROFILE.jobKey(fixtureId);
 }
 
+export interface LineMoveImportOptions {
+  /** Re-attempt fixtures whose last run was `partial` (by default they are kept, like completed ones). */
+  retryPartial?: boolean;
+}
+
 export async function importLineMoves(
   deps: LineMoveImportDeps,
   fixture: OddsPapiFixture,
   profile: LineMoveProfile = BOOKS_PROFILE,
+  options: LineMoveImportOptions = {},
 ): Promise<LineMoveImportOutcome> {
   const { db, client, markets } = deps;
   const log = deps.log ?? silentLogger;
@@ -135,10 +148,19 @@ export async function importLineMoves(
   const away = fixture.participant2Name;
 
   const [existing] = await db
-    .select({ id: ingestionRuns.id, status: ingestionRuns.status })
+    .select({
+      id: ingestionRuns.id,
+      status: ingestionRuns.status,
+      issues: ingestionRuns.issueCounts,
+    })
     .from(ingestionRuns)
     .where(eq(ingestionRuns.jobKey, jobKey));
-  if (existing?.status === "completed")
+  // Runs before ADR-071 recorded a skipped book as `completed` with a too_large_* issue: still partial.
+  const partial =
+    existing?.status === "partial" ||
+    (existing?.status === "completed" &&
+      Object.keys(existing.issues ?? {}).some((k) => k.startsWith("too_large_")));
+  if ((existing?.status === "completed" || partial) && !(partial && options.retryPartial))
     return { status: "already-imported", fixtureId: fixture.fixtureId };
 
   const startedAt = new Date().toISOString();
@@ -249,7 +271,8 @@ export async function importLineMoves(
         requestType: "historical",
         startedAt,
         finishedAt: sql`now()`,
-        status: "completed",
+        // A skipped book is missing data, not a success: `partial` keeps the gap visible (ADR-071).
+        status: tooLarge.length ? "partial" : "completed",
         eventsSeen: 1,
         quotesSeen: rows.length,
         issueCounts: {
@@ -266,7 +289,13 @@ export async function importLineMoves(
       away,
       moves: rows.length,
     });
-    return { status: "imported", fixtureId: fixture.fixtureId, eventId, moves: rows.length };
+    return {
+      status: "imported",
+      fixtureId: fixture.fixtureId,
+      eventId,
+      moves: rows.length,
+      missingBooks: tooLarge,
+    };
   } catch (err) {
     const error = (err instanceof Error ? err.message : String(err)).slice(0, 500);
     await db

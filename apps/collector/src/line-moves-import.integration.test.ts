@@ -274,13 +274,58 @@ describe("oversized responses", () => {
       ),
     };
     const outcome = await importLineMoves({ db, client, markets }, fixture, EXCHANGES_PROFILE);
-    expect(outcome).toMatchObject({ status: "imported", moves: 2 });
+    expect(outcome).toMatchObject({ status: "imported", moves: 2, missingBooks: ["kalshi"] });
     const [run] = await db.select().from(ingestionRuns);
+    expect(run!.status).toBe("partial"); // not "completed": the gap stays visible (ADR-071)
     expect(run!.issueCounts).toMatchObject({
       too_large_kalshi: 1,
       moves_novig: 1,
       moves_prophetx: 1,
     });
+  });
+
+  it("keeps a partial game by default and retries it on request", async () => {
+    let tooLarge = true;
+    const client = {
+      historicalOdds: vi.fn(
+        async (_id: string, books: readonly string[]): Promise<OddsPapiHistory> => {
+          if (tooLarge && books.includes("kalshi"))
+            throw new Error("Cannot create a string longer than 0x1fffffe8 characters");
+          return { bookmakers: Object.fromEntries(books.map((b) => [b, book()])) };
+        },
+      ),
+    };
+    await importLineMoves({ db, client, markets }, fixture, EXCHANGES_PROFILE);
+    expect(
+      await importLineMoves({ db, client, markets }, fixture, EXCHANGES_PROFILE),
+    ).toMatchObject({ status: "already-imported" });
+    tooLarge = false; // e.g. after a streaming parser lands
+    const retried = await importLineMoves({ db, client, markets }, fixture, EXCHANGES_PROFILE, {
+      retryPartial: true,
+    });
+    expect(retried).toMatchObject({ status: "imported", missingBooks: [] });
+    const runs = await db.select().from(ingestionRuns);
+    expect(runs.map((r) => r.status)).toEqual(["completed"]);
+  });
+
+  it("treats a pre-ADR-071 completed run with a too_large issue as partial", async () => {
+    await db.insert(ingestionRuns).values({
+      jobKey: EXCHANGES_PROFILE.jobKey(fixture.fixtureId),
+      provider: "oddspapi",
+      requestType: "historical",
+      startedAt: "2026-10-20T00:00:00Z",
+      status: "completed",
+      issueCounts: { too_large_kalshi: 1 },
+    });
+    const client = fakeClient();
+    expect(
+      await importLineMoves({ db, client, markets }, fixture, EXCHANGES_PROFILE),
+    ).toMatchObject({ status: "already-imported" });
+    expect(
+      await importLineMoves({ db, client, markets }, fixture, EXCHANGES_PROFILE, {
+        retryPartial: true,
+      }),
+    ).toMatchObject({ status: "imported" });
   });
 
   it("still fails the run on any other error", async () => {
