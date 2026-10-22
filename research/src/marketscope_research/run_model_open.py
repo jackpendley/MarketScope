@@ -11,11 +11,13 @@ import argparse
 import os
 import subprocess
 from datetime import datetime, timezone
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
 from . import evaluation as ev
+from . import provenance
 from . import fair_value as fv
 from . import injury_windows as iw
 from . import model_open as mo
@@ -167,6 +169,9 @@ def main() -> None:
     ]
     with open(args.out, "w") as fh:
         fh.write("\n".join(parts))
+    provenance.write_run_record(args.out, provenance.run_record(
+        "MS-057 model and the open", [{"kind": "db", "table": "line_moves (pinnacle spreads)", "rows": len(moves), "sha256": provenance.frame_sha256(moves)}, {"kind": "db", "table": "rating_snapshots", "rows": len(ratings), "sha256": provenance.frame_sha256(ratings)}],
+        [Path(fv.__file__).with_name("fair_value_params.json")], ["sorted before the seeded bootstrap (ADR-066)", "Addenda V and W sensitivities"], {"phase": getattr(args, "phase", None)}))
     print("\n".join(p for p in parts if "result" in p.lower() and "**" in p or p.startswith("**Sample") or
                     p.startswith(str(len(vals)))))
 

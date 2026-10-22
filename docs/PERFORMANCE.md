@@ -106,6 +106,18 @@ Index notes:
 
 The live rate will fall in the playoffs (fewer games on the board), so the real figure should be lower. Adding a full past season through OddsPapi (about 270 games × ~2K rows × 376 B ≈ 200 MB) would still fit, but it's the first thing that would push toward the limit.
 
+## Research lake (Phase 14, measured 2026-10-22, M-series MacBook)
+
+- **Dataset:** `lake-2d40bfbafd04b8f2`, with 93 fixtures, 37,298,339 rows and 154 MB of Parquet. Rows per fixture: median 277k, maximum 1.79M.
+- **Coverage, now recorded in the manifest:** 30 fixtures have no Bookmaker.eu history. Every other requested book is present in every fixture.
+- **Integrity:** `lake verify` re-hashes every file in 0.35 s. `lake snapshot` writes a 161 MB archive in 0.5 s. `lake restore` unpacks it and checks every file hash and the dataset ID in 0.6 s.
+- **Build memory** (peak RSS, `resource.getrusage`):
+  - **Imports:** pandas, pyarrow and DuckDB alone take about 100–125 MB.
+  - **Streaming parse:** a 557 MB raw response for 4 book groups adds about 2 MB. The yajl2 C backend never holds the response.
+  - **Writer, before batching:** it held every kept entry as a Python object. That cost 265 MB for the 193k-row fixture and 1.09 GB for 1.8M synthetic entries, about the largest real fixture.
+  - **Writer, after batching** (Arrow column batches of 50k rows, ADR-070): 198 MB and 401 MB respectively. The bytes are identical and the time is the same.
+- **Study runners:** the MS-056 discovery run took 22 minutes until lake candidates were built once per game; it now takes 4.3 minutes, peaking at 2.0 GB. That peak comes from each game's full candidate structures across all books. It is the next memory target if confirmation (about 190 games) needs it.
+
 ## Thresholds to revisit
 
 - **`gameCoverage` > 500 ms:** move per-game coverage into a summary table refreshed after each collection run.

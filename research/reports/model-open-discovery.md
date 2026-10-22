@@ -1,6 +1,6 @@
 # Does the market move toward the model? discovery (MS-057)
 
-_Generated 2026-10-22 20:19 UTC · commit `ae63e06` · reproduce with `research/src/marketscope_research/run_model_open.py --phase discovery`._
+_Generated 2026-10-22 20:54 UTC · commit `103e2bc` · reproduce with `research/src/marketscope_research/run_model_open.py --phase discovery`._
 
 Design pre-registered in `research/PREREGISTRATION.md` (Addendum O, committed before this code). Decision time 6 days before kickoff; the model line is ratings-only (AdjEM gap plus 1.6 home advantage) from the latest snapshot usable then. Game bootstrap (5,000, seed 2026). **Analysis, not betting advice.**
 

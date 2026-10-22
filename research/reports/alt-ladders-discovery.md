@@ -1,6 +1,6 @@
 # Alternate ladders: discovery (MS-055b)
 
-_Generated 2026-10-22 02:05 UTC · commit `e6f563d` · reproduce with `research/src/marketscope_research/run_alt_ladders.py --phase discovery`._
+_Generated 2026-10-22 21:11 UTC · commit `103e2bc` · reproduce with `research/src/marketscope_research/run_alt_ladders.py --phase discovery`._
 
 Design pre-registered in `research/PREREGISTRATION.md` (Addendum Q, committed before this code; corrections in Addendum R). Every retail alternate spread and total (−300 to +300) priced against the sharp-consensus fair probability at its exact line (engine v2, Shin devig); candidates are the ones worth more than 0 at decision time, scored at the sharp-consensus close. Game bootstrap (5,000, seed 2026). **Analysis, not betting advice.**
 
@@ -44,6 +44,25 @@ Under Addendum R a claim needs both intervals above 0; these discovery numbers w
 | DraftKings                        | 1101  | +3.79% (+2.75 to +4.81) | 317                 | -5.65% (-7.28 to -4.00) |
 | FanDuel                           | 1958  | +4.54% (+3.54 to +5.56) | 596                 | -4.85% (-5.92 to -3.81) |
 | Hard Rock                         | 2205  | +3.56% (+2.75 to +4.43) | 468                 | -3.35% (-4.65 to -1.95) |
+
+## Engine v3 (Addendum T secondary)
+
+Candidates selected and scored with the MS-059 line conversion (logit scale for spreads and totals, fitted to the sharp books' own alternate prices), coherence rule applied. Secondary: the registered primary stays on engine v2 (post hoc on discovery games: descriptive only).
+
+3049 candidates. Engine-scored +2.29% (+1.56 to +2.98); direct-scored -1.13% (-2.68 to +0.59) on 864 with a direct price. Within 1 point of the main line (direct): +1.63% (+0.41 to +2.90).
+
+| Alternates                        | Count | Engine-scored value     | With a direct price | Direct-scored value     |
+| --------------------------------- | ----- | ----------------------- | ------------------- | ----------------------- |
+| Spread alternates spanning 3 or 7 | 1410  | +2.46% (+1.56 to +3.42) | 347                 | -2.27% (-4.61 to +0.19) |
+| Other spread alternates           | 1988  | +2.27% (+1.42 to +3.09) | 544                 | -1.97% (-3.86 to +0.04) |
+| Total alternates                  | 1061  | +2.33% (+1.49 to +3.12) | 320                 | +0.29% (-1.14 to +1.87) |
+| 0.5–1 point from the main line    | 170   | +2.06% (+1.09 to +2.95) | 113                 | +1.63% (+0.41 to +2.90) |
+| 1.5–3 points                      | 633   | +2.38% (+1.62 to +3.20) | 224                 | +1.09% (-0.02 to +2.42) |
+| More than 3 points                | 2246  | +2.28% (+1.51 to +3.04) | 527                 | -2.67% (-4.64 to -0.49) |
+| Caesars                           | 663   | +3.89% (+2.18 to +5.33) | 212                 | +2.61% (-1.04 to +5.68) |
+| DraftKings                        | 385   | +1.09% (+0.10 to +1.95) | 125                 | -2.63% (-4.94 to -0.62) |
+| FanDuel                           | 758   | +2.05% (+0.96 to +3.03) | 256                 | -4.24% (-5.88 to -2.78) |
+| Hard Rock                         | 1243  | +1.95% (+1.23 to +2.59) | 271                 | -0.42% (-1.69 to +0.85) |
 
 ## What this can't see
 

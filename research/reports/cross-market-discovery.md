@@ -1,6 +1,6 @@
 # Cross-market value on main markets: discovery (MS-054)
 
-_Generated 2026-10-22 02:21 UTC · commit `f2df262` · reproduce with `research/src/marketscope_research/run_cross_market.py --phase discovery`._
+_Generated 2026-10-22 21:05 UTC · commit `103e2bc` · reproduce with `research/src/marketscope_research/run_cross_market.py --phase discovery`._
 
 Design pre-registered in `research/PREREGISTRATION.md` (Addendum P, committed before this code; corrections in Addendum R). Data: the research lake (full ladders). Fair probabilities from the frozen engine v2 and Shin devig; the sharp consensus is the equal-weight mean of Pinnacle, Circa, Bookmaker.eu and Novig. Values are per unit at the sharp-consensus close. Game bootstrap (5,000, seed 2026). **Analysis, not betting advice.**
 
@@ -62,6 +62,12 @@ Under Addenda R and S a claim needs corroborated positions with both intervals a
 | FanDuel                           | 43    | +2.76% (+1.50 to +4.03) | 17                  | +2.46% (-0.15 to +4.49) |
 | Hard Rock                         | 29    | +2.82% (+1.44 to +4.01) | 16                  | +3.08% (+0.56 to +5.14) |
 | Corroborated (Addendum S primary) | 6     | +4.14% (+1.65 to +6.84) | 1                   | +1.87% (+1.87 to +1.87) |
+
+## Engine v3 (Addendum T secondary)
+
+Positions selected and scored with the MS-059 line conversion (logit scale for spreads and totals, fitted to the sharp books' own alternate prices), coherence rule applied. Moneyline conversion stayed v2, so A is the corrected A above. Secondary: the registered primaries stay on engine v2 (post hoc on discovery games: descriptive only).
+
+B: 117 positions, engine-scored +2.97% (+1.79 to +4.06); direct-scored +2.05% (-0.25 to +4.24) on 54 positions with a direct price. Corroborated: 7 positions, engine-scored +4.34% (+1.63 to +6.47); direct-scored +1.87% (+1.87 to +1.87) on 1.
 
 ## What this can't see
 

@@ -1,6 +1,6 @@
 # Fair-value engine v3: line conversion (fit, MS-059)
 
-_Generated 2026-10-22 19:05 UTC · commit `50a1946` on `main` (run as `40d3690` in PR #79) · reproduce with `research/src/marketscope_research/run_ladder_fit.py --phase fit`._
+_Generated 2026-10-22 20:56 UTC · commit `103e2bc` · reproduce with `research/src/marketscope_research/run_ladder_fit.py --phase fit`._
 
 Design pre-registered in `research/PREREGISTRATION.md` (Addendum T, committed before this code). Each sharp book's (Pinnacle, Circa, Bookmaker.eu) Shin-devigged prices at its own half-point alternates, and its own moneyline, predicted from the same book's main line by four conversions of the frozen engine v2 distributions; loss is the binary KL divergence, game bootstrap (5,000, seed 2026); selection weeks 1–3, validation weeks 4–6. **Uses no game outcomes; this is model building, not a claim about value.**
 

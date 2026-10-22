@@ -1,0 +1,72 @@
+{
+  "corrections": [
+    "coherence rule (Addendum R)",
+    "corroboration (Addendum S)",
+    "engine v2 registered; v3 secondary (Addendum T)"
+  ],
+  "generated_at": "2026-10-22T21:05:48+00:00",
+  "git_commit": "103e2bc515b9bce93cc47eb6be33cbad4d9ca398",
+  "git_dirty": false,
+  "inputs": [
+    {
+      "books_missing": {
+        "id1400003171451946": "bookmaker.eu",
+        "id1400003171466824": "bookmaker.eu",
+        "id1400003171515778": "bookmaker.eu",
+        "id1400003171515780": "bookmaker.eu",
+        "id1400003171515782": "bookmaker.eu",
+        "id1400003171515784": "bookmaker.eu",
+        "id1400003171515786": "bookmaker.eu",
+        "id1400003171515788": "bookmaker.eu",
+        "id1400003171515790": "bookmaker.eu",
+        "id1400003171515792": "bookmaker.eu",
+        "id1400003171515794": "bookmaker.eu",
+        "id1400003171515796": "bookmaker.eu",
+        "id1400003171515798": "bookmaker.eu",
+        "id1400003171515800": "bookmaker.eu",
+        "id1400003171515802": "bookmaker.eu",
+        "id1400003171515804": "bookmaker.eu",
+        "id1400003171515806": "bookmaker.eu",
+        "id1400003171515808": "bookmaker.eu",
+        "id1400003171515810": "bookmaker.eu",
+        "id1400003171515812": "bookmaker.eu",
+        "id1400003171515818": "bookmaker.eu",
+        "id1400003171515820": "bookmaker.eu",
+        "id1400003171515822": "bookmaker.eu",
+        "id1400003171515824": "bookmaker.eu",
+        "id1400003171515826": "bookmaker.eu",
+        "id1400003171515828": "bookmaker.eu",
+        "id1400003171515830": "bookmaker.eu",
+        "id1400003171515832": "bookmaker.eu",
+        "id1400003171515834": "bookmaker.eu",
+        "id1400003171515836": "bookmaker.eu"
+      },
+      "catalogs": ["f65e3f16b4e77359908455725ea1d6ec7e41c7a98b8ea97bdc0d2b53f559c823"],
+      "dataset_id": "lake-2d40bfbafd04b8f2",
+      "fixtures": 93,
+      "kind": "lake",
+      "rows": 37298339,
+      "transform_versions": [1]
+    },
+    {
+      "kind": "db",
+      "rows": 2768,
+      "sha256": "fc3eecf1649193ba9342c88ffb3b3c8c55c214d81b7a3a168f36089ffd44cf89",
+      "table": "odds_observations (the-odds-api)"
+    }
+  ],
+  "packages": {
+    "duckdb": "2.0.0",
+    "ijson": "3.6.0",
+    "numpy": "2.4.6",
+    "pandas": "3.0.6",
+    "pyarrow": "26.0.0",
+    "scipy": "1.16.3"
+  },
+  "params": {
+    "fair_value_params.json": "801d8878f1ec9bb8b5f9ccdb1a10403f45d0d329ec16359e9b0190294c0dc709"
+  },
+  "phase": "discovery",
+  "python": "3.11.6",
+  "study": "MS-054 cross-market value"
+}
