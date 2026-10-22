@@ -1321,3 +1321,35 @@ These run on a better fair-value engine: a joint margin–total distribution and
 - The nightly import runs the profile after the books, with 3 more free history calls per game. Backfill: `import:line-moves --profile fixes --from 2026-09-01`.
 
 **Research.** No registered study changes. The B confirmation primary already counts only corroborated prices (Addendum S). Future studies may use `mainline.timeline(..., ghost_rule=True)`, and must say so in their pre-registration.
+
+## ADR-066 — Fair-value engine v3: line conversion fitted to the sharp books' own ladders (MS-059) (2026-10-22)
+
+**Context.** Engine v2 (ADR-062) moves a devigged probability to another line by adding the main-line calibration shift unchanged at every line. ADR-064 showed this overstates the tails: MS-055b's candidates were +4.3% engine-scored but −3.6% against the sharp books' own prices at the same line. Addendum T fixed the protocol before any code (`7a62f87`, before the first confirmation kickoff); the code came before the first run (`40d3690`).
+
+**Target (no game outcomes).** At 48, 24, 6 and 1 hours before kickoff and at the close, each sharp book's (Pinnacle, Circa, Bookmaker.eu) Shin-devigged price at its own half-point alternates within 10 points of the main line, and its own moneyline, predicted from the same book's main line. Loss: binary KL divergence; game bootstrap. Selection on weeks 1–3 (48 games), adoption on weeks 4–6 (45 games).
+
+**Candidates:** V2 (additive), L (logit shift), M (continuous location shift of the pmf), S (logit scale: β·logit plus a calibrated shift, one β per market).
+
+**Results** (`research/reports/fair-value-v3.md`):
+
+- **Spreads: S adopted, β = 0.98.** Validation KL 0.592 → 0.478 ×10⁻³, difference −0.114 (−0.167 to −0.061). Mean absolute error 1.02 → 0.93 probability points; beyond 3 points from the main line 1.80 → 1.59.
+- **Totals: S adopted, β = 1.06.** KL 0.813 → 0.437, difference −0.376 (−0.529 to −0.237). Mean absolute error 1.33 → 1.06; beyond 3 points 2.20 → 1.38.
+- **Moneylines from the spread: V2 stays.** L was chosen on selection, but on validation −0.084 (−0.234 to +0.026) does not clear 0.
+- β ≈ 1 for spreads means the gain is mostly working on the logit scale instead of adding probability. Totals' ladders are slightly steeper than the historical distribution implies. The location shift was worst for spreads: moving the whole margin distribution misplaces the key-number masses.
+
+**Decision.**
+
+- `fair_value_params.json` gains `conversion`. `load_engine(history, v3=True)` uses it; the default stays v2, so every registered study reproduces exactly. Checked: the MS-054, MS-055b and MS-057 discovery reports regenerate with identical numbers.
+- `Engine.spread_side`, `total_side` and `moneyline_home` replace direct calls to the additive functions in `cross_market` and `model_open`. Their v2 path _is_ the registered function.
+- Confirmation reports for MS-054, MS-055b and MS-057 add a v3 secondary. The registered primaries stay on v2. Studies registered from MS-056 onward use v3.
+
+**What v3 does to the discovery numbers** (post hoc, descriptive only):
+
+- **MS-055b alternates:**
+  - candidates fall from 6,257 to 3,049;
+  - engine-scored +2.3%, direct-scored −1.1% (−2.7 to +0.6);
+  - the gap between the engine and the sharp books' own prices narrows from 7.9 to 3.4 points, but does not close. Shin on a sharp alternate is itself approximate (alternates carry more margin), so direct scoring remains the stricter check.
+- **MS-054 B:** essentially unchanged (+3.0% engine-scored), because main lines are converted only short distances.
+- **MS-057 secondary:** −1.0% under both.
+
+**Reproducibility fix.** `run_model_open` resampled rows in SQL order, so the seeded bootstrap's interval for the MS-057 slope varied slightly between runs (+0.048 to +0.189 committed; +0.051 to +0.187 on re-run). It now sorts by event first: +0.051 to +0.189, deterministic. The claim is unchanged.

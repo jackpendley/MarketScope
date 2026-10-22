@@ -68,10 +68,14 @@ def main() -> None:
     final = set(schedule.loc[schedule["final"], "event_id"].dropna())
     frame = frame[frame["event_id"].isin(set(kicks[in_phase].index) & final)]
 
+    # The seeded bootstrap resamples rows by position: sort so it doesn't depend on SQL row order.
+    frame = frame.sort_values("event_id").reset_index(drop=True)
     e1 = iw.slope_ci(frame, "y", "x") if len(frame) > 2 else None
     engine = fv.load_engine(history)
     vals = mo.model_side_values(frame, tl, kicks, engine)
     e2 = sm.ratio_bootstrap(vals.assign(v=vals["value"]), "v") if len(vals) else None
+    vals3 = mo.model_side_values(frame, tl, kicks, fv.load_engine(history, v3=True))  # Addendum T secondary
+    e3 = sm.ratio_bootstrap(vals3.assign(v=vals3["value"]), "v") if len(vals3) else None
 
     def verdict(e, claim):
         if e is None:
@@ -111,6 +115,8 @@ def main() -> None:
         "## Secondary: the model's side at Pinnacle's line 6 days out (|disagreement| ≥ 1.5)", "",
         f"{len(vals)} positions. Mean value at Pinnacle's no-vig close: {pct(e2)}. Secondary: "
         f"{verdict(e2, 'taking the model side early carries positive value')}.", "",
+        "Engine v3 (Addendum T secondary; MS-059 line conversion, logit scale): "
+        f"{pct(e3)}" + (" (post hoc on discovery games: descriptive only)." if args.phase == "discovery" else "."), "",
         "## Exploratory: value by size of the disagreement (added after the first run)", "",
         table(by_size, ["Disagreement size (points)", "Positions", "Value at Pinnacle's close"]), "",
         "## What this can't see", "",

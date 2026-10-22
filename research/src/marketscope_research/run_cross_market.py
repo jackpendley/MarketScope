@@ -48,17 +48,19 @@ def main() -> None:
               else (sm.DISCOVERY_END, sm.CONFIRMATION_END))
     manifest = manifest[(manifest["kickoff"] >= lo) & (manifest["kickoff"] < hi)]
 
-    runs = {}
-    for coherent in (False, True):
-        a_all, b_all = [], []
-        for f in manifest.itertuples():
-            lad = con.execute("SELECT * FROM ladder WHERE fixture_id = ?", [f.fixture_id]).df()
-            lad["created_at"] = pd.to_datetime(lad["created_at"], utc=True)
-            a, b = cm.fixture_positions(lad, f.kickoff, engine, coherent=coherent)
-            a_all.append(a.assign(event_id=f.fixture_id))
-            b_all.append(b.assign(event_id=f.fixture_id))
-        runs[coherent] = (pd.concat(a_all, ignore_index=True) if a_all else pd.DataFrame(),
-                          pd.concat(b_all, ignore_index=True) if b_all else pd.DataFrame())
+    engine3 = fv.load_engine(history, v3=True)  # MS-059 line conversion (Addendum T secondary)
+    configs = (("registered", engine, False), ("coherent", engine, True), ("v3", engine3, True))
+    runs = {key: ([], []) for key, _, _ in configs}
+    for f in manifest.itertuples():
+        lad = con.execute("SELECT * FROM ladder WHERE fixture_id = ?", [f.fixture_id]).df()
+        lad["created_at"] = pd.to_datetime(lad["created_at"], utc=True)
+        for key, eng, coherent in configs:
+            a, b = cm.fixture_positions(lad, f.kickoff, eng, coherent=coherent)
+            runs[key][0].append(a.assign(event_id=f.fixture_id))
+            runs[key][1].append(b.assign(event_id=f.fixture_id))
+    runs = {key: (pd.concat(a_all, ignore_index=True) if a_all else pd.DataFrame(),
+                  pd.concat(b_all, ignore_index=True) if b_all else pd.DataFrame())
+            for key, (a_all, b_all) in runs.items()}
 
     def boot(d, col="value"):
         d = d.dropna(subset=[col]) if len(d) else d
@@ -82,8 +84,9 @@ def main() -> None:
     def n_direct(d):
         return int(d["value_direct"].notna().sum()) if len(d) else 0
 
-    a, b = runs[False]
-    ca, cb = runs[True]
+    a, b = runs["registered"]
+    ca, cb = runs["coherent"]
+    _a3, b3 = runs["v3"]  # A is unchanged under v3: the moneyline conversion stayed v2
     # Addendum S: was the price also seen by our own collector (The Odds API) while it was in effect?
     with connect(dsn) as conn:
         obs = _frame(conn, """
@@ -92,14 +95,19 @@ def main() -> None:
             FROM odds_observations WHERE source = 'the-odds-api' AND event_id = ANY(%s::uuid[])
               AND bookmaker_key IN ('draftkings', 'fanduel', 'hardrockbet')""", (list(manifest["event_id"]),))
     obs["observed_at"] = pd.to_datetime(obs["observed_at"], utc=True)
-    if len(cb):
-        ev = manifest.set_index("fixture_id")["event_id"]
-        cb = cb.assign(fixture_id=cb["event_id"], event_id=cb["event_id"].map(ev))
-        cb["corroborated"] = cm.corroborated(cb, obs)
-        cb["event_id"] = cb["fixture_id"]
-        seen = cb[cb["corroborated"].fillna(False).astype(bool)]
-    else:
-        seen = cb
+    ev = manifest.set_index("fixture_id")["event_id"]
+
+    def corroborate(d):
+        if not len(d):
+            return d, d
+        d = d.assign(fixture_id=d["event_id"], event_id=d["event_id"].map(ev))
+        d["corroborated"] = cm.corroborated(d, obs)
+        d["event_id"] = d["fixture_id"]
+        return d, d[d["corroborated"].fillna(False).astype(bool)]
+
+    cb, seen = corroborate(cb)
+    b3, seen3 = corroborate(b3)
+    e3, e3d, e3s, e3sd = boot(b3), boot(b3, "value_direct"), boot(seen3), boot(seen3, "value_direct")
     eseen, eseen_d = boot(seen), boot(seen, "value_direct")
     checkable = int(cb["corroborated"].notna().sum()) if len(cb) else 0
     ea, eb = boot(a), boot(b)
@@ -160,6 +168,14 @@ def main() -> None:
         "(DraftKings, FanDuel, Hard Rock).", "",
         primary_b, "",
         table(c_rows, ["Positions", "Count", "Engine-scored value", "With a direct price", "Direct-scored value"]), "",
+        "## Engine v3 (Addendum T secondary)", "",
+        "Positions selected and scored with the MS-059 line conversion (logit scale for spreads and totals, fitted "
+        "to the sharp books' own alternate prices), coherence rule applied. Moneyline conversion stayed v2, so A is "
+        "the corrected A above. Secondary: the registered primaries stay on engine v2"
+        + (" (post hoc on discovery games: descriptive only)." if args.phase == "discovery" else "."), "",
+        f"B: {len(b3)} positions, engine-scored {pct(e3)}; direct-scored {pct(e3d)} on {n_direct(b3)} positions with "
+        f"a direct price. Corroborated: {len(seen3)} positions, engine-scored {pct(e3s)}; direct-scored {pct(e3sd)} "
+        f"on {n_direct(seen3)}.", "",
         "## What this can't see", "",
         "Alternate ladders (MS-055b); retail limits; whether a price would have been accepted at size; feed errors "
         "that are not ghost markets.", "",

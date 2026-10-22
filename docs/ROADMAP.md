@@ -383,7 +383,7 @@ The phase is NFL only and free first. A criteria-based gate decides whether paid
   - [ ] Confirmation on weeks 7–14; then the paid-data decision.
 - [x] **MS-058** Ghost markets in the collector (ADR-065): near-even and flat-pair rules checked against our own The Odds API snapshots; corrections in `line_move_fixes` (backfilled), shown on the replay page; `line_moves` unchanged for the registered studies.
 - [ ] **Future pre-registrations confirm on weeks 7–18** (plus playoffs where the question allows): about 55% more games than weeks 7–14, at no cost. Registered confirmations keep weeks 7–14.
-- [ ] **MS-059** Fair-value engine v3: calibrate line conversion against the sharp books' own alternate ladders in the lake, an outcome-free target, instead of the additive shift.
+- [x] **MS-059** Fair-value engine v3 (ADR-066): logit-scale line conversion fitted to the sharp books' own alternate prices (outcome-free); adopted for spreads (KL −19%) and totals (−46%), moneylines stay v2; v3 secondaries in the MS-054/055b/057 confirmation reports.
 - [ ] **Paid-data gate:** buy The Odds API history ($119, one month) only if MS-057 or MS-054 B shows a positive estimate too uncertain to decide on one season.
 
 ## Out of scope until the core works

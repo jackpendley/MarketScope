@@ -120,3 +120,38 @@ def test_choose_beta_finds_a_planted_scale():
     planted = obs.assign(p_star=lf.predict(obs, ENGINE, "scale", 1.2))
     beta, losses = lf.choose_beta(planted, ENGINE)
     assert beta == 1.2 and len(losses) == len(fv.BETAS)
+
+
+V3 = {"spreads": {"method": "scale", "beta": 0.98}, "totals": {"method": "scale", "beta": 1.06},
+      "moneyline": {"method": "v2", "beta": 1.0}}
+
+
+def v3_engine():
+    import dataclasses
+    return dataclasses.replace(ENGINE, conversion=V3)
+
+
+@pytest.mark.parametrize("side,line", [("home", -6.5), ("away", 6.5), ("away", 2.5), ("home", -3.0)])
+def test_engine_v2_path_is_the_registered_function(side, line):
+    assert ENGINE.spread_side(-3.0, 44.0, 0.52, side, line) == \
+        ml.side_probabilities(ENGINE.margin_pmf(-3.0, 44.0), -3.0, 0.52, side, line)
+
+
+@pytest.mark.parametrize("home_spread", [-3.0, 4.5])
+def test_engine_v3_spreads_follow_the_calibrated_curve(home_spread):
+    e = v3_engine()
+    conv = fv.calibrate(fv.home_margin_pmf(e.margin_pmf(home_spread, 44.0), home_spread), -home_spread, 0.52,
+                        "scale", 0.98)
+    w, pu, lo = e.spread_side(home_spread, 44.0, 0.52, "home", -9.5)
+    assert (w, pu) == pytest.approx(conv(9.5))
+    aw, apu, alo = e.spread_side(home_spread, 44.0, 0.52, "away", 9.5)
+    assert (aw, alo) == pytest.approx((lo, w))
+    hw, hpu, hlo = e.spread_side(home_spread, 44.0, 0.52, "home", home_spread)
+    assert hw / (hw + hlo) == pytest.approx(0.52)
+
+
+def test_engine_v3_totals_and_unadopted_moneyline():
+    e = v3_engine()
+    w, pu, lo = e.total_side(44.5, -3.0, 0.47, "under", 50.5)
+    assert (lo, pu) == pytest.approx(fv.calibrate(e.total_pmf(44.5, -3.0), 44.5, 0.47, "scale", 1.06)(50.5))
+    assert e.moneyline_home(-3.0, 44.0, 0.55) == ENGINE.moneyline_home(-3.0, 44.0, 0.55)

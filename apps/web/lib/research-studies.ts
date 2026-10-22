@@ -480,6 +480,7 @@ export const MARKET_STUDIES: Study[] = [
       "Withdrawn: a measurement artifact. Our fair-value engine moves a sharp price to another line by adding the same probability shift at every line, which overstates the chances far from the main line, so the same model found the same value at the close. Scored against Pinnacle's, Circa's and Bookmaker.eu's own prices at the same alternate line, these candidates are worth −3.6% (−4.9% to −2.3%), and −5.1% beyond 3 points from the main line.",
     exploratory: [
       "Within 1 point of the main line: +1.6% (+0.4% to +2.8%) against the sharp books' own prices, 115 alternates; registered for the held-out weeks only.",
+      "With engine v3, whose line conversion is fitted to the sharp books' own alternate prices (post hoc): 3,049 candidates, +2.3% engine-scored and −1.1% (−2.7% to +0.6%) against the sharp books' own prices. The gap narrows from 7.9 to 3.4 points.",
     ],
     report: `${REPO}/research/reports/alt-ladders-discovery.md`,
   },
