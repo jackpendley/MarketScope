@@ -1539,3 +1539,17 @@ OddsPapi's terms need checking for private storage of history before any upload.
 - **Credential-free demo.** `tests/fixtures/synthetic_forward_test.csv` (synthetic, labelled in its name and README) produces a full card, including intervals and calibration, with no database.
 
 **Alternatives rejected.** An experiment tracker such as MLflow: one frozen model, with run records and hashes in git and the database, does not need one. A new, simpler model to demonstrate the workflow: it would add a model count without adding evidence.
+
+## ADR-075 — Backups of the serving database, proven by a restore check (2026-10-22)
+
+**Context.** An external review asked for backup and restore of the state needed for the product and published results. The research lake has snapshots (ADR-070, ADR-073). The serving database had no backup we controlled, and no restore had ever been tried.
+
+**Decision.**
+
+- **`scripts/db-backup.sh`.** `pg_dump` (custom format, compressed) of the `public` schema plus the `drizzle` migration journal, with a manifest holding the dump's SHA-256 and per-table row counts just before and just after. Writes are rare (a few times a day), so the two usually agree and the check is exact.
+- **`scripts/db-restore-check.sh`** restores into a scratch local database and fails unless every table's count matches. A backup that has never been restored is a hope, not a backup.
+- **Plain shell around `pg_dump`/`pg_restore`.** No backup service: the database is small, and the standard tools are what a reader would expect.
+
+**Measured.** 186 MB → 11.2 MB dump in 22 s (indexes are rebuilt, not dumped). Restore and check of 27 tables and 626,813 rows in 3–5 s, every count matching.
+
+**Open.** Backups stay on the laptop in `backups/` (gitignored; they contain password hashes and session tokens). A durable off-machine copy needs separate approval. The `lake-snapshots` bucket was approved for lake snapshots, not for credentials data.

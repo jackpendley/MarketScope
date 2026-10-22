@@ -47,3 +47,16 @@ Each command shows the database host and asks for confirmation before changing a
 1. `curl -I https://<domain>/api/health/live` → 200.
 2. `curl -I https://<domain>/nfl` → 307 redirect to `/login?next=%2Fnfl`; `curl -I https://<domain>/api/games` → 401.
 3. In a browser, sign in and open `/nfl`. Check that the snapshot timestamp matches the latest `collect-odds` run.
+
+## Backup and restore (ADR-075)
+
+```sh
+SOURCE_URL=… scripts/db-backup.sh                  # read-only on the source; writes backups/ (gitignored)
+scripts/db-restore-check.sh backups/<file>.dump    # restores into a scratch local DB, compares every table, drops it
+```
+
+- **The backup** is the `public` schema (every app table, the Better Auth tables included) plus the `drizzle` migration journal, so a restored database knows which migrations it has. Its manifest records the dump's SHA-256 and every table's row count just before and just after the dump.
+- **The check** verifies the hash, restores into `marketscope_restore_check`, and requires every table's count to match. A count must fall between the before and after counts if the collector wrote during the dump.
+- **Measured 2026-10-22:** 186 MB database → 11.2 MB dump in 22 s; restore and check of 27 tables (626,813 rows) in 3–5 s.
+- **Not included:** the `storage` schema (bucket metadata, ADR-073) and Supabase's own `auth` schema, which we don't use. The research lake has its own snapshots (`lake push`, ADR-073).
+- **The file contains password hashes and session tokens.** Keep it in `backups/` (gitignored) and never upload it anywhere public. A durable off-machine copy needs its own approval.
