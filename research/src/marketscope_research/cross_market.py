@@ -19,8 +19,6 @@ from dataclasses import dataclass
 import pandas as pd
 
 from . import fair_value as fv
-from . import market_ml as ml
-from . import openers_totals as ot
 from .lake import mainline
 
 KEYS = (3.0, 7.0)
@@ -122,13 +120,11 @@ def side_win_loss(engine: fv.Engine, market: str, src: Line, side: str, target: 
     """(win, loss) probability for `side` at `target`, from a source line's devigged probability."""
     p1 = shin(src)
     if market == "spreads":
-        pmf = engine.margin_pmf(src.point, total_hint)
         line = target if side == "home" else -target
-        w, _pu, lo = ml.side_probabilities(pmf, src.point, p1, side, line)
+        w, _pu, lo = engine.spread_side(src.point, total_hint, p1, side, line)
         return w, lo
     if market == "totals":
-        pmf = engine.total_pmf(src.point, spread_hint)
-        w, _pu, lo = ot.total_side_probabilities(pmf, src.point, p1, side, target)
+        w, _pu, lo = engine.total_side(src.point, spread_hint, p1, side, target)
         return w, lo
     # moneyline from a moneyline source: its own devigged probability (ties excluded)
     return (p1, 1 - p1) if side == "home" else (1 - p1, p1)
@@ -197,9 +193,7 @@ def fixture_positions(ladder: pd.DataFrame, kickoff: pd.Timestamp, engine: fv.En
             # A: moneyline against the book's own spread
             spr, mlq = line_at(cands, book, "spreads", d, coherent), line_at(cands, book, "moneyline", d, coherent)
             if spr is not None and mlq is not None:
-                pmf = engine.margin_pmf(spr.point, tot_h)
-                w, _pu, lo = ml.side_probabilities(pmf, spr.point, shin(spr), "home", 0.0)
-                p_home = w / (w + lo) if w + lo > 0 else 0.5
+                p_home = engine.moneyline_home(spr.point, tot_h, shin(spr))
                 for side, dec, p in (("home", mlq.d1, p_home), ("away", mlq.d2, 1 - p_home)):
                     if not in_band(dec) or value(p, 1 - p, dec) <= 0:
                         continue

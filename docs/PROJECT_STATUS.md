@@ -1,6 +1,6 @@
 # Project Status
 
-_Rewrite this file at the end of every session. Last updated: 2026-10-22 (session 1, continued; MS-058)._
+_Rewrite this file at the end of every session. Last updated: 2026-10-22 (session 1, continued; MS-058, MS-059)._
 
 ## Current milestone
 
@@ -11,7 +11,8 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-22 (sessio
   - MS-053 engine v2; MS-055a Wong 2.0 (break-even);
   - MS-057 (**the market moves toward the ratings early in the week, +0.116 per point: a discovery claim**);
   - MS-054 and MS-055b discovery (ADR-064);
-  - MS-058 ghost markets in the collector (ADR-065): corrections in `line_move_fixes`, shown on the replay page; `line_moves` unchanged for the registered studies.
+  - MS-058 ghost markets in the collector (ADR-065): corrections in `line_move_fixes` (backfilled: 10,887 rows, 44 of 2,409 book-market timelines in 33 games, 3.1% of `line_moves` rows), shown on the replay page; `line_moves` unchanged for the registered studies (fingerprint checked);
+  - MS-059 engine v3 (ADR-066): logit-scale line conversion fitted to the sharp books' own alternate prices, outcome-free; adopted for spreads (KL −19%) and totals (−46%), moneylines stay v2. Registered primaries stay on v2; confirmation reports add v3 secondaries.
 - **ADR-064 in one paragraph:**
   - **The positives:** both lake studies had positive primaries as registered: B +3.6% and alternates +4.3%.
   - **The checks found two measurement problems:**
@@ -19,7 +20,7 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-22 (sessio
     - OddsPapi keeps some dead sportsbook markets "active" (ghost markets), and the main-line rule picks them.
   - **Alternates:** withdrawn. Against the sharp books' own same-line prices they are −3.6%.
   - **B:** after corrections +2.2% (−0.1 to +4.3), inconclusive. Confirmation counts only prices our own collector also saw (Addenda R and S, registered before week 7).
-- **Next:** MS-059 (engine v3 calibrated on sharp alternate ladders), then MS-056 (information timing).
+- **Next:** MS-056 (information timing), using engine v3.
 
 - **Site:** live at https://marketscope-delta.vercel.app behind invite-only accounts (ADR-049). Jack's account is `jackpendley` / jackpendley9@gmail.com.
 
@@ -286,7 +287,7 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-22 (sessio
 ## Tests
 
 - **Football pytest:** 114 (unit tests, plus integration against the migrated test DB; includes validation of the committed coaching CSV and the 2016–24 seeding reproduction).
-- **Research pytest:** 141.
+- **Research pytest:** 182.
 - **TS:** db 55, shared 192, collector 80, web 148 (unit + integration), e2e 63.
 
 ## Quotas
@@ -321,18 +322,17 @@ Nothing blocking.
 
 ## Next task
 
-**MS-059: fair-value engine v3** (ADR-064 follow-up). Calibrate line conversion against the sharp books' own alternate ladders in the lake (Pinnacle, Circa, Bookmaker.eu), an outcome-free target, instead of the additive shift in `market_ml.side_probabilities` and `openers_totals.total_side_probabilities`. Pre-register it; because the target uses no game outcomes it can use every 2026 game. Any study that adopts v3 registers that before its confirmation run.
+**MS-056: information timing.** Hourly Open-Meteo forecast revisions (ingest exists in `apps/football`); ESPN's injury JSON only if its terms allow, otherwise a faster cadence of nflverse report snapshots. Event studies: how long until Pinnacle moves after a threshold crossing, which books lag, and the value of the lagging numbers (engine v3). Pre-register first.
 
 **Pre-registration default from now on:** confirm on weeks 7–18 (plus playoffs where the question allows), not 7–14.
-
-**Then:** MS-056 information timing (Open-Meteo forecast revisions; ESPN injury JSON only if its terms allow).
 
 **Lake upkeep:** `lake build` appends new finals (about 1.5 min a game). Confirmation needs weeks 7–14 in the lake before 2026-12-16.
 
 **Confirmation runbook (after 2026-12-16).** `--phase confirmation` for:
 
 - `run_sharp_market`, `run_market_ml`, `run_injury_windows`, `run_openers_totals`, `run_exchanges` (Phase 12);
-- `run_model_open` (MS-057), `run_cross_market` (MS-054, Addendum S primary), `run_alt_ladders` (MS-055b).
+- `run_model_open` (MS-057), `run_cross_market` (MS-054, Addendum S primary), `run_alt_ladders` (MS-055b); each now adds the v3 secondary (Addendum T);
+- `run_ladder_fit --phase stability` (MS-059 weeks 7–14 check, informational).
 
 The paid-data gate then looks at MS-057 and MS-054 B.
 

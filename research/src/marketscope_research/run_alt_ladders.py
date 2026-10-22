@@ -46,15 +46,16 @@ def main() -> None:
     lo, hi = ((pd.Timestamp("2026-09-01", tz="UTC"), sm.DISCOVERY_END) if args.phase == "discovery"
               else (sm.DISCOVERY_END, sm.CONFIRMATION_END))
     manifest = manifest[(manifest["kickoff"] >= lo) & (manifest["kickoff"] < hi)]
-    runs = {}
-    for coherent in (False, True):
-        parts_ = []
-        for f in manifest.itertuples():
-            lad = con.execute("SELECT * FROM ladder WHERE fixture_id = ?", [f.fixture_id]).df()
-            lad["created_at"] = pd.to_datetime(lad["created_at"], utc=True)
-            parts_.append(cm.alt_positions(lad, f.kickoff, engine, coherent=coherent).assign(event_id=f.fixture_id))
-        runs[coherent] = pd.concat(parts_, ignore_index=True) if parts_ else pd.DataFrame()
-    alt, calt = runs[False], runs[True]
+    engine3 = fv.load_engine(history, v3=True)  # MS-059 line conversion (Addendum T secondary)
+    configs = (("registered", engine, False), ("coherent", engine, True), ("v3", engine3, True))
+    runs = {key: [] for key, _, _ in configs}
+    for f in manifest.itertuples():
+        lad = con.execute("SELECT * FROM ladder WHERE fixture_id = ?", [f.fixture_id]).df()
+        lad["created_at"] = pd.to_datetime(lad["created_at"], utc=True)
+        for key, eng, coherent in configs:
+            runs[key].append(cm.alt_positions(lad, f.kickoff, eng, coherent=coherent).assign(event_id=f.fixture_id))
+    runs = {key: pd.concat(p, ignore_index=True) if p else pd.DataFrame() for key, p in runs.items()}
+    alt, calt, alt3 = runs["registered"], runs["coherent"], runs["v3"]
 
     def boot(d, col="value"):
         d = d.dropna(subset=[col]) if len(d) else d
@@ -124,6 +125,16 @@ def main() -> None:
         primary, "",
         table(rows_cor, ["Alternates", "Count", "Engine-scored value", "With a direct price", "Direct-scored value"]),
         "",
+        "## Engine v3 (Addendum T secondary)", "",
+        "Candidates selected and scored with the MS-059 line conversion (logit scale for spreads and totals, fitted "
+        "to the sharp books' own alternate prices), coherence rule applied. Secondary: the registered primary stays "
+        "on engine v2" + (" (post hoc on discovery games: descriptive only)." if args.phase == "discovery" else "."),
+        "",
+        f"{len(alt3)} candidates. Engine-scored {pct(boot(alt3))}; direct-scored {pct(boot(alt3, 'value_direct'))} on "
+        f"{nd(alt3)} with a direct price. Within 1 point of the main line (direct): "
+        f"{pct(boot(alt3[alt3['distance'] <= 1] if len(alt3) else alt3, 'value_direct'))}.", "",
+        table([[label, len(d), pct(boot(d)), nd(d), pct(boot(d, "value_direct"))] for label, d in groups(alt3)],
+              ["Alternates", "Count", "Engine-scored value", "With a direct price", "Direct-scored value"]), "",
         "## What this can't see", "",
         "Retail limits on alternates (usually lower than on main lines); whether a price would have been accepted; "
         "sharp alternate prices carry more margin than main lines, so the direct fair price is itself approximate.",

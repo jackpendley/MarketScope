@@ -151,6 +151,44 @@ class Engine:
     margin_bucket: callable
     total_bucket: callable
     devig_method: str
+    conversion: dict | None = None  # MS-059 line conversion per target; None = v2 everywhere (registered)
+
+    def _conversion(self, target: str) -> dict | None:
+        c = (self.conversion or {}).get(target)
+        return None if not c or c["method"] == "v2" else c
+
+    def spread_side(self, home_spread: float, total: float, p_home_nv: float, side: str,
+                    line: float) -> tuple[float, float, float]:
+        """(win, push, loss) for side ('home'/'away') at `line` (from that side), calibrated so the home
+        team's no-push cover probability at `home_spread` is p_home_nv. v2 is market_ml.side_probabilities."""
+        fav = self.margin_pmf(home_spread, total)
+        c = self._conversion("spreads")
+        if c is None:
+            return ml.side_probabilities(fav, home_spread, p_home_nv, side, line)
+        conv = calibrate(home_margin_pmf(fav, home_spread), -home_spread, p_home_nv, c["method"], c["beta"])
+        w, pu = conv(-(line if side == "home" else -line))
+        return (w, pu, 1 - w - pu) if side == "home" else (1 - w - pu, pu, w)
+
+    def total_side(self, total_line: float, home_spread: float, p_over_nv: float, side: str,
+                   line: float) -> tuple[float, float, float]:
+        """(win, push, loss) for 'over'/'under' at `line`, calibrated at `total_line`. v2 is
+        openers_totals.total_side_probabilities."""
+        pmf = self.total_pmf(total_line, home_spread)
+        c = self._conversion("totals")
+        if c is None:
+            return ot.total_side_probabilities(pmf, total_line, p_over_nv, side, line)
+        w, pu = calibrate(pmf, total_line, p_over_nv, c["method"], c["beta"])(line)
+        return (w, pu, 1 - w - pu) if side == "over" else (1 - w - pu, pu, w)
+
+    def moneyline_home(self, home_spread: float, total: float, p_home_nv: float) -> float:
+        """P(home wins), ties excluded, from the home cover probability at `home_spread`."""
+        fav = self.margin_pmf(home_spread, total)
+        c = self._conversion("moneyline")
+        if c is None:
+            w, _pu, lo = ml.side_probabilities(fav, home_spread, p_home_nv, "home", 0.0)
+            return w / (w + lo) if w + lo > 0 else 0.5
+        w, pu = calibrate(home_margin_pmf(fav, home_spread), -home_spread, p_home_nv, c["method"], c["beta"])(0.0)
+        return w / (1 - pu) if pu < 1 else 0.5
 
     def margin_pmf(self, home_spread: float, total: float) -> pd.Series:
         s = abs(home_spread)
@@ -161,8 +199,9 @@ class Engine:
         return self.total.pmf(s, total) if self.total else self.total_bucket(s, total)
 
 
-def load_engine(history: pd.DataFrame, params_path=None) -> Engine:
-    """history: 2016–25 final games (home_line, total, margin, points, season)."""
+def load_engine(history: pd.DataFrame, params_path=None, v3: bool = False) -> Engine:
+    """history: 2016–25 final games (home_line, total, margin, points, season). v3 = use the line
+    conversion adopted by MS-059 (Addendum T); otherwise the registered v2 additive shift."""
     import json
     from pathlib import Path
 
@@ -172,7 +211,8 @@ def load_engine(history: pd.DataFrame, params_path=None) -> Engine:
     return Engine(
         margin=margin_model(f, m["h_s"], m["h_t"]) if m["model"] == "kernel" else None,
         total=total_model(f, t["h_s"], t["h_t"]) if t["model"] == "kernel" else None,
-        margin_bucket=bucket_pmf(f, "k"), total_bucket=bucket_pmf(f, "pts"), devig_method=p["devig"])
+        margin_bucket=bucket_pmf(f, "k"), total_bucket=bucket_pmf(f, "pts"), devig_method=p["devig"],
+        conversion=p.get("conversion") if v3 else None)
 
 
 # --- line conversion (MS-059, research/PREREGISTRATION.md Addendum T) ---------------------------

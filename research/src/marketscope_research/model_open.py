@@ -50,8 +50,8 @@ def model_side_values(frame: pd.DataFrame, tl, kickoffs: pd.Series, engine) -> p
         side = "away" if r.x > 0 else "home"  # model's home line higher = home weaker = take away
         line = r.pin_d if side == "home" else -r.pin_d
         price = r.price1 if side == "home" else r.price2
-        pmf = engine.margin_pmf(cq.point, 44.0)  # the adopted margin model ignores the total
-        w, _pu, lo = ml.side_probabilities(pmf, cq.point, ml.no_vig_home(cq.price1, cq.price2), side, line)
+        # 44.0: the adopted margin model ignores the total
+        w, _pu, lo = engine.spread_side(cq.point, 44.0, ml.no_vig_home(cq.price1, cq.price2), side, line)
         rows.append({"event_id": r.event_id, "side": side, "line": line, "price": price,
                      "value": ml.expected_value(w, lo, price)})
     return pd.DataFrame(rows, columns=["event_id", "side", "line", "price", "value"])

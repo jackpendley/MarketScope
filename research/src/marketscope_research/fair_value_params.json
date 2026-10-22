@@ -11,5 +11,19 @@
   },
   "devig": "shin",
   "mix": 0.02,
-  "train_seasons": "2016-2025"
+  "train_seasons": "2016-2025",
+  "conversion": {
+    "spreads": {
+      "method": "scale",
+      "beta": 0.98
+    },
+    "totals": {
+      "method": "scale",
+      "beta": 1.06
+    },
+    "moneyline": {
+      "method": "v2",
+      "beta": 1.0
+    }
+  }
 }
