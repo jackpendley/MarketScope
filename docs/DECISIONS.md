@@ -1324,7 +1324,7 @@ These run on a better fair-value engine: a joint margin–total distribution and
 
 ## ADR-066 — Fair-value engine v3: line conversion fitted to the sharp books' own ladders (MS-059) (2026-10-22)
 
-**Context.** Engine v2 (ADR-062) moves a devigged probability to another line by adding the main-line calibration shift unchanged at every line. ADR-064 showed this overstates the tails: MS-055b's candidates were +4.3% engine-scored but −3.6% against the sharp books' own prices at the same line. Addendum T fixed the protocol before any code (`7a62f87`, before the first confirmation kickoff); the code came before the first run (`40d3690`).
+**Context.** Engine v2 (ADR-062) moves a devigged probability to another line by adding the main-line calibration shift unchanged at every line. ADR-064 showed this overstates the tails: MS-055b's candidates were +4.3% engine-scored but −3.6% against the sharp books' own prices at the same line. Addendum T fixed the protocol before any code (`7a62f87`, before the first confirmation kickoff); the code came before the first run (`50a1946` on `main`; first pushed as `40d3690` in PR #79).
 
 **Target (no game outcomes).** At 48, 24, 6 and 1 hours before kickoff and at the close, each sharp book's (Pinnacle, Circa, Bookmaker.eu) Shin-devigged price at its own half-point alternates within 10 points of the main line, and its own moneyline, predicted from the same book's main line. Loss: binary KL divergence; game bootstrap. Selection on weeks 1–3 (48 games), adoption on weeks 4–6 (45 games).
 
