@@ -219,6 +219,23 @@ def test_predictions_are_append_only_and_must_precede_kickoff(conn):
     conn.rollback()
 
 
+def test_predictions_record_their_provenance(conn):
+    from marketscope_football.store import insert_predictions
+
+    upsert_teams(conn, TEAMS)
+    upsert_games(conn, [game(home_score=None, away_score=None)])
+    kick = datetime(2026, 9, 11, 0, 35, tzinfo=timezone.utc)
+    row = {"game_id": "2026_01_SF_LA", "kickoff_utc": kick, "home_team": "LA", "away_team": "SF", "expected_margin": 2.5,
+           "expected_total": None, "home_score": None, "away_score": None, "p_home": 0.58, "home_qb": None,
+           "away_qb": None, "home_qb_p": None, "away_qb_p": None, "contributions": {"ratings": 2.5}}
+    prov = {"params_sha256": "p" * 64, "feature_schema_sha256": "f" * 64, "code_sha": "c" * 40, "input_sha256": "i" * 64}
+    insert_predictions(conn, [row], "ratings-v1", datetime(2026, 9, 9, 13, tzinfo=timezone.utc), prov)
+    insert_predictions(conn, [row], "ratings-v1", datetime(2026, 9, 10, 13, tzinfo=timezone.utc))  # older callers
+    got = conn.execute("""SELECT params_sha256, feature_schema_sha256, code_sha, input_sha256
+                          FROM model_predictions ORDER BY predicted_at""").fetchall()
+    assert got == [("p" * 64, "f" * 64, "c" * 40, "i" * 64), (None, None, None, None)]
+
+
 def test_model_runs_allow_one_test_per_version(conn):
     from marketscope_football.store import upsert_model_run
 

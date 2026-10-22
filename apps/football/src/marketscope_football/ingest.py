@@ -295,12 +295,18 @@ def ingest_predictions(dry_run: bool, job_key: str | None, horizon_days: int = 8
     through = replay(model, games, obs)
     k = games["kickoff_utc"]
     upcoming = games[games["margin"].isna() & (k > now) & (k <= now + pd.Timedelta(days=horizon_days))]
+    from .ratings.provenance import prediction_provenance
+
     rows = estimates(model, upcoming, starters).to_dict("records") if len(upcoming) else []
-    print(f"predictions: {len(rows)} upcoming games (state through {through[0]} week {through[1]})")
+    # What produced these estimates (ADR-074): results known now, play-by-play channels, expected starters.
+    known = games.loc[games["margin"].notna(), ["game_id", "margin"]]
+    prov = prediction_provenance(known, obs, starters)
+    print(f"predictions: {len(rows)} upcoming games (state through {through[0]} week {through[1]}); "
+          f"inputs {prov['input_sha256'][:12]}, schema {prov['feature_schema_sha256'][:12]}")
     if dry_run or not rows:
         return
     run_job(job_key or f"predictions:{now:%Y-%m-%dT%H}", "predictions", MODEL_VERSION,
-            lambda conn: (insert_predictions(conn, rows, MODEL_VERSION, now), f"appended {len(rows)} estimates"))
+            lambda conn: (insert_predictions(conn, rows, MODEL_VERSION, now, prov), f"appended {len(rows)} estimates"))
 
 
 def ingest_projections(dry_run: bool, job_key: str | None, history_sims: int = 2000) -> None:

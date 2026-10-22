@@ -1,0 +1,161 @@
+{
+  "model_version": "ratings-v1",
+  "params_sha256": "c2f6ed74f6c7e32a57899b0080815ec48b7cace82dfe9ad9a2240624340cbe2e",
+  "feature_schema_sha256": "0ec3190681c2175882540d929870d752d8a645e66dcaa25d84b7f8aa19a7d0e3",
+  "features": [
+    {
+      "name": "pass",
+      "weight": 0.20266164502634998,
+      "unit": "points",
+      "available": "filtered state after every completed game before the prediction (point in time)"
+    },
+    {
+      "name": "rush",
+      "weight": 0.2631284665979258,
+      "unit": "points",
+      "available": "filtered state after every completed game before the prediction (point in time)"
+    },
+    {
+      "name": "succ",
+      "weight": 53.63072490761073,
+      "unit": "share",
+      "available": "filtered state after every completed game before the prediction (point in time)"
+    },
+    {
+      "name": "ppd",
+      "weight": 0.5057071883326687,
+      "unit": "points",
+      "available": "filtered state after every completed game before the prediction (point in time)"
+    },
+    {
+      "name": "st",
+      "weight": 0.9038765802175199,
+      "unit": "points",
+      "available": "filtered state after every completed game before the prediction (point in time)"
+    },
+    {
+      "name": "qb",
+      "weight": 0.4857212995319151,
+      "unit": "points",
+      "available": "latest depth charts, injury reports and snaps published before the prediction"
+    },
+    {
+      "name": "avail_ol",
+      "weight": -0.729109197143381,
+      "unit": "starters",
+      "available": "latest depth charts, injury reports and snaps published before the prediction"
+    },
+    {
+      "name": "avail_skill",
+      "weight": -0.8974390461060874,
+      "unit": "starters",
+      "available": "latest depth charts, injury reports and snaps published before the prediction"
+    },
+    {
+      "name": "avail_front7",
+      "weight": -0.5882778654925503,
+      "unit": "starters",
+      "available": "latest depth charts, injury reports and snaps published before the prediction"
+    },
+    {
+      "name": "avail_db",
+      "weight": -0.5812927721758289,
+      "unit": "starters",
+      "available": "latest depth charts, injury reports and snaps published before the prediction"
+    }
+  ],
+  "home_field": 0.34004085122695715,
+  "fit": {
+    "seasons": "2016\u201322 (likelihood); game layer by OLS on the tuning seasons",
+    "games": 1906,
+    "in_sample_margin_mae": 10.01872463726249
+  },
+  "evaluation_history": [
+    "2023\u201324: validation seasons; they shaped factor selection and the margin distribution, so they are not an unbiased test.",
+    "2025: evaluated exactly once with the frozen parameters (the test record below); not reusable as a test for any later model.",
+    "2026: the live forward test, append-only estimates written before kickoff; the only prospective evidence."
+  ],
+  "test_2025": {
+    "games": 285,
+    "ran_at": "2026-10-18T18:30:06+00:00",
+    "code_sha": "30ab657bab84c6df2e313551dedcfb236036571b",
+    "models": {
+      "ratings-v1": {
+        "margin_mae": 10.062007027096787,
+        "margin_mae_lo": 9.13140103273183,
+        "margin_mae_hi": 10.979205997390094,
+        "brier": 0.22199259971639157,
+        "log_loss": 0.6355259533392908
+      },
+      "naive home field": {
+        "margin_mae": 11.017743272641516,
+        "margin_mae_lo": 10.032810690978689,
+        "margin_mae_hi": 12.062509650189003,
+        "brier": 0.2501878475996565,
+        "log_loss": 0.6953673485869327
+      },
+      "Elo (538)": {
+        "margin_mae": 10.19038024481135,
+        "margin_mae_lo": 9.301662182042206,
+        "margin_mae_hi": 11.121524794726266,
+        "brier": 0.22429119412223006,
+        "log_loss": 0.6410363702976427
+      },
+      "SRS (ridge)": {
+        "margin_mae": 10.187170866617935,
+        "margin_mae_lo": 9.284885149765419,
+        "margin_mae_hi": 11.12166701942154,
+        "brier": 0.222508906559809,
+        "log_loss": 0.6363493758752894
+      },
+      "market-implied ratings": {
+        "margin_mae": 10.298876321375559,
+        "margin_mae_lo": 9.363523658676456,
+        "margin_mae_hi": 11.238368904605661,
+        "brier": 0.22904313133798898,
+        "log_loss": 0.6517501187198972
+      },
+      "nflverse close": {
+        "margin_mae": 9.670175438596491,
+        "margin_mae_lo": 8.815745614035087,
+        "margin_mae_hi": 10.547456140350876,
+        "brier": 0.2103753671402678,
+        "log_loss": 0.607768747047002
+      }
+    }
+  },
+  "forward_2026": {
+    "source": "database",
+    "games": 5,
+    "weeks": 1,
+    "first_game": "2026-10-18 20:05:00+00:00",
+    "last_game": "2026-10-20 00:15:00+00:00",
+    "margin_mae": 7.8436146711410455,
+    "margin_vs_close": {
+      "games": 5,
+      "model": 7.8436146711410455,
+      "close": 7.7,
+      "diff": 0.1436146711410453,
+      "ci": null
+    },
+    "brier_vs_close": {
+      "games": 5,
+      "model": 0.2098404202996198,
+      "close": 0.23448729199823895,
+      "diff": -0.02464687169861911,
+      "ci": null
+    },
+    "total_vs_close": {
+      "games": 5,
+      "model": 13.50543516648202,
+      "close": 13.9,
+      "diff": -0.3945648335179811,
+      "ci": null
+    },
+    "favourite_won": {
+      "won": 4,
+      "decided": 5
+    },
+    "calibration": null
+  }
+}

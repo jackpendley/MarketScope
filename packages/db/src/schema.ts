@@ -943,6 +943,15 @@ export const modelPredictions = pgTable(
     awayQbP: doublePrecision(),
     /** Additive contributions to the margin, e.g. {"ratings": 3.1, "home": 0.3, "qb": -1.2, "absences": -0.4}. */
     contributions: jsonb().$type<Record<string, number>>().notNull(),
+    /**
+     * Provenance (ADR-074): the frozen parameters, feature schema, code commit and a content hash of
+     * the inputs (results, play-by-play channels, expected starters) behind this estimate. Null for
+     * rows written before it was recorded.
+     */
+    paramsSha256: text(),
+    featureSchemaSha256: text(),
+    codeSha: text(),
+    inputSha256: text(),
   },
   (t) => [
     primaryKey({ columns: [t.modelVersion, t.gameId, t.predictedAt] }),

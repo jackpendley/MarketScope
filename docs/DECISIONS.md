@@ -1516,3 +1516,26 @@ OddsPapi's terms need checking for private storage of history before any upload.
 - **Commands:** `lake push`, `lake snapshots`, `lake pull --dataset ID --to DIR`. They need `SUPABASE_URL` (in `research/.env.local`; not secret) and `SUPABASE_STORAGE_KEY`, the project's secret key, which Jack adds to the same gitignored file.
 
 **Cost.** 161 MB of the free tier's 1 GB. That is separate from the 500 MB database.
+
+## ADR-074 — ratings-v1 as a complete, reproducible ML workflow (2026-10-22)
+
+**Context.** The external review asked for one ML model taken end to end: a versioned dataset, features, baseline and model, chronological evaluation and calibration, a reloadable artifact with its feature schema, predictions carrying provenance, and a model card and report generated from the same result. ratings-v1 already had most of the substance: frozen parameters (ADR-039), a one-time 2025 test, benchmarks, and an append-only live forward test. It lacked the connective tissue, and `MODEL_CARD.md` §2 still said the model was "not built yet". No new model was added.
+
+**Decision.**
+
+- **Feature schema** (`ratings/feature_schema.py`, `feature_schema.json`). Every feature of the linear game layer, with its frozen weight, unit and when it becomes available, generated from `params.json`. Tests check that:
+  - the committed JSON matches the generated one;
+  - every weighted feature is described;
+  - the reloaded model computes exactly Σ weight × feature + home field. The saved artifact and its description cannot diverge.
+- **Prediction provenance** (migration 0021). `model_predictions` gains `params_sha256`, `feature_schema_sha256`, `code_sha` (the Actions commit or local HEAD) and `input_sha256`, a content hash of the results, play-by-play channels and expected starters the estimate was built from. Rows written before this keep nulls; their provenance was not recorded.
+- **Generated model card** (`ratings/model_card.py`). It writes one structured result, `apps/football/reports/model-card-ratings-v1.json`, and rewrites `MODEL_CARD.md` §2 between markers from it:
+  - the schema and the fit summary;
+  - the 2025 test record with every benchmark;
+  - the 2026 forward test, using the same definitions as the site's `/model` scorecard (margin MAE and Brier against the nflverse close, total MAE, how often the favourite won, calibration bins after 50 games, intervals after 30).
+
+  The production forward test is read with a read-only connection.
+
+- **Honest evaluation history, stated on the card.** 2023–24 shaped the model, so it is not a test. 2025 was evaluated once and cannot be reused for a later model. The 2026 forward test is the only prospective evidence: today 5 final games, the model's margin MAE 7.84 against the close's 7.70.
+- **Credential-free demo.** `tests/fixtures/synthetic_forward_test.csv` (synthetic, labelled in its name and README) produces a full card, including intervals and calibration, with no database.
+
+**Alternatives rejected.** An experiment tracker such as MLflow: one frozen model, with run records and hashes in git and the database, does not need one. A new, simpler model to demonstrate the workflow: it would add a model count without adding evidence.
