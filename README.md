@@ -12,7 +12,15 @@ MarketScope collects NFL odds from five sportsbooks four times a day and stores 
 
 It is an analytics and education project, not a picks service.
 
-> **Status:** Phases 0–11 are complete, and Phase 12 (the Sharp-Market Lab) has finished its discovery studies; confirmation runs in December 2026. Odds and football data update automatically on a schedule, and the site is deployed on Vercel behind invite-only accounts. Start with the [case study](docs/CASE_STUDY.md), then [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md) and [`docs/ROADMAP.md`](docs/ROADMAP.md).
+> **Status:** Phases 0–12 are built, and their pre-registered studies have run on discovery weeks. Phase 13 added a full-ladder research lake and a better fair-value engine; Phase 14 made the evidence reproducible and the operations verifiable. Confirmation runs on the held-out weeks after 2026-12-16. Odds and football data update automatically on a schedule, and the site is deployed on Vercel behind invite-only accounts. Start with the [case study](docs/CASE_STUDY.md) or the [reviewer walkthrough](docs/WALKTHROUGH.md), then [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md).
+
+## For reviewers: three stories
+
+1. **Ingestion that cannot quietly lose data.** Idempotent, budget-guarded, transactional jobs. Partial imports are recorded as partial. Health is judged by gaps, not by whether a job ran. The importer streams JSON that is too large for a string, and the database backup is proven by a restore check.
+2. **Two measurement errors that made the market look beatable.** Ghost markets in a provider feed and an engine that overstated far-off lines produced positive results. Both were found, corrected against independent data, and the claims withdrawn.
+3. **Reproducible modelling with honest evaluation.** Content-addressed datasets, run records, generated result numbers, a frozen model with a generated feature schema and model card, and pre-registered sensitivity checks, including a permutation null that caught a flaw in my own check.
+
+Each with the problem, decision, alternative, measured outcome and limitation: [case study](docs/CASE_STUDY.md#three-engineering-stories).
 
 ![MarketScope Ratings: the KenPom-style table (synthetic demo data)](docs/screenshots/ratings-desktop.png)
 
@@ -120,7 +128,7 @@ Collecting real odds needs a key from The Odds API in `apps/collector/.env.local
 
 ## Documentation
 
-- [Case study](docs/CASE_STUDY.md) · [Roadmap](docs/ROADMAP.md) · [Project status](docs/PROJECT_STATUS.md) · [Decisions](docs/DECISIONS.md)
+- [Case study](docs/CASE_STUDY.md) · [Reviewer walkthrough](docs/WALKTHROUGH.md) · [Roadmap](docs/ROADMAP.md) · [Project status](docs/PROJECT_STATUS.md) · [Decisions](docs/DECISIONS.md)
 - [Architecture](docs/ARCHITECTURE.md) · [Data dictionary](docs/DATA_DICTIONARY.md) · [API](docs/API.md) · [Performance](docs/PERFORMANCE.md)
 - [Ratings design and results](docs/RATINGS.md) · [Model card](docs/MODEL_CARD.md) · [Research](research/README.md) · [Pre-registration](research/PREREGISTRATION.md)
 - [Security](docs/SECURITY.md) · [Accessibility](docs/ACCESSIBILITY.md) · [Provider coverage](docs/PROVIDER_COVERAGE.md) · [Signal definitions](docs/SIGNAL_DEFINITIONS.md)
