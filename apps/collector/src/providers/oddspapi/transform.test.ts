@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  bookCandidates,
   deriveObservations,
+  instantMs,
   snapshotTimes,
   withoutGhosts,
   type Candidate,
@@ -250,5 +252,56 @@ describe("withoutGhosts", () => {
     const a = line(-6.5, 1.909, 1.909, "2026-10-17T10:00:00Z");
     const b = line(-7, 1.909, 1.909, "2026-10-18T10:00:00Z");
     expect(handicaps(withoutGhosts([a, b], T))).toEqual([-6.5, -7]);
+  });
+});
+
+describe("instantMs", () => {
+  it("compares offsets as instants and rejects timestamps without a zone", () => {
+    const kick = instantMs(KICKOFF);
+    expect(instantMs("2026-10-11T16:30:00-01:00")).toBeGreaterThan(kick); // 17:30Z
+    expect(instantMs("2026-10-11T17:30:00+01:00")).toBeLessThan(kick); // 16:30Z
+    expect(instantMs("2026-10-11T17:00:00+00:00")).toBe(kick);
+    expect(() => instantMs("2026-10-11T16:30:00")).toThrow(/without a time zone/);
+    expect(() => instantMs("not a timeZ")).toThrow(/unparseable/);
+  });
+});
+
+describe("bookCandidates timestamps", () => {
+  const markets = new Map([[100, meta(100, "spreads", -3, ["1", "2"])]]);
+  const book = (entries1: OddsPapiEntry[]) => ({
+    markets: {
+      "100": {
+        outcomes: {
+          "100": { players: { "0": entries1 } },
+          "101": { players: { "0": [e("2026-10-10T08:00:00.000Z", 1.91)] } },
+        },
+      },
+    },
+  });
+
+  it("filters at kickoff by instant and sorts by instant, not text", () => {
+    const { spreads } = bookCandidates(
+      book([
+        e("2026-10-11T17:30:00+01:00", 1.8), // 16:30Z: pregame
+        e("2026-10-10T09:00:00.000Z", 1.95),
+        e("2026-10-11T16:30:00-01:00", 1.7), // 17:30Z: in-play
+        e("2026-10-11T17:00:00+00:00", 1.6), // kickoff itself: in-play
+      ]),
+      markets,
+      instantMs(KICKOFF),
+    );
+    expect(spreads[0]!.side1.entries.map((x) => x.price)).toEqual([1.95, 1.8]);
+  });
+
+  it("keeps the provider's order for equal times and refuses zone-less input", () => {
+    const tied = bookCandidates(
+      book([e("2026-10-10T09:00:00.000Z", 1.9), e("2026-10-10T09:00:00.000Z", 2.0)]),
+      markets,
+      instantMs(KICKOFF),
+    );
+    expect(tied.spreads[0]!.side1.entries.map((x) => x.price)).toEqual([1.9, 2.0]);
+    expect(() =>
+      bookCandidates(book([e("2026-10-10T09:00:00", 1.9)]), markets, instantMs(KICKOFF)),
+    ).toThrow(/without a time zone/);
   });
 });

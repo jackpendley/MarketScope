@@ -5,12 +5,19 @@ can contain dots (bookmaker.eu, novig.us), so the path is split on the fixed key
 Only full-game spread, total and moneyline markets are kept, only entries before kickoff, and only
 entries whose price or active flag changed for that outcome (lossless for prices). For `limit_books`
 (the market makers, whose limits mean something) a limit change is kept too.
+
+Timestamps are compared as UTC instants, never as text: `2026-10-11T17:30:00+01:00` is before a
+17:00Z kickoff. A timestamp without a zone is an error, not local time. Dropping repeated states while
+streaming is lossless only if each outcome's entries arrive in time order, which every response seen so
+far does (ADR-067); an entry earlier than its predecessor fails the fixture instead of being silently
+mis-deduplicated. Entries with the same timestamp keep their file order (`seq`).
 """
 
 from __future__ import annotations
 
 from collections.abc import Iterator
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import BinaryIO
 
 import ijson
@@ -27,6 +34,19 @@ class Entry:
     price: float
     active: bool
     limit: float | None
+    seq: int = 0  # position in the response, to keep ties in provider order
+
+
+def parse_utc(value: str) -> datetime:
+    """An ISO 8601 timestamp with a zone (Z or an offset) as an aware UTC datetime. Raises ValueError
+    for anything else, including a timestamp with no zone."""
+    try:
+        t = datetime.fromisoformat(value.replace("Z", "+00:00") if value.endswith("Z") else value)
+    except (TypeError, ValueError) as err:
+        raise ValueError(f"unparseable timestamp {value!r}") from err
+    if t.tzinfo is None or t.utcoffset() is None:
+        raise ValueError(f"timestamp without a time zone {value!r}")
+    return t.astimezone(timezone.utc)
 
 
 def split_path(prefix: str) -> tuple[str, str, str]:
@@ -43,9 +63,13 @@ LIMIT_BOOKS = frozenset({"pinnacle", "circasports", "bookmaker.eu"})
 
 def stream_entries(fh: BinaryIO, main_markets: set[int], kickoff: str,
                    limit_books: frozenset[str] = LIMIT_BOOKS) -> Iterator[Entry]:
-    """Yield kept entries in file order. `kickoff` is an ISO string; entries at or after it are
-    in-play and dropped (ISO strings in the same format compare correctly as text)."""
+    """Yield kept entries in file order. `kickoff` is an ISO string with a zone; entries at or after
+    that instant are in-play and dropped. Raises ValueError on a timestamp without a zone or an
+    outcome whose entries go back in time."""
+    kick = parse_utc(kickoff)
     last: dict[tuple[str, int, int], tuple] = {}
+    seen: dict[tuple[str, int, int], datetime] = {}
+    seq = 0
     cur: dict = {}
     key: tuple[str, int, int] | None = None
     for prefix, event, value in ijson.parse(fh, use_float=True):
@@ -58,7 +82,14 @@ def stream_entries(fh: BinaryIO, main_markets: set[int], kickoff: str,
         elif event == "end_map" and prefix.endswith(ITEM):
             created = cur.get("createdAt")
             price = cur.get("price")
-            if created is None or price is None or created >= kickoff:
+            if created is None or price is None:
+                continue
+            t = parse_utc(created)
+            if key in seen and t < seen[key]:
+                raise ValueError(f"entries out of time order for {key}: {created} after {seen[key].isoformat()}")
+            seen[key] = t
+            seq += 1
+            if t >= kick:
                 continue
             state = (price, bool(cur.get("active", True)),
                      cur.get("limit") if key[0] in limit_books else None)
@@ -66,7 +97,7 @@ def stream_entries(fh: BinaryIO, main_markets: set[int], kickoff: str,
                 continue
             last[key] = state
             yield Entry(key[0], key[1], key[2], created, float(price), state[1],
-                        None if cur.get("limit") is None else float(cur["limit"]))
+                        None if cur.get("limit") is None else float(cur["limit"]), seq)
         elif prefix.startswith("bookmakers.") and prefix.endswith(ITEM + ".createdAt"):
             cur["createdAt"] = value
         elif prefix.endswith(ITEM + ".price"):

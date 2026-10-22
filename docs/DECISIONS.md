@@ -1353,3 +1353,28 @@ These run on a better fair-value engine: a joint margin–total distribution and
 - **MS-057 secondary:** −1.0% under both.
 
 **Reproducibility fix.** `run_model_open` resampled rows in SQL order, so the seeded bootstrap's interval for the MS-057 slope varied slightly between runs (+0.048 to +0.189 committed; +0.051 to +0.187 on re-run). It now sorts by event first: +0.051 to +0.189, deterministic. The claim is unchanged.
+
+## ADR-067 — Timestamps compared as instants; reconstruction order checked (2026-10-22)
+
+**Context.** An external review found that the lake parser (`lake/parse.py`, `stream_entries`) compared `createdAt` with kickoff as text. For a 17:00Z kickoff, `16:30-01:00` (17:30Z) would be kept and `17:30+01:00` (16:30Z) dropped. A kickoff spelled `+00:00` could also let an entry exactly at kickoff through.
+
+**Measured impact: none on existing data.**
+
+- **Lake:** 0 of 37,298,339 entries (93 fixtures) are at or after kickoff, checked on parsed UTC.
+- **Formats:** all 2,418,151 timestamps in the two raw responses still on disk use one format (`YYYY-MM-DDTHH:MM:SS.mmmZ`), the same as the manifest's kickoffs. Text comparison is therefore correct on every response seen.
+- **Re-parse:** re-parsing both raw fixtures with the old and new parsers gives identical entries (193,432 and 67,998).
+- **Ordering:** within each outcome, entries are in ascending time order, with 48 exact ties in 2.4M.
+- **Lake against raw (same provider, earlier capture):**
+  - Fixture `…892`: every lake row equals the raw capture for all 10 requested books. The only difference is 876 BetMGM entries, a book the lake does not request.
+  - Fixture `…902`: the raw file was captured before kickoff. Every one of its pregame entries is in the lake unchanged, and the lake adds the later ones.
+  - So between captures the provider's history behaved as append-only, with no revisions to earlier entries. This is internal consistency of one provider, not independent verification.
+- **Limit:** the other 91 fixtures' raw responses were deleted after parsing. Entries wrongly _excluded_ by the old comparison cannot be ruled out for them directly. The TypeScript importer always compared instants (`Date.parse`), and its `line_moves` agree 100% with the lake's main lines, which is strong indirect evidence.
+
+**Decision.**
+
+- **Python (`parse.py`):** `parse_utc` turns every timestamp into an aware UTC datetime. A timestamp without a zone, or an unparseable one, raises `ValueError` and fails that fixture; it is never read in local time. Entries are kept only if strictly earlier than kickoff.
+- **Ordering:** dropping repeated states while streaming is lossless only if each outcome arrives in time order. That is now an asserted invariant: an entry earlier than its predecessor fails the fixture. The alternative, buffering and re-sorting every raw entry before deduplication, would hold about three times the stored rows in memory to guard against something never observed.
+- **Ties:** entries carry their position in the response (`seq`), and `write_fixture` sorts by (book, market, outcome, time, seq). Equal timestamps therefore keep the provider's order, and the last one is the price in effect.
+- **TypeScript (`transform.ts`):** `instantMs` rejects timestamps without a zone. `bookCandidates` filters and sorts by instant instead of comparing text; JavaScript's sort is stable, so ties keep provider order.
+
+**What a timestamp means.** `createdAt` is the provider's record of when a book's price changed, not when we or anyone else could have seen it. Every lake-based study reconstructs availability from it, retrospectively. The Odds API snapshots are the only prices with our own receipt time (`observed_at`). That is why Addendum S corroborates against them.
