@@ -1403,7 +1403,7 @@ These run on a better fair-value engine: a joint margin–total distribution and
 
 ## ADR-069 — Evaluation boundaries and the MS-057 shared-line check (Addenda V and W) (2026-10-22)
 
-**Context.** An external review asked whether confirmation samples respect decision times, and whether MS-057's "the market moves toward the model" could be an artifact. Addendum V (`1f07746`) registered sensitivities before any confirmation run. A planted-data test then showed that V's joint regression still credits a useless model when the baseline is noisy, so Addendum W (`8c66dfa`) added a permutation null before any real-data run. Code: `f9598a7`.
+**Context.** An external review asked whether confirmation samples respect decision times, and whether MS-057's "the market moves toward the model" could be an artifact. Addendum V (`1f07746`) registered sensitivities before any confirmation run. A planted-data test then showed that V's joint regression still credits a useless model when the baseline is noisy, so Addendum W (`8c66dfa`) added a permutation null before any real-data run. Code: `e1eec7f` on `main` (first pushed as `f9598a7` in PR #86).
 
 **What was found.**
 

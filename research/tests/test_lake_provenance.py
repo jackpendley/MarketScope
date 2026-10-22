@@ -150,7 +150,8 @@ def test_streamed_batches_write_the_same_bytes_as_one_list(tmp_path, monkeypatch
 
 
 def test_generated_outputs_do_not_make_the_tree_dirty(tmp_path, monkeypatch):
-    out = {"status": " M research/reports/x.md\n M apps/web/lib/generated/y.json\n", "code": " M research/src/a.py\n"}
+    out = {"status": " M research/reports/x.md\n M apps/web/lib/generated/y.json\n M docs/DECISIONS.md\n",
+           "code": " M research/src/a.py\n"}
 
     def fake(cmd, text=True):
         return "abc\n" if "rev-parse" in cmd else out[mode]

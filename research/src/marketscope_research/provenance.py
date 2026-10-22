@@ -31,13 +31,18 @@ PACKAGES = ("numpy", "pandas", "pyarrow", "duckdb", "scipy", "ijson")
 OUTPUT_DIRS = ("research/reports/", "apps/web/lib/generated/")  # what runners write; not "code changed"
 
 
+def _affects_results(path: str) -> bool:
+    """Generated outputs and Markdown documentation cannot change a result; anything else can."""
+    return not (path.startswith(OUTPUT_DIRS) or path.endswith(".md"))
+
+
 def git_state(repo: Path = store.REPO) -> tuple[str, bool]:
-    """(commit, dirty). Dirty means a tracked file other than a generated output (reports, generated JSON)
-    differs from the commit: the code or parameters that ran are not exactly the commit's."""
+    """(commit, dirty). Dirty means a tracked file that can affect results (not a generated output or a
+    Markdown document) differs from the commit: what ran is not exactly the commit's code and parameters."""
     sha = subprocess.check_output(["git", "-C", str(repo), "rev-parse", "HEAD"], text=True).strip()
     changed = subprocess.check_output(["git", "-C", str(repo), "status", "--porcelain", "--untracked-files=no"],
                                       text=True).splitlines()
-    dirty = any(not line[3:].startswith(OUTPUT_DIRS) for line in changed)
+    dirty = any(_affects_results(line[3:]) for line in changed)
     return sha, dirty
 
 
