@@ -1,19 +1,24 @@
 # Project Status
 
-_Rewrite this file at the end of every session. Last updated: 2026-10-20 (session 1, continued; MS-042)._
+_Rewrite this file at the end of every session. Last updated: 2026-10-22 (session 1, continued; MS-054/055b)._
 
 ## Current milestone
 
 **Phase 13 (ADR-061): finding real value on NFL spreads, totals and moneylines.** Phase 12 discovery is complete, with no value against the close (its confirmation runs after 2026-12-16).
 
-Phase 13 tests what sharp bettors actually use: information timing, model versus the early line, and cross-market pricing. It is free first, with a paid-data gate.
-
 - **Done:**
-  - MS-052 lake code (verified 100% against `line_moves` on two games; full build running);
-  - MS-053 fair-value engine v2;
-  - MS-055a Wong 2.0 (break-even);
-  - MS-057 (**the market moves toward the ratings model early in the week: +0.116 per point, a discovery claim**).
-- **Next:** MS-054 cross-market value and MS-055b alternate ladders, both on the lake; MS-056 information timing.
+  - MS-052 research lake (93 games, 37.3M entries, 151 MB; 100% agreement with `line_moves`);
+  - MS-053 engine v2; MS-055a Wong 2.0 (break-even);
+  - MS-057 (**the market moves toward the ratings early in the week, +0.116 per point: a discovery claim**);
+  - MS-054 and MS-055b discovery (ADR-064).
+- **ADR-064 in one paragraph:**
+  - **The positives:** both lake studies had positive primaries as registered: B +3.6% and alternates +4.3%.
+  - **The checks found two measurement problems:**
+    - the engine's additive line conversion overstates far tails, which the same engine then "confirms" at the close;
+    - OddsPapi keeps some dead sportsbook markets "active" (ghost markets), and the main-line rule picks them.
+  - **Alternates:** withdrawn. Against the sharp books' own same-line prices they are −3.6%.
+  - **B:** after corrections +2.2% (−0.1 to +4.3), inconclusive. Confirmation counts only prices our own collector also saw (Addenda R and S, registered before week 7).
+- **Next:** MS-058 (ghost markets in the collector and replay), then MS-059 (engine v3 calibrated on sharp alternate ladders), then MS-056 (information timing).
 
 - **Site:** live at https://marketscope-delta.vercel.app behind invite-only accounts (ADR-049). Jack's account is `jackpendley` / jackpendley9@gmail.com.
 
@@ -266,10 +271,21 @@ Phase 13 tests what sharp bettors actually use: information timing, model versus
   - **MS-055a:** model-priced teaser legs 74.5% on 2023–25, break-even. `wong-model` paper strategy added.
   - **MS-057:** slope +0.116 (+0.048 to +0.189), a discovery claim; early-line value −1.0%. Paid-data gate: wait for confirmation.
 
+- **MS-054 and MS-055b discovery (this PR, ADR-064).**
+  - Addenda P and Q before code (`89907bb`, `0c1cd71` before the first runs); Addendum R (`a5e0f9d`) and S (`4a37fad`) before any confirmation game. Branch SHAs; fix after the rebase merge.
+  - **Lake:** built for all 93 finished games; `lake check` 100% for nine books, Kalshi 99.93%.
+  - **A** (moneyline vs the book's own spread): −4.9%, the opposite.
+  - **B** (retail above the sharp consensus, same line):
+    - as registered: +3.6% (+2.3 to +4.8);
+    - with the coherence rule: +3.0% engine-scored, and +2.2% (−0.1 to +4.3) direct-scored.
+    - Caesars' strongest positions were ghost markets: a −10 last updated on 1 September, still "active" at kickoff.
+  - **MS-055b:** +4.3% as registered; −3.6% against the sharp books' own same-line prices. Withdrawn. Within 1 point of the main line: +1.6%, confirmation only.
+  - `/research` adds C1, C2 and A1 (24 studies); `docs/PROVIDER_COVERAGE.md` documents ghost markets.
+
 ## Tests
 
 - **Football pytest:** 114 (unit tests, plus integration against the migrated test DB; includes validation of the committed coaching CSV and the 2016–24 seeding reproduction).
-- **Research pytest:** 125.
+- **Research pytest:** 139.
 - **TS:** db 54, shared 192, collector 71, web 148 (unit + integration), e2e 63.
 
 ## Quotas
@@ -304,21 +320,26 @@ Nothing blocking.
 
 ## Next task
 
-**MS-054: cross-market value on main markets** (needs the lake build finished; check it with `python -m marketscope_research.lake status`, then `lake check` for all games).
+**MS-058: ghost markets in the collector** (ADR-064, `docs/PROVIDER_COVERAGE.md`).
 
-1. **Pre-register** (Addendum P) with a power statement:
-   - **Moneyline versus the same book's spread and total**, priced with engine v2. A moneyline better than its own spread implies is a candidate, especially for spreads of ±1 to ±3.
-   - **Same-line retail prices against the sharp-consensus fair price** (equal-weight Shin devig of Pinnacle, Circa, Bookmaker.eu and Novig; Addendum M) at 48, 24, 6 and 1 hours.
-   - **Outcome:** value at the consensus close. Discovery weeks 1–6, confirmation weeks 7–14.
-2. **Then:** MS-055b, alternate ladders scored by the engine (lake); MS-056, information timing.
+1. **Choose a rule** for `pickMain` (`apps/collector/src/providers/oddspapi/transform.ts`) that removes dead sportsbook markets. The research coherence rule (`research/.../lake/mainline.coherent`) misses ghosts priced level with the real line. Candidates:
+   - corroboration against our own snapshots;
+   - a staleness cap relative to the book's own activity;
+   - both, measured with the lake.
+2. **Mirror it** in `lake/mainline.py`, keeping the TS and Python versions identical (shared test cases).
+3. **Re-derive `line_moves`** (books profile v3; history calls are free) and check the replay page on the Caesars example (fixture `id1400003171515908`).
 
-**After a merge:** run `paper reconstruct` on production, which adds `wong-model` reconstructed positions for weeks 1–7.
+**Then:** MS-059 engine v3 (calibrate line conversion against sharp alternate ladders in the lake), then MS-056 information timing (Open-Meteo forecast revisions; ESPN injury JSON only if its terms allow).
+
+**Lake upkeep:** `lake build` appends new finals (about 1.5 min a game). Confirmation needs weeks 7–14 in the lake before 2026-12-16.
 
 **Confirmation runbook (after 2026-12-16).** `--phase confirmation` for:
 
 - `run_sharp_market`, `run_market_ml`, `run_injury_windows`, `run_openers_totals`, `run_exchanges` (Phase 12);
-- `run_model_open` (MS-057, which decides the paid-data gate).
+- `run_model_open` (MS-057), `run_cross_market` (MS-054, Addendum S primary), `run_alt_ladders` (MS-055b).
+
+The paid-data gate then looks at MS-057 and MS-054 B.
 
 **On hold (Jack, 2026-10-21):** the OddsPapi email (`docs/DATA_SOURCES.md`).
 
-**Waiting on Jack (optional):** a Sportradar quote or SharpAPI terms; data purchases (gate in ADR-063).
+**Waiting on Jack (optional):** a Sportradar quote or SharpAPI terms; data purchases (gate in ADRs 063 and 064).

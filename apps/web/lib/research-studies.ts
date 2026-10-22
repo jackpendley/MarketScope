@@ -428,4 +428,59 @@ export const MARKET_STUDIES: Study[] = [
     ],
     report: `${REPO}/research/reports/teasers-model.md`,
   },
+  {
+    id: "C1",
+    title: "Moneylines priced off the book's own spread",
+    question:
+      "When a retail book's moneyline is worth more than its own spread implies, is it worth more than the sharp books' closing moneyline?",
+    window: "2026 weeks 1–6, 51 positions",
+    status: "no claim",
+    primary: {
+      label: "Mean value per unit at the sharp-consensus close",
+      estimate: "−0.049",
+      interval: "−0.063 to −0.035",
+    },
+    finding:
+      "No, the opposite. When a book's moneyline and spread disagreed, the sharp books sided with the moneyline's price, not the spread's: the spread was the number out of line. Every retail book was below zero.",
+    exploratory: [],
+    report: `${REPO}/research/reports/cross-market-discovery.md`,
+  },
+  {
+    id: "C2",
+    title: "Retail prices above the sharp consensus",
+    question:
+      "When a retail book's spread, total or moneyline is worth more than the sharp-consensus fair price at the same line (Pinnacle, Circa, Bookmaker.eu, Novig), is it still worth more at the close?",
+    window: "2026 weeks 1–6, 131 positions",
+    status: "inconclusive",
+    primary: {
+      label: "Mean value per unit at the sharp-consensus close (as registered)",
+      estimate: "+0.036",
+      interval: "+0.023 to +0.048",
+    },
+    finding:
+      "Positive as registered, but checks after the run weakened it. The odds feed sometimes shows a dead sportsbook market as live: a Caesars −10 last updated on 1 September was still listed at kickoff on 18 October, when the real line was −7. The strongest positions sat on prices unchanged for days. With dead markets removed and prices scored against the sharp books' own numbers at the same line, the value is +2.2% (−0.1% to +4.3%). The held-out weeks decide, counting only prices our own collector also saw.",
+    exploratory: [
+      "Hard Rock +3.1% (+0.6% to +5.1%) on 16 positions scored against the sharp books' own prices; seen after the run, so not evidence.",
+    ],
+    report: `${REPO}/research/reports/cross-market-discovery.md`,
+  },
+  {
+    id: "A1",
+    title: "Alternate lines above the sharp consensus",
+    question:
+      "Are retail alternate spreads and totals priced better than the sharp-consensus fair price at their exact line worth more at the close?",
+    window: "2026 weeks 1–6, 6,278 alternates",
+    status: "no claim",
+    primary: {
+      label: "Mean value per unit at the sharp-consensus close (as registered)",
+      estimate: "+0.043",
+      interval: "+0.035 to +0.051",
+    },
+    finding:
+      "Withdrawn: a measurement artifact. Our fair-value engine moves a sharp price to another line by adding the same probability shift at every line, which overstates the chances far from the main line, so the same model found the same value at the close. Scored against Pinnacle's, Circa's and Bookmaker.eu's own prices at the same alternate line, these candidates are worth −3.6% (−4.9% to −2.3%), and −5.1% beyond 3 points from the main line.",
+    exploratory: [
+      "Within 1 point of the main line: +1.6% (+0.4% to +2.8%) against the sharp books' own prices, 115 alternates; registered for the held-out weeks only.",
+    ],
+    report: `${REPO}/research/reports/alt-ladders-discovery.md`,
+  },
 ];
