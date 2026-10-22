@@ -67,8 +67,10 @@ def write_fixture(fixture_id: str, entries: list[Entry], root: Path | None = Non
         "active": pa.array([e.active for e in entries], pa.bool_()),
         "limit": pa.array([e.limit for e in entries], pa.float64()),
     })
+    # seq breaks timestamp ties in provider order, so point-in-time lookups are deterministic.
+    table = table.append_column("seq", pa.array([e.seq for e in entries], pa.int64()))
     table = table.sort_by([("book", "ascending"), ("market_id", "ascending"), ("outcome_id", "ascending"),
-                           ("created_at", "ascending")])
+                           ("created_at", "ascending"), ("seq", "ascending")]).drop_columns(["seq"])
     tmp = root / "entries" / f".fixture={fixture_id}.parquet.tmp"
     pq.write_table(table, tmp, compression="zstd")
     tmp.replace(root / "entries" / f"fixture={fixture_id}.parquet")  # atomic: never a half-written file

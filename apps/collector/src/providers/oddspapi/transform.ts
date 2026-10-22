@@ -83,7 +83,7 @@ export function snapshotTimes(
     closeMinutes = 5,
   }: Pick<DeriveOptions, "windowDays" | "slotHours" | "closeMinutes"> = {},
 ): string[] {
-  const kick = Date.parse(kickoff);
+  const kick = instantMs(kickoff);
   const close = kick - closeMinutes * 60_000;
   const start = Math.max(Date.parse(firstEntryAt), kick - windowDays * 24 * HOUR);
   const slot = slotHours * HOUR;
@@ -113,6 +113,18 @@ export function latestAt(series: Series | undefined, t: number): OddsPapiEntry |
     } else hi = mid - 1;
   }
   return found >= 0 ? series.entries[found]! : null;
+}
+
+/**
+ * Milliseconds since the epoch for an ISO 8601 timestamp with a zone (Z or an offset). Date.parse
+ * reads a timestamp without a zone in the machine's local time, so that is an error, as is anything
+ * unparseable. Offsets are compared as instants: 17:30+01:00 is before 17:00Z.
+ */
+export function instantMs(iso: string): number {
+  if (!/(Z|[+-]\d{2}:?\d{2})$/.test(iso)) throw new Error(`timestamp without a time zone: ${iso}`);
+  const t = Date.parse(iso);
+  if (Number.isNaN(t)) throw new Error(`unparseable timestamp: ${iso}`);
+  return t;
 }
 
 /** Continuous "cents" scale so −105 vs +105 counts as 10 apart, not 210. */
@@ -151,13 +163,15 @@ export function bookCandidates(
     const name = new Map(meta.outcomes.map((o) => [String(o.outcomeId), o.outcomeName]));
     const seriesFor = (wanted: string): Series | undefined => {
       const id = [...name.entries()].find(([, n]) => n === wanted)?.[0];
-      const entries = id
+      // Sorted by instant (a stable sort, so equal times keep the provider's order), not as text.
+      const timed = id
         ? (market.outcomes[id]?.players?.["0"] ?? [])
-            .filter((e) => Date.parse(e.createdAt) < kickoffMs && e.price > 1)
-            .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+            .map((e) => ({ e, t: instantMs(e.createdAt) }))
+            .filter(({ e, t }) => t < kickoffMs && e.price > 1)
+            .sort((a, b) => a.t - b.t)
         : [];
-      return entries.length
-        ? { times: entries.map((e) => Date.parse(e.createdAt)), entries }
+      return timed.length
+        ? { times: timed.map(({ t }) => t), entries: timed.map(({ e }) => e) }
         : undefined;
     };
     const side1 = seriesFor(isTotal ? "Over" : "1");
@@ -253,7 +267,7 @@ export function deriveObservations(
   markets: ReadonlyMap<number, OddsPapiMarketMeta>,
   options: DeriveOptions,
 ): DerivedObservation[] {
-  const kick = Date.parse(options.kickoff);
+  const kick = instantMs(options.kickoff);
   const out: DerivedObservation[] = [];
 
   for (const [slug, book] of Object.entries(history.bookmakers ?? {})) {

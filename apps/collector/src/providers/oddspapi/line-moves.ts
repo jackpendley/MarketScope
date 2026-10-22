@@ -14,6 +14,7 @@
 import { decimalToAmerican, type Market } from "@marketscope/shared";
 import {
   bookCandidates,
+  instantMs,
   pickMain,
   withoutGhosts,
   type Candidate,
@@ -73,7 +74,7 @@ export function deriveLineMoves(
 ): LineMove[] {
   const { limitBooks, recordLimitBooks, markets: only, ghostRule = false, ...rest } = options;
   const opts = { ...LINE_MOVE_DEFAULTS, ...rest };
-  const kick = Date.parse(opts.kickoff);
+  const kick = instantMs(opts.kickoff);
   const out: LineMove[] = [];
   for (const [slug, book] of Object.entries(history.bookmakers ?? {})) {
     const bookmakerKey = opts.bookMap[slug];

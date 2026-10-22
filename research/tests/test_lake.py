@@ -46,6 +46,61 @@ def test_stream_entries_filters_and_dedupes():
                    ("bookmaker.eu", 101, "08:00", None), ("draftkings", 100, "08:00", 10.0)]
 
 
+def one_outcome(*entries):
+    """A response with a single main-market outcome at Pinnacle."""
+    body = {"bookmakers": {"pinnacle": {"markets": {"100": {"outcomes": {"100": {"players": {"0": list(entries)}}}}}}}}
+    return list(stream_entries(io.BytesIO(json.dumps(body).encode()), {100}, KICK))
+
+
+def test_kickoff_is_compared_as_an_instant_not_as_text():
+    # "2026-10-11T16:30:00-01:00" sorts before the kickoff text but is 17:30Z: in-play, excluded
+    got = one_outcome(entry("2026-10-11T16:00:00.000Z", 1.90), entry("2026-10-11T16:30:00-01:00", 1.80))
+    assert [e.price for e in got] == [1.90]
+
+
+def test_offset_entries_before_kickoff_are_kept_and_at_kickoff_dropped():
+    got = one_outcome(entry("2026-10-11T17:30:00+01:00", 1.90),    # 16:30Z: before kickoff, kept
+                      entry("2026-10-11T17:00:00.000Z", 1.80),     # exactly kickoff: dropped
+                      entry("2026-10-11T17:00:00+00:00", 1.70))    # same instant, other spelling: dropped
+    assert [(e.created_at, e.price) for e in got] == [("2026-10-11T17:30:00+01:00", 1.90)]
+
+
+def test_kickoff_with_an_offset_is_the_same_instant():
+    body = {"bookmakers": {"pinnacle": {"markets": {"100": {"outcomes": {"100": {"players": {"0": [
+        entry("2026-10-11T16:59:59.999Z", 1.9), entry("2026-10-11T17:00:00.000Z", 1.8)]}}}}}}}}
+    got = list(stream_entries(io.BytesIO(json.dumps(body).encode()), {100}, "2026-10-11T18:00:00+01:00"))
+    assert [e.price for e in got] == [1.9]
+
+
+def test_timestamps_without_a_zone_are_rejected():
+    with pytest.raises(ValueError, match="without a time zone"):
+        one_outcome(entry("2026-10-11T16:30:00", 1.9))
+    with pytest.raises(ValueError, match="without a time zone"):
+        list(stream_entries(io.BytesIO(b'{"bookmakers": {}}'), {100}, "2026-10-11T17:00:00"))
+    with pytest.raises(ValueError, match="unparseable"):
+        one_outcome(entry("yesterday", 1.9))
+
+
+def test_an_outcome_going_back_in_time_fails_the_fixture():
+    with pytest.raises(ValueError, match="out of time order"):
+        one_outcome(entry("2026-10-10T09:00:00.000Z", 1.9), entry("2026-10-10T08:00:00.000Z", 1.8))
+
+
+def test_suspensions_and_reopenings_survive_deduplication():
+    got = one_outcome(entry("2026-10-10T08:00:00.000Z", 1.9), entry("2026-10-10T09:00:00.000Z", 1.9, a=False),
+                      entry("2026-10-10T09:30:00.000Z", 1.9, a=False), entry("2026-10-10T10:00:00.000Z", 1.9))
+    assert [(e.created_at[11:16], e.active) for e in got] == [("08:00", True), ("09:00", False), ("10:00", True)]
+
+
+def test_ties_keep_provider_order_after_storage(tmp_path):
+    got = one_outcome(entry("2026-10-10T08:00:00.000Z", 1.9), entry("2026-10-10T08:00:00.000Z", 2.1),
+                      entry("2026-10-10T08:00:00.000Z", 2.0))
+    assert [e.seq for e in got] == [1, 2, 3]
+    store.write_fixture("t", got, tmp_path)
+    t = pd.read_parquet(tmp_path / "entries" / "fixture=t.parquet")
+    assert t["price"].tolist() == [1.9, 2.1, 2.0]  # the last of the tie is the price in effect
+
+
 def test_store_round_trip_and_views(tmp_path):
     catalog = [{"marketId": 100, "sportId": 14, "marketType": "spreads", "handicap": -3, "period": "result",
                 "playerProp": False, "outcomes": [{"outcomeId": 100, "outcomeName": "1"},
