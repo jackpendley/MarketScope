@@ -389,6 +389,19 @@ The phase is NFL only and free first. A criteria-based gate decides whether paid
 - [x] **MS-059** Fair-value engine v3 (ADR-066): logit-scale line conversion fitted to the sharp books' own alternate prices (outcome-free); adopted for spreads (KL −19%) and totals (−46%), moneylines stay v2; v3 secondaries in the MS-054/055b/057 confirmation reports.
 - [ ] **Paid-data gate:** buy The Odds API history ($119, one month) only if MS-057 or MS-054 B shows a positive estimate too uncertain to decide on one season.
 
+## Phase 14 — Evidence, reproducibility and operations (ADR-067+)
+
+Prompted by an external review (of commit `7a62f87`), reconciled against the local state on 2026-10-22. Ordered by dependency; each item has acceptance criteria in the plan recorded in `docs/PROJECT_STATUS.md`.
+
+- [x] **Timestamps and reconstruction** (ADR-067): instants, not text; zone required; per-outcome order asserted; ties kept in provider order. Measured impact on existing data: none.
+- [x] **Evaluation boundaries** (Addenda V and W, ADR-069): frozen-first subsets, week-block bootstrap, declared confirmation family with a Holm sensitivity, and MS-057's shared-line check (a market baseline and permutation nulls).
+- [ ] **Dataset identity and reproducible runs:** lake manifest v2 (schema and transform versions, file and catalog hashes, coverage), dataset ID independent of build time, atomic resumable builds, run records per report, peak-memory measurement, and a snapshot/restore command. Durable private copy: needs approval (a Supabase Storage bucket).
+- [ ] **Generated results:** runners emit JSON that the `/research` cards read; a test fails on drift.
+- [ ] **Operations:** partial imports marked `partial` and retried; freshness per dataset in `/api/health/data`; backup and restore demonstrated; refreshed measurements.
+- [ ] **One complete ML workflow:** ratings-v1 with a versioned dataset, feature schema, reloadable artifact, prediction provenance, and a generated model card.
+- [ ] **Data and service gap analysis** in `docs/DATA_SOURCES.md` (no purchases).
+- [ ] **Reviewer documentation:** README, case study and architecture around three stories, plus a synthetic walkthrough.
+
 ## Out of scope until the core works
 
 Props, alternate lines, live betting, bet placement, other leagues, betting splits, CLV tracking, and alerts. (Sharp-book references are done: Pinnacle is a reference book since MS-022.) See spec §5 "Future releases".

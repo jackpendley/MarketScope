@@ -404,6 +404,7 @@ export const MARKET_STUDIES: Study[] = [
       "Yes: for each point the ratings disagreed, Pinnacle's line moved about an eighth of a point their way by kickoff. The ratings hold information early-week lines have not yet absorbed. Not enough to pay yet: taking the model's side at Pinnacle's early line averaged −1.0% (−2.8% to +0.8%) against its close.",
     exploratory: [
       "No clear pattern by size of disagreement (9–15 positions per group).",
+      "Is it the model or the early line? Both are measured from Pinnacle's line 6 days out, so noise in that line alone would give a positive slope. Shuffling model lines within weeks gives +0.020 (−0.006 to +0.046), far below +0.116. Against the market's own earlier closes, the model's coefficient is +0.100 (−0.008 to +0.238, 50 games): suggestive, not yet established (Addenda V and W).",
       "If weeks 7–14 confirm the slope, this is the case for buying earlier seasons of history to test it at scale.",
     ],
     report: `${REPO}/research/reports/model-open-discovery.md`,
