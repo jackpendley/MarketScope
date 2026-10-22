@@ -272,7 +272,7 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-22 (sessio
   - **MS-057:** slope +0.116 (+0.048 to +0.189), a discovery claim; early-line value −1.0%. Paid-data gate: wait for confirmation.
 
 - **MS-054 and MS-055b discovery (this PR, ADR-064).**
-  - Addenda P and Q before code (`89907bb`, `0c1cd71` before the first runs); Addendum R (`a5e0f9d`) and S (`4a37fad`) before any confirmation game. Branch SHAs; fix after the rebase merge.
+  - Addenda P and Q before code (`f31fc81`, `dd81c16` before the first runs); Addendum R (`a4d3c87`) and S (`a12b8af`) before any confirmation game.
   - **Lake:** built for all 93 finished games; `lake check` 100% for nine books, Kalshi 99.93%.
   - **A** (moneyline vs the book's own spread): −4.9%, the opposite.
   - **B** (retail above the sharp consensus, same line):

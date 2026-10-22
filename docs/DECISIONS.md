@@ -1245,8 +1245,9 @@ These run on a better fair-value engine: a joint margin–total distribution and
 - **The research lake (MS-052) is built:** all 93 finished 2026 games, 37.3 million entries, 151 MB of Parquet. It reproduces `line_moves` at 100% for nine books and 99.93% for Kalshi, on a 15-minute grid.
 - **Pre-registration:**
   - MS-054 is Addendum P and MS-055b is Addendum Q.
-  - The code (`89907bb`, `0c1cd71`) was committed before the first runs.
+  - The code (`f31fc81`, `dd81c16`) was committed before the first runs.
   - Reports: `research/reports/cross-market-discovery.md` and `alt-ladders-discovery.md`.
+  - The addenda cite branch SHAs from before the rebase merge: `0c1cd71` is `dd81c16` on main, and `0f5b772` is `e6f563d`.
 
 **As registered (weeks 1–6):**
 
@@ -1271,11 +1272,11 @@ These run on a better fair-value engine: a joint margin–total distribution and
 **Decision.**
 
 - **Withdrawn.** MS-055b's claim is a measurement artifact, the same treatment ADR-055 gave F10. B is "inconclusive" on `/research`. MS-054 A is "no claim".
-- **Addendum R (`a5e0f9d`), registered before any confirmation game:**
+- **Addendum R (`a4d3c87`), registered before any confirmation game:**
   - A coherence rule for ghost markets: a market is kept only if its price is monotone with the book's fresher markets. Exchanges are exempt.
   - Direct scoring against the sharp books' own same-line prices, on half-point lines.
   - With both applied, B is +3.0% engine-scored and **+2.2% (−0.1 to +4.3) direct-scored** (descriptive only).
-- **Addendum S (`4a37fad`):**
+- **Addendum S (`a12b8af`):**
   - **Why:** the coherence rule misses ghosts priced almost level with the real line (the Caesars −10 survives it).
   - **Rejected:** a minimum-slope rule, without using any outcome. Hard Rock prices adjacent lines in equal pairs and real ladders flatten in the tails.
   - **The B confirmation primary instead:** only prices our own collector also saw while they were in effect (DraftKings, FanDuel, Hard Rock), with both engine- and direct-scored intervals above 0.

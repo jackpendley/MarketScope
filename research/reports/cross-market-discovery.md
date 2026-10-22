@@ -1,6 +1,6 @@
 # Cross-market value on main markets: discovery (MS-054)
 
-_Generated 2026-10-22 02:21 UTC · commit `244841f` · reproduce with `research/src/marketscope_research/run_cross_market.py --phase discovery`._
+_Generated 2026-10-22 02:21 UTC · commit `f2df262` · reproduce with `research/src/marketscope_research/run_cross_market.py --phase discovery`._
 
 Design pre-registered in `research/PREREGISTRATION.md` (Addendum P, committed before this code; corrections in Addendum R). Data: the research lake (full ladders). Fair probabilities from the frozen engine v2 and Shin devig; the sharp consensus is the equal-weight mean of Pinnacle, Circa, Bookmaker.eu and Novig. Values are per unit at the sharp-consensus close. Game bootstrap (5,000, seed 2026). **Analysis, not betting advice.**
 
