@@ -316,7 +316,7 @@ Next: the ratings-v1 ML workflow.
 
 ## Waiting on Jack
 
-Nothing blocking.
+Nothing blocking. One approval would add a durable copy of the research lake: a private Supabase Storage bucket (see Next task).
 
 ## Known issues / open decisions
 
