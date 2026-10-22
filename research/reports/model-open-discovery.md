@@ -31,10 +31,10 @@ Engine v3 (Addendum T secondary; MS-059 line conversion, logit scale): -1.0% (-2
 ## Exploratory: value by size of the disagreement (added after the first run)
 
 | Disagreement size (points) | Positions | Value at Pinnacle's close |
-|---|---|---|
-| 1.5–2.5 | 15 | -1.6% (-4.6 to +1.0) |
-| 2.5–3.5 | 10 | +0.4% (-2.9 to +3.3) |
-| 3.5–+ | 9 | -1.4% (-4.8 to +2.0) |
+| -------------------------- | --------- | ------------------------- |
+| 1.5–2.5                    | 15        | -1.6% (-4.6 to +1.0)      |
+| 2.5–3.5                    | 10        | +0.4% (-2.9 to +3.3)      |
+| 3.5–+                      | 9         | -1.4% (-4.8 to +2.0)      |
 
 ## What this can't see
 

@@ -41,16 +41,12 @@
         "id1400003171515834": "bookmaker.eu",
         "id1400003171515836": "bookmaker.eu"
       },
-      "catalogs": [
-        "f65e3f16b4e77359908455725ea1d6ec7e41c7a98b8ea97bdc0d2b53f559c823"
-      ],
+      "catalogs": ["f65e3f16b4e77359908455725ea1d6ec7e41c7a98b8ea97bdc0d2b53f559c823"],
       "dataset_id": "lake-2d40bfbafd04b8f2",
       "fixtures": 93,
       "kind": "lake",
       "rows": 37298339,
-      "transform_versions": [
-        1
-      ]
+      "transform_versions": [1]
     }
   ],
   "packages": {

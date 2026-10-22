@@ -1,8 +1,5 @@
 {
-  "corrections": [
-    "MS-058 ghost rule",
-    "engine v3 totals conversion (ADR-066)"
-  ],
+  "corrections": ["MS-058 ghost rule", "engine v3 totals conversion (ADR-066)"],
   "generated_at": "2026-10-22T21:00:49+00:00",
   "git_commit": "103e2bc515b9bce93cc47eb6be33cbad4d9ca398",
   "git_dirty": false,
@@ -36,24 +33,16 @@
         "id1400003171515832": "bookmaker.eu",
         "id1400003171515834": "bookmaker.eu"
       },
-      "catalogs": [
-        "f65e3f16b4e77359908455725ea1d6ec7e41c7a98b8ea97bdc0d2b53f559c823"
-      ],
+      "catalogs": ["f65e3f16b4e77359908455725ea1d6ec7e41c7a98b8ea97bdc0d2b53f559c823"],
       "dataset_id": "lake-315a013853065fc9",
       "fixtures": 77,
       "kind": "lake",
       "rows": 30094179,
-      "transform_versions": [
-        1
-      ]
+      "transform_versions": [1]
     },
     {
       "kind": "open-meteo single runs",
-      "models": [
-        "ecmwf_ifs",
-        "gfs_global",
-        "ncep_hrrr_conus"
-      ],
+      "models": ["ecmwf_ifs", "gfs_global", "ncep_hrrr_conus"],
       "rows": {
         "ecmwf_ifs": 985,
         "gfs_global": 950,
