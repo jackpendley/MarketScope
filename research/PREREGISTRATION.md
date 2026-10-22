@@ -1042,3 +1042,96 @@ varies by about 3% per unit, and positions within a game are correlated. So only
 - runs other than 00, 06, 12 and 18 UTC;
 - whether a retail price would have been accepted at size;
 - stadium-specific wind effects (the forecast is for the location, not inside the bowl).
+
+## Addendum V (2026-10-22): evaluation boundaries, MS-057 baselines and the confirmation family
+
+Written after every discovery run and before any confirmation run (the runbook starts after
+2026-12-16). It adds sensitivity analyses and one MS-057 secondary. **No registered primary, sample
+or decision rule changes.** Prompted by an external review and our own audit (ADR-067 onward).
+
+**1. Rules frozen after some confirmation decisions.** Confirmation samples are selected by kickoff
+(from 2026-10-21). Some decisions come earlier: 6 days before kickoff for MS-057, 48 hours for MS-054
+and MS-055b, 72 hours for MS-056. So a few week-7 decisions were made before the rule that scores
+them was committed. Part of a label could have been visible too: a line's move up to the freeze.
+
+- **Freeze time** = the commit time on `main` of the addendum that fixed the study's confirmation
+  rule. That is conservative, because it is later than the commit's authoring time. In UTC:
+  - C and D: 2026-10-20 03:26;
+  - G and H: 2026-10-21 02:36;
+  - I: 2026-10-21 03:00;
+  - J: 2026-10-21 03:09;
+  - K and L: 2026-10-21 04:16;
+  - O: 2026-10-21 23:47;
+  - P, Q, R and S: 2026-10-22 17:07;
+  - U: 2026-10-22 19:31.
+- **Each confirmation report adds the "frozen-first" subset:** positions, or games for game-level
+  regressions, whose decision time is after the freeze. The registered result, on all of the
+  sample, still decides. The subset is a sensitivity, labelled as such.
+- **Label.** All of these analyses are retrospective reconstructions from provider history. "Frozen
+  first" means only that the rule existed before the decision. It does not mean anything was
+  observed or acted on in real time.
+
+**2. MS-057: the early line appears on both sides of the regression.** The primary regresses
+y = close − L on x = model − L, where L is Pinnacle's line at d. If L contains noise that later
+reverses, then y and x share −L. The slope is then positive even for a model with no information:
+the market moves toward _any_ reasonable estimate, not specifically toward ours. The discovery slope
+(+0.116) therefore cannot by itself show that the ratings add information. On the same frame, the
+confirmation report adds:
+
+- **Market baseline B.** Team ratings implied by Pinnacle's closing home spreads of 2026 games that
+  were final before d. It is a ridge least-squares fit of home line = −(r_home − r_away + h), with
+  the home advantage h estimated, λ = 1 (in units of one game), refitted for each d. Neutral sites
+  have h = 0. B is missing when either team has no earlier closing line.
+- **Joint regression (new secondary, confirmation decides):** OLS of y on (model − L) and (B − L),
+  game bootstrap (5,000, seed 2026).
+  - "The ratings add information beyond the market's own earlier closes" is claimed only if the
+    model coefficient's interval lies above 0.
+  - If the registered primary holds but this does not, the report says: "the market moves toward
+    the model, but no more than toward its own earlier lines".
+- **Descriptive only:**
+  - the slope of y on (B − L) alone;
+  - the primary slope with the model line permuted across games within a week (1,000
+    permutations, seed 2026; mean and 2.5–97.5% range), which shows the size of the shared-line
+    effect.
+- **Language.** Predicting where a line moves is not the same as earning at an available price.
+  The MS-057 value secondary (Addendum O) is the only price-aware MS-057 test.
+
+**3. Shared weekly shocks.** Every confirmation primary also reports an interval from resampling
+weeks (5,000 draws, seed 2026) beside the registered game bootstrap, plus the numbers of unique games
+and weeks. This is a sensitivity only; the game bootstrap decides.
+
+**4. The confirmation family.** These are the confirmation primaries. Each keeps its own claim rule.
+
+| Study   | Primary                                                                      | Addendum |
+| ------- | ---------------------------------------------------------------------------- | -------- |
+| MS-043  | S1 lead share; S2 stale-retail CLV; S3 continuation; S4 and S5 as registered | C        |
+| MS-043  | S2b CLV at −110 or better                                                    | D        |
+| MS-043  | S2c price-aware value                                                        | H        |
+| MS-046  | G1 log-loss difference; G2 value of predicted-positive positions             | G        |
+| MS-047  | I1 news priced inside the window; I2 retail lag value                        | I        |
+| MS-050  | J1 openers; J2 stale totals                                                  | J        |
+| MS-051  | K1 stale exchange prices                                                     | K        |
+| MS-051  | K1n Novig                                                                    | L        |
+| MS-057  | slope of the move to the close on the disagreement                           | O        |
+| MS-054  | A moneyline versus own spread                                                | P (R)    |
+| MS-054  | B corroborated, engine and direct                                            | S        |
+| MS-055b | alternates, engine and direct                                                | Q (R)    |
+| MS-056  | wind-revision positions                                                      | U        |
+
+- **Holm sensitivity.** Across this family, at a family-wise 5%, using two-sided bootstrap
+  p-values: p = 2 × min(share of draws ≤ 0, share ≥ 0), or the registered test's p-value where one
+  exists. A primary that needs two intervals (B, alternates) uses the larger of its two p-values.
+- The summary report states which registered claims survive Holm. Everything not in the table is
+  secondary or exploratory, and is labelled that way.
+
+**5. Reporting distinctions** (all confirmation reports and `/research`):
+
+- "No claim" means the interval includes 0. It is not evidence of no effect. Where the interval is
+  narrow, the report also states the largest effect it rules out.
+- Value is labelled by how it was priced:
+  - model-priced (engine at the consensus close);
+  - direct (the sharp books' own price at the same line);
+  - corroborated (a price our own collector also observed);
+  - realized (paper results, hypothetical).
+- A quote in a provider's historical feed is not proof that the price was available to us. Price
+  ordering in a feed says nothing about who bet.
