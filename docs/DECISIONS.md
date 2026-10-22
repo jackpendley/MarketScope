@@ -1416,3 +1416,44 @@ These run on a better fair-value engine: a joint margin–total distribution and
 - **Confirmation family** (Addendum V §4): 13 rows. Holm adjustment is reported as a sensitivity. `evaluation.py` provides `frozen_first`, `mean_bootstrap` (game or week clusters, with bootstrap p-values), `ols_ci` and `holm`. Each confirmation runner adds these when it runs after 2026-12-16.
 
 **Why it matters.** Predicting where a line moves is not the same as earning at an available price. MS-057's price-aware secondary is −1.0% (−2.8 to +0.8). The slope survives the shared-line check better than expected, and confirmation on weeks 7–14 decides.
+
+## ADR-070 — Lake dataset identity, atomic builds, snapshots and run records (2026-10-22)
+
+**Context.** An external review noted that reports identify only a git commit and a build time. A commit says which code ran, not which data it read. The lake is local and rebuildable from OddsPapi, but re-downloading is not a reproducibility guarantee: providers revise, drop or stop serving history. The review also asked whether the "streaming" build really has bounded memory.
+
+**Decision.**
+
+- **Manifest v2** (`lake/store.py`). Per fixture, it records:
+  - schema version and transform version (1 = before ADR-067, 2 = after);
+  - request groups, and books requested but absent;
+  - first and last entry;
+  - the file's SHA-256 and the market catalog's SHA-256.
+
+  Every catalog used is kept under `catalogs/<sha>.parquet`, so files are always interpreted with the catalog they were built with. `lake manifest-upgrade` filled these fields for the 93 existing fixtures from their files, marking them transform 1. ADR-067 showed that transforms 1 and 2 give identical output on every response seen.
+
+- **Dataset ID:** a hash of the sorted (fixture, file hash, schema, transform, catalog) tuples. It does not depend on build time or manifest order. Parquet output is canonical (sorted, and the same writer settings give byte-identical files across independent builds), so the same content gets the same ID. The current lake is `lake-2d40bfbafd04b8f2`.
+- **Atomic, resumable builds:**
+  - fixture files, catalogs and the manifest are written to a temporary name and renamed;
+  - a crash while writing the manifest leaves the previous manifest intact (tested);
+  - a fixture written but not yet recorded shows up in `lake verify` as an unrecorded file. Rebuilding it gives the same hash and ID (tested).
+- **Verify, snapshot and restore:**
+  - `lake verify` re-hashes every file against the manifest;
+  - `lake snapshot --to DIR` writes `<dataset id>.tar` with `SNAPSHOT.json` (every file's hash), and refuses a lake that does not verify;
+  - `lake restore` re-checks every hash and the dataset ID, and refuses a tampered archive (tested).
+- **Run records** (`provenance.py`). The lake and MS-057 runners write `<report>.run.json` beside the report, containing:
+  - the lake dataset ID and coverage of the selected fixtures, or content hashes of the database tables read;
+  - parameter-file hashes;
+  - the git commit and whether the tree was dirty;
+  - Python and package versions;
+  - the corrections applied.
+- **Bounded memory.** The parser streams, but the writer used to collect every kept entry as a Python object first. It now buffers Arrow column batches of 50k rows. Peak memory for 1.8M entries fell from 1.09 GB to 401 MB, with identical bytes (`docs/PERFORMANCE.md`).
+
+**Durable copy: proposed, needs approval.** A private Supabase Storage bucket in the existing project would hold `lake snapshot` archives. That means 161 MB now, of the free tier's 1 GB, which is separate from the 500 MB database. The alternatives:
+
+- Cloudflare R2 (10 GB free) needs a new account.
+- Backblaze B2 (10 GB free) needs a new account.
+- A GitHub release asset is rejected: the repository is public, and provider data must not be public.
+
+OddsPapi's terms need checking for private storage of history before any upload. Until then, snapshots go to a local directory.
+
+**What this does not do.** It does not verify the provider. Agreement between the lake and `line_moves` is two transformations of one feed. Independent verification means a price our own collector observed (Addendum S).

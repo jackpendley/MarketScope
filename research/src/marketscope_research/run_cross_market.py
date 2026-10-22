@@ -13,9 +13,11 @@ import argparse
 import os
 import subprocess
 from datetime import datetime, timezone
+from pathlib import Path
 
 import pandas as pd
 
+from . import provenance
 from . import cross_market as cm
 from . import fair_value as fv
 from . import sharp_market as sm
@@ -182,6 +184,9 @@ def main() -> None:
     ]
     with open(args.out, "w") as fh:
         fh.write("\n".join(parts))
+    provenance.write_run_record(args.out, provenance.run_record(
+        "MS-054 cross-market value", [provenance.lake_dataset(manifest["fixture_id"]), {"kind": "db", "table": "odds_observations (the-odds-api)", "rows": len(obs), "sha256": provenance.frame_sha256(obs)}],
+        [Path(fv.__file__).with_name("fair_value_params.json")], ["coherence rule (Addendum R)", "corroboration (Addendum S)", "engine v2 registered; v3 secondary (Addendum T)"], {"phase": getattr(args, "phase", None)}))
     print("\n".join(p for p in parts if ("result" in p.lower() and "**" in p) or p.startswith("**Sample")
                     or p.startswith("A: ")))
 

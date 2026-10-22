@@ -2,7 +2,11 @@
 
     ODDSPAPI_API_KEY=... STUDY_DATABASE_URL=... python -m marketscope_research.lake build [--from D] [--to D] [--limit N]
     STUDY_DATABASE_URL=... python -m marketscope_research.lake check     # lake main lines vs line_moves
-    python -m marketscope_research.lake status
+    python -m marketscope_research.lake status            # fixtures, rows and the dataset ID
+    python -m marketscope_research.lake verify            # every file's hash against the manifest
+    python -m marketscope_research.lake manifest-upgrade  # fill manifest v2 fields for older fixtures
+    python -m marketscope_research.lake snapshot --to DIR # self-describing archive (refuses if not verified)
+    python -m marketscope_research.lake restore --from TAR --to DIR
 
 build: 1 billable request (the fixture list; +1 for the market catalog if not cached). History calls are
 free (6 per game, 5 s apart). Finished fixtures are skipped, so a rerun only fetches what is missing.
@@ -16,6 +20,7 @@ import json
 import os
 import sys
 from datetime import datetime, timezone
+from pathlib import Path
 
 import pandas as pd
 
@@ -68,7 +73,7 @@ def build(args) -> int:
     root = store.lake_dir()
     catalog = load_catalog(client)
     markets = store.main_market_rows(catalog)
-    store.write_markets(markets, root)
+    catalog_sha = store.write_markets(markets, root)
     main_ids = set(markets["market_id"])
     events = event_map(dsn)
     fixtures = sorted(client.fixtures(args.frm, args.to), key=lambda f: f["startTime"])[: args.limit]
@@ -82,16 +87,24 @@ def build(args) -> int:
         if fid in done:
             continue
         try:
-            entries = []
-            for group in REQUEST_GROUPS:
-                path = client.historical_to_file(fid, group, raw / f"{fid}-{'_'.join(group)}.json")
-                with open(path, "rb") as fh:
-                    entries.extend(stream_entries(fh, main_ids, f["startTime"]))
+            paths = [client.historical_to_file(fid, group, raw / f"{fid}-{'_'.join(group)}.json")
+                     for group in REQUEST_GROUPS]
+
+            def stream():  # parsed lazily, straight into the writer's column batches
+                for path in paths:
+                    with open(path, "rb") as fh:
+                        yield from stream_entries(fh, main_ids, f["startTime"])
+
+            rows = store.write_fixture(fid, stream(), root)
+            for path in paths:
                 path.unlink()
-            rows = store.write_fixture(fid, entries, root)
+            facts = store.fixture_facts(fid, root)
+            present = set(facts["books"].split(",")) if facts["books"] else set()
             store.record_fixture({"fixture_id": fid, "event_id": match_event(events, f), "kickoff": f["startTime"],
-                                  "home": f["participant1Name"], "away": f["participant2Name"], "rows": rows,
-                                  "books": ",".join(sorted({e.book for e in entries}))}, root)
+                                  "home": f["participant1Name"], "away": f["participant2Name"], **facts,
+                                  "request_groups": json.dumps(REQUEST_GROUPS),
+                                  "books_missing": ",".join(b for g in REQUEST_GROUPS for b in g if b not in present),
+                                  "catalog_sha256": catalog_sha}, root)
             log("lake.fixture", fixture=fid, rows=rows)
         except (OddsPapiError, ValueError) as err:
             failed += 1
@@ -109,6 +122,13 @@ def main() -> None:
     b.add_argument("--limit", type=int)
     sub.add_parser("check")
     sub.add_parser("status")
+    sub.add_parser("verify")
+    sub.add_parser("manifest-upgrade")
+    sn = sub.add_parser("snapshot")
+    sn.add_argument("--to", required=True)
+    rs = sub.add_parser("restore")
+    rs.add_argument("--from", dest="frm", required=True)
+    rs.add_argument("--to", required=True)
     args = ap.parse_args()
     if args.command == "build":
         sys.exit(build(args))
@@ -118,8 +138,22 @@ def main() -> None:
             raise SystemExit("Set STUDY_DATABASE_URL (read-only use).")
         print(lake_check.report(dsn))
         return
+    if args.command == "verify":
+        problems = store.verify()
+        print("\n".join(problems) if problems else "ok: every file matches the manifest")
+        sys.exit(1 if problems else 0)
+    if args.command == "manifest-upgrade":
+        print(f"upgraded {store.upgrade_manifest(REQUEST_GROUPS)} fixtures")
+        return
+    if args.command == "snapshot":
+        print(store.snapshot(Path(args.to)))
+        return
+    if args.command == "restore":
+        print(f"restored and verified {store.restore(Path(args.frm), Path(args.to))}")
+        return
     m = store.read_manifest()
-    print(f"{len(m)} fixtures, {int(m['rows'].sum()) if len(m) else 0} rows, lake at {store.lake_dir()}")
+    did = store.dataset_id(m) if m["file_sha256"].notna().all() else "unknown (run manifest-upgrade)"
+    print(f"{len(m)} fixtures, {int(m['rows'].sum()) if len(m) else 0} rows, dataset {did}, lake at {store.lake_dir()}")
 
 
 if __name__ == "__main__":

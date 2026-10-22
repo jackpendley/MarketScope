@@ -19,6 +19,7 @@ from pathlib import Path
 
 import pandas as pd
 
+from . import provenance
 from . import fair_value as fv
 from . import ladder_fit as lf
 from . import sharp_market as sm
@@ -180,6 +181,9 @@ def main() -> None:
     ]
     with open(args.out, "w") as fh:
         fh.write("\n".join(parts))
+    provenance.write_run_record(args.out, provenance.run_record(
+        "MS-059 ladder fit", [provenance.lake_dataset(pd.concat([sel_m, val_m])["fixture_id"])],
+        [Path(fv.__file__).with_name("fair_value_params.json")], ["MS-058 ghost rule for main lines", "coherence rule for alternates"], {"phase": getattr(args, "phase", None)}))
     print("\n".join(p for p in parts if p.startswith("**") or p.startswith("Validation")))
 
 
