@@ -12,8 +12,10 @@ import os
 import subprocess
 from datetime import datetime, timezone
 
+import numpy as np
 import pandas as pd
 
+from . import evaluation as ev
 from . import fair_value as fv
 from . import injury_windows as iw
 from . import model_open as mo
@@ -71,6 +73,19 @@ def main() -> None:
     # The seeded bootstrap resamples rows by position: sort so it doesn't depend on SQL row order.
     frame = frame.sort_values("event_id").reset_index(drop=True)
     e1 = iw.slope_ci(frame, "y", "x") if len(frame) > 2 else None
+
+    # Addendum V: the shared early line, a market-only baseline, frozen-first and week-block sensitivities.
+    based = mo.add_baseline(frame, schedule, mo.closes_frame(schedule, tl))
+    with_b = based.dropna(subset=["xb"]).reset_index(drop=True)
+    joint = ev.ols_ci(with_b, "y", ["x", "xb"]) if len(with_b) > 3 else None
+    base_only = ev.ols_ci(with_b, "y", ["xb"])[0] if len(with_b) > 2 else None
+    null = mo.joint_permutation(with_b) if len(with_b) > 3 else None  # Addendum W
+    beats_null = bool(joint and null is not None and joint[0].value > np.nanquantile(null, 0.975))
+    perm = mo.permutation_slopes(frame) if len(frame) > 2 else None
+    frame_k = frame.assign(decision_at=frame["event_id"].map(kicks) - mo.LEAD)
+    first = ev.frozen_first(frame_k, "decision_at", "O")
+    e_first = ev.ols_ci(first, "y", ["x"])[0] if len(first) > 2 else None
+    e_week = ev.ols_ci(frame, "y", ["x"], cluster="week")[0] if frame["week"].nunique() > 2 else None
     engine = fv.load_engine(history)
     vals = mo.model_side_values(frame, tl, kicks, engine)
     e2 = sm.ratio_bootstrap(vals.assign(v=vals["value"]), "v") if len(vals) else None
@@ -83,6 +98,9 @@ def main() -> None:
         tag = " (discovery result; confirmation on weeks 7–14 decides)" if args.phase == "discovery" else ""
         return f"**{claim}**{tag}" if e.low > 0 else ("**the opposite**" + tag if e.high < 0 else
                                                        "not distinguishable: no claim")
+
+    def vci(e):
+        return "–" if e is None else f"{e.value:+.3f} ({e.low:+.3f} to {e.high:+.3f}; {e.clusters} clusters)"
 
     def pct(e):
         return "–" if e is None else f"{100 * e.value:+.1f}% ({100 * e.low:+.1f} to {100 * e.high:+.1f})"
@@ -112,6 +130,27 @@ def main() -> None:
         "## Primary: slope of Pinnacle's move to the close on the model's disagreement", "",
         f"Slope: {ci(e1, 3)} points of move per point of disagreement. **Primary result:** "
         f"{verdict(e1, 'the market moves toward the model')}.", "",
+        "## Addendum V: is it the model, or the early line?", "",
+        "y and x share Pinnacle's line at d, so noise in that line alone makes the slope positive. The baseline is "
+        "the market's own view before d: team ratings fitted to Pinnacle's closing lines of games already final. "
+        + ("Discovery numbers are descriptive; confirmation decides." if args.phase == "discovery" else
+           "The joint regression is the Addendum V secondary."), "",
+        f"- Games: {len(frame)} in {frame['week'].nunique()} weeks; {len(with_b)} with a baseline (week 1 has none).",
+        f"- Joint regression, model coefficient: {vci(joint[0] if joint else None)}; baseline coefficient: "
+        f"{vci(joint[1] if joint else None)}. "
+        + ("**The ratings add information beyond the market's earlier closes.**"
+           if joint and joint[0].low > 0 and beats_null else
+           "The market moves toward the model, but no more than toward its own earlier lines."
+           if joint and e1 is not None and e1.low > 0 else "No claim."),
+        f"- Addendum W null, the model coefficient with model lines shuffled within weeks (1,000 permutations): "
+        f"97.5th percentile {np.nanquantile(null, 0.975):+.3f}; the observed coefficient "
+        f"{'exceeds' if beats_null else 'does not exceed'} it." if null is not None else "- Addendum W null: –",
+        f"- Baseline alone: {vci(base_only)}.",
+        f"- Model lines shuffled within each week (1,000 permutations): mean slope "
+        f"{np.nanmean(perm):+.3f}, 95% of permutations {np.nanquantile(perm, 0.025):+.3f} to "
+        f"{np.nanquantile(perm, 0.975):+.3f}." if perm is not None else "- Permutations: –",
+        f"- Frozen first (decisions after Addendum O was committed): {vci(e_first)} over {len(first)} games.",
+        f"- Week-block bootstrap of the primary slope: {vci(e_week)}.", "",
         "## Secondary: the model's side at Pinnacle's line 6 days out (|disagreement| ≥ 1.5)", "",
         f"{len(vals)} positions. Mean value at Pinnacle's no-vig close: {pct(e2)}. Secondary: "
         f"{verdict(e2, 'taking the model side early carries positive value')}.", "",
