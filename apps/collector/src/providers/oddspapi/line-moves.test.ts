@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { deriveLineMoves, lineAt, type LineMove } from "./line-moves";
+import { deriveLineMoves, ghostFixRows, lineAt, type LineMove } from "./line-moves";
 import {
   deriveObservations,
   type OddsPapiEntry,
@@ -254,6 +254,54 @@ describe("deriveLineMoves", () => {
     expect(rows.map((m) => [m.changedAt, m.price1])).toEqual([
       ["2026-10-11T10:00:00.000Z", -200],
       ["2026-10-11T16:30:00.000Z", null],
+    ]);
+  });
+});
+
+describe("ghost rule", () => {
+  // A -10 left "active" since Sept 1 at even money beside the real -3 at -115/-105.
+  const ghostHistory: OddsPapiHistory = {
+    bookmakers: {
+      caesars: {
+        markets: {
+          ...market(100, [e("2026-10-10T08:00:00Z", 1.87)], [e("2026-10-10T08:00:00Z", 1.95)]),
+          ...market(130, [e("2026-09-01T08:00:00Z", 1.91)], [e("2026-09-01T08:00:00Z", 1.91)]),
+        },
+      },
+    },
+  };
+  const markets = new Map(MARKETS).set(130, meta(130, "spreads", -10, ["1", "2"]));
+  const opts = { kickoff: KICKOFF, bookMap: { caesars: "williamhill_us" }, windowDays: 60 };
+
+  it("the registered rule takes the ghost; the ghost rule takes the real line", () => {
+    const point = (ghostRule: boolean) =>
+      deriveLineMoves(ghostHistory, markets, { ...opts, ghostRule })
+        .filter((r) => r.market === "spreads")
+        .map((r) => r.point);
+    expect(point(false)).toEqual([-10]);
+    expect(point(true)).toEqual([-10, -3]); // the ghost was the only line until Oct 10
+  });
+
+  it("ghostFixRows keeps only the timelines that differ, whole", () => {
+    const registered = deriveLineMoves(ghostHistory, markets, opts);
+    const fixed = deriveLineMoves(ghostHistory, markets, { ...opts, ghostRule: true });
+    expect(ghostFixRows(registered, registered)).toEqual([]);
+    expect(ghostFixRows(registered, fixed)).toEqual(fixed);
+  });
+
+  it("an all-ghost timeline becomes one suspension row", () => {
+    const row = (point: number): LineMove => ({
+      bookmakerKey: "williamhill_us",
+      market: "spreads",
+      changedAt: "2026-10-10T08:00:00.000Z",
+      point,
+      price1: -110,
+      price2: -110,
+      limit1: null,
+      limit2: null,
+    });
+    expect(ghostFixRows([row(-10)], [])).toEqual([
+      { ...row(-10), point: null, price1: null, price2: null },
     ]);
   });
 });

@@ -7,7 +7,14 @@
 // Unlike the snapshot import (ADR-026), games we also collected live are welcome: line_moves
 // is a separate table, so sources never mix inside odds_observations.
 
-import { bookmakers, events, ingestionRuns, lineMoves, type Database } from "@marketscope/db";
+import {
+  bookmakers,
+  events,
+  ingestionRuns,
+  lineMoveFixes,
+  lineMoves,
+  type Database,
+} from "@marketscope/db";
 import {
   BOARD_BOOKS,
   COLLECTED_BOOKMAKERS,
@@ -18,7 +25,7 @@ import {
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { silentLogger, type Logger } from "./log";
 import type { OddsPapiClient, OddsPapiFixture } from "./providers/oddspapi/client";
-import { deriveLineMoves } from "./providers/oddspapi/line-moves";
+import { deriveLineMoves, ghostFixRows } from "./providers/oddspapi/line-moves";
 import type { Market } from "@marketscope/shared";
 import type { OddsPapiHistory, OddsPapiMarketMeta } from "./providers/oddspapi/transform";
 
@@ -54,13 +61,15 @@ export const LINE_MOVE_REQUEST_GROUPS: readonly (readonly string[])[] = [
 
 /** A set of books imported together, with its own job key (so each set is idempotent on its own). */
 export interface LineMoveProfile {
-  name: "books" | "exchanges";
+  name: "books" | "exchanges" | "fixes";
   jobKey: (fixtureId: string) => string;
   bookMap: Readonly<Record<string, string>>;
   requestGroups: readonly (readonly string[])[];
   limitBooks: ReadonlySet<string>;
   recordLimitBooks?: ReadonlySet<string>;
   markets?: readonly Market[];
+  /** Write ghost-market corrections to line_move_fixes instead of rows to line_moves. */
+  ghostFixes?: boolean;
 }
 
 export const BOOKS_PROFILE: LineMoveProfile = {
@@ -84,6 +93,18 @@ export const EXCHANGES_PROFILE: LineMoveProfile = {
   limitBooks: new Set(),
   recordLimitBooks: new Set(["novig", "prophetx", "kalshi"]),
   markets: ["spreads", "totals"],
+};
+
+/**
+ * Ghost-market corrections for the books (MS-058, ADR-065): the same histories, derived with and
+ * without the ghost rule; only the books and markets that differ are written, to line_move_fixes.
+ * line_moves is never touched, so the pre-registered studies keep reading exactly what they did.
+ */
+export const FIXES_PROFILE: LineMoveProfile = {
+  ...BOOKS_PROFILE,
+  name: "fixes",
+  jobKey: (fixtureId) => `oddspapi-moves-fix:${fixtureId}:v1`,
+  ghostFixes: true,
 };
 
 export type LineMoveImportOutcome =
@@ -137,13 +158,17 @@ export async function importLineMoves(
         log.warn("line_moves.too_large", { fixtureId: fixture.fixtureId, books: group });
       }
     }
-    const rows = deriveLineMoves(merged, markets, {
-      kickoff: fixture.startTime,
-      bookMap: profile.bookMap,
-      limitBooks: profile.limitBooks,
-      recordLimitBooks: profile.recordLimitBooks,
-      markets: profile.markets,
-    });
+    const derive = (ghostRule: boolean) =>
+      deriveLineMoves(merged, markets, {
+        kickoff: fixture.startTime,
+        bookMap: profile.bookMap,
+        limitBooks: profile.limitBooks,
+        recordLimitBooks: profile.recordLimitBooks,
+        markets: profile.markets,
+        ghostRule,
+      });
+    const rows = profile.ghostFixes ? ghostFixRows(derive(false), derive(true)) : derive(false);
+    const table = profile.ghostFixes ? lineMoveFixes : lineMoves;
     const perBook: Record<string, number> = {};
     for (const r of rows) perBook[r.bookmakerKey] = (perBook[r.bookmakerKey] ?? 0) + 1;
 
@@ -193,16 +218,16 @@ export async function importLineMoves(
         id = created!.id;
       }
 
-      await tx.delete(lineMoves).where(
+      await tx.delete(table).where(
         and(
-          eq(lineMoves.eventId, id),
-          eq(lineMoves.source, LINE_MOVES_SOURCE),
+          eq(table.eventId, id),
+          eq(table.source, LINE_MOVES_SOURCE),
           // Only this profile's books: importing exchanges never touches the books' rows.
-          inArray(lineMoves.bookmakerKey, Object.values(profile.bookMap)),
+          inArray(table.bookmakerKey, Object.values(profile.bookMap)),
         ),
       );
       for (let i = 0; i < rows.length; i += 1_000) {
-        await tx.insert(lineMoves).values(
+        await tx.insert(table).values(
           rows.slice(i, i + 1_000).map((r) => ({
             eventId: id,
             bookmakerKey: r.bookmakerKey,

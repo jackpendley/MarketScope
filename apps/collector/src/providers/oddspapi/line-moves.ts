@@ -15,6 +15,7 @@ import { decimalToAmerican, type Market } from "@marketscope/shared";
 import {
   bookCandidates,
   pickMain,
+  withoutGhosts,
   type Candidate,
   type OddsPapiHistory,
   type OddsPapiMarketMeta,
@@ -53,6 +54,8 @@ export interface LineMoveOptions {
   recordLimitBooks?: ReadonlySet<string>;
   /** Markets to derive (default: all three). */
   markets?: readonly Market[];
+  /** Remove ghost spread and total markets before picking the main line (MS-058, ADR-065). */
+  ghostRule?: boolean;
 }
 
 export const LINE_MOVE_DEFAULTS = {
@@ -68,7 +71,7 @@ export function deriveLineMoves(
   markets: ReadonlyMap<number, OddsPapiMarketMeta>,
   options: LineMoveOptions,
 ): LineMove[] {
-  const { limitBooks, recordLimitBooks, markets: only, ...rest } = options;
+  const { limitBooks, recordLimitBooks, markets: only, ghostRule = false, ...rest } = options;
   const opts = { ...LINE_MOVE_DEFAULTS, ...rest };
   const kick = Date.parse(opts.kickoff);
   const out: LineMove[] = [];
@@ -89,6 +92,7 @@ export function deriveLineMoves(
           ...opts,
           keepLimits: triggers || Boolean(recordLimitBooks?.has(bookmakerKey)),
           limitsInKey: triggers,
+          ghostRule,
         }),
       );
     }
@@ -102,10 +106,14 @@ function timeline(
   candidates: readonly Candidate[],
   kick: number,
   opts: Required<
-    Omit<LineMoveOptions, "kickoff" | "bookMap" | "limitBooks" | "recordLimitBooks" | "markets">
+    Omit<
+      LineMoveOptions,
+      "kickoff" | "bookMap" | "limitBooks" | "recordLimitBooks" | "markets" | "ghostRule"
+    >
   > & {
     keepLimits: boolean;
     limitsInKey: boolean;
+    ghostRule: boolean;
   },
 ): LineMove[] {
   const times = [...new Set(candidates.flatMap((c) => [...c.side1.times, ...c.side2.times]))].sort(
@@ -136,7 +144,10 @@ function timeline(
   for (const [i, t] of times.entries()) {
     const next = times[i + 1];
     if (next !== undefined && next - t < opts.settleMs) continue;
-    const main = pickMain(candidates, t);
+    const main = pickMain(
+      opts.ghostRule && market !== "h2h" ? withoutGhosts(candidates, t) : candidates,
+      t,
+    );
     if (!main) {
       offSince ??= t;
       continue;
@@ -168,6 +179,39 @@ function timeline(
   const start = kick - opts.windowDays * DAY;
   const first = rows.findIndex((r) => Date.parse(r.changedAt) >= start);
   return first === -1 ? rows.slice(-1) : rows.slice(Math.max(0, first - 1));
+}
+
+/**
+ * Corrections for `line_move_fixes` (MS-058, ADR-065): for each book and market whose ghost-free
+ * timeline differs from the registered one, the whole ghost-free timeline. `line_moves` itself is
+ * never rewritten (pre-registered studies read it as it is). A timeline that is entirely ghosts
+ * becomes one suspension row at its first change, so readers never fall back to the ghosts.
+ */
+export function ghostFixRows(registered: readonly LineMove[], ghostFree: readonly LineMove[]) {
+  const group = (rows: readonly LineMove[]) => {
+    const out = new Map<string, LineMove[]>();
+    for (const r of rows) {
+      const key = `${r.bookmakerKey}|${r.market}`;
+      out.set(key, [...(out.get(key) ?? []), r]);
+    }
+    return out;
+  };
+  const before = group(registered);
+  const after = group(ghostFree);
+  const fixes: LineMove[] = [];
+  for (const [key, rows] of before) {
+    const fixed = after.get(key) ?? [];
+    if (JSON.stringify(rows) === JSON.stringify(fixed)) continue;
+    fixes.push(
+      ...(fixed.length
+        ? fixed
+        : [{ ...rows[0]!, point: null, price1: null, price2: null, limit1: null, limit2: null }]),
+    );
+  }
+  // A ghost-free timeline where the registered one had nothing cannot happen (the rule only
+  // removes markets), but keep it if it ever does.
+  for (const [key, rows] of after) if (!before.has(key)) fixes.push(...rows);
+  return fixes;
 }
 
 /** The row in effect at time t (latest changedAt ≤ t) for one book and market, if any. */

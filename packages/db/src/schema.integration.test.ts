@@ -157,6 +157,7 @@ describe("Data API lock-down (ADR-018)", () => {
       "events",
       "ingestion_payloads",
       "ingestion_runs",
+      "line_move_fixes",
       "line_moves",
       "market_signals",
       "model_predictions",

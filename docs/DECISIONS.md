@@ -1285,3 +1285,39 @@ These run on a better fair-value engine: a joint margin–total distribution and
   - **MS-058:** the collector adopts a ghost-market rule, `line_moves` is re-derived, and the replay page is corrected.
   - **MS-059, engine v3:** calibrate line conversion against the sharp books' own alternate ladders, an outcome-free target that the lake now provides.
 - **The paid-data gate gains a second reason.** If B holds, or is positive but inconclusive, The Odds API's 2020–25 snapshots would test it over about 1,400 games, with retail prices observed independently.
+
+## ADR-065 — Ghost markets in the collector: a rule checked against our own snapshots, and corrections beside `line_moves` (MS-058) (2026-10-22)
+
+**Context.** ADR-064 found that OddsPapi keeps some dead sportsbook markets "active", and that the main-line rule (`pickMain`: both sides active, closest to even) can take them. `line_moves` and the replay page show those ghosts. Pre-registered Phase 12 studies read `line_moves` as it is, and their confirmation runs on weeks 7–14 have not happened yet.
+
+**Ground truth.** Our own collector records each book's main line from The Odds API, independently of OddsPapi. For 13 week-6 games (1,176 snapshots of DraftKings, FanDuel and Hard Rock), the registered rule agrees with it at 95.2% whenever both list a line. The rest are 0.5–1 point timing differences, plus one large miss: a DraftKings 64.5 total when the line was 39.5.
+
+**Rules tried and rejected.**
+
+- **Staleness** (a market much older than the book's freshest one): FanDuel's agreement falls from 97% to between 32% and 87%, depending on the thresholds. FanDuel's real main line can sit unchanged for five days while its alternates are repriced.
+- **Staleness gated by distance:** still 85–90% for FanDuel.
+- **Direction-aware slope:** removes real lines in a fixture whose whole ladder is labelled the other way round.
+
+**Decision: two rules** (`withoutGhosts` in `transform.ts`, ported to `lake/mainline.py`), for spreads and totals at sportsbooks only:
+
+1. **Near even, normal margin.** A main line has a no-vig probability between 0.3 and 0.7, and implied probabilities summing to at most 1.12. Example: DraftKings suspended its totals board but left 63.5 and 64.5 active at 13/1; the old rule called 64.5 the main line. A Hard Rock 25.0 total carried a 70% margin.
+2. **Flat pair.** Two near-even lines at least 2 points apart whose probabilities differ by less than 0.005 per point cannot both be live. The one updated less recently is the ghost. Example: Caesars' −10 at 50.0% beside its real −7 at 50.2%.
+
+**Checks.**
+
+- **Against The Odds API:** no regressions (95.5% agreement when listed), and the 2-point-or-more misses fall from 2 to 0.
+- **Across the lake** (93 games, hourly, final 7 days):
+  - The rule changes 0.4% of book-hours: Caesars 1.5% of spread hours, the other retail books 0–0.4%, and Pinnacle and Bookmaker.eu never.
+  - 99% of its changes move the line toward the cross-book median (2 of 404 hours move away).
+  - Caesars' spread hours 2+ points off the median fall from 3.45% to 1.92%.
+- **Known limit:** a ghost that is the book's only near-even market cannot be seen from inside the book. Caesars showed only its −10 from 11 October until it posted −7 on the 18th. A cross-book check would catch it, but would also erase the real off-market numbers that studies look for. So it is not used.
+
+**Storage: corrections beside `line_moves`, not a rewrite.**
+
+- `line_moves` stays exactly as derived. The pre-registered studies and their confirmation runs read it unchanged.
+- A new `fixes` import profile derives each game with and without the rule, and writes the _whole_ corrected timeline of any book and market that differs to `line_move_fixes` (same columns, RLS on). A timeline that is entirely ghosts becomes one suspension row.
+- The replay page (`lineMoveHistory`) shows a book's fixes instead of its registered rows.
+- Size: only the differing timelines, a few percent of `line_moves`. A second full table would not fit in the 500 MB free tier by season's end.
+- The nightly import runs the profile after the books, with 3 more free history calls per game. Backfill: `import:line-moves --profile fixes --from 2026-09-01`.
+
+**Research.** No registered study changes. The B confirmation primary already counts only corroborated prices (Addendum S). Future studies may use `mainline.timeline(..., ghost_rule=True)`, and must say so in their pre-registration.

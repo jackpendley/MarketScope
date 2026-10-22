@@ -134,6 +134,13 @@
       "when": 1792534189858,
       "tag": "0018_paper_positions_immutable",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1792690149900,
+      "tag": "0019_line_move_fixes",
+      "breakpoints": true
     }
   ]
 }

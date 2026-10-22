@@ -2,7 +2,8 @@ name: Import line moves
 
 # Nightly: minute-level main-line moves for NFL games that finished since the last run, from
 # OddsPapi's free history (MS-042, ADR-052). Games already imported are skipped without any
-# provider call (job key per fixture). 1 billable OddsPapi request for the fixture list, plus 1
+# provider call (job key per fixture). Profiles: books, exchanges, and ghost-market fixes for the
+# books (ADR-065, written to line_move_fixes). 1 billable OddsPapi request for the fixture list, plus 1
 # for the market catalog (the runner has no local cache): about 60 of the 250 a month.
 # 11:00 UTC is after Monday Night Football and before the 13:00 football refresh.
 on:

@@ -381,7 +381,8 @@ The phase is NFL only and free first. A criteria-based gate decides whether paid
 - [ ] **MS-057** Does the market move toward the MarketScope model from the open?
   - [x] Discovery (ADR-063): slope +0.116 (+0.048 to +0.189), a discovery claim; early-line value −1.0%, no claim.
   - [ ] Confirmation on weeks 7–14; then the paid-data decision.
-- [ ] **MS-058** Ghost markets in the collector: adopt a ghost-market rule in `pickMain`, re-derive `line_moves`, and fix the replay page. The feed sometimes keeps dead sportsbook markets "active" (ADR-064).
+- [x] **MS-058** Ghost markets in the collector (ADR-065): near-even and flat-pair rules checked against our own The Odds API snapshots; corrections in `line_move_fixes` (backfilled), shown on the replay page; `line_moves` unchanged for the registered studies.
+- [ ] **Future pre-registrations confirm on weeks 7–18** (plus playoffs where the question allows): about 55% more games than weeks 7–14, at no cost. Registered confirmations keep weeks 7–14.
 - [ ] **MS-059** Fair-value engine v3: calibrate line conversion against the sharp books' own alternate ladders in the lake, an outcome-free target, instead of the additive shift.
 - [ ] **Paid-data gate:** buy The Odds API history ($119, one month) only if MS-057 or MS-054 B shows a positive estimate too uncertain to decide on one season.
 
