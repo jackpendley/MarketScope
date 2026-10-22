@@ -126,6 +126,15 @@ export interface LineMoveImportDeps {
   log?: Logger;
 }
 
+/** Full-game spread, total and moneyline market ids: the only ones line moves use. */
+export function mainMarkets(markets: ReadonlyMap<number, OddsPapiMarketMeta>): Set<number> {
+  const out = new Set<number>();
+  for (const [id, m] of markets)
+    if (m.period === "result" && !m.playerProp && ["spreads", "totals", "moneyline"].includes(m.marketType))
+      out.add(id);
+  return out;
+}
+
 export function lineMovesJobKey(fixtureId: string): string {
   return BOOKS_PROFILE.jobKey(fixtureId);
 }
@@ -169,7 +178,9 @@ export async function importLineMoves(
     const tooLarge: string[] = [];
     for (const group of profile.requestGroups) {
       try {
-        const part = await client.historicalOdds(fixture.fixtureId, group);
+        const part = await client.historicalOdds(fixture.fixtureId, group, {
+          markets: mainMarkets(markets),
+        });
         Object.assign(merged.bookmakers, part.bookmakers ?? {});
       } catch (err) {
         // A busy exchange's full history can exceed V8's maximum string length (~512 MB). Skip

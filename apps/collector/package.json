@@ -18,6 +18,7 @@
   "dependencies": {
     "@marketscope/db": "workspace:*",
     "@marketscope/shared": "workspace:*",
+    "@streamparser/json": "0.0.26",
     "drizzle-orm": "^0.45.4",
     "zod": "^4.6.0"
   },

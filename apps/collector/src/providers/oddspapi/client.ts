@@ -5,6 +5,7 @@
 // markets, bookmakers, sports, etc. count against the plan's monthly request allowance.
 // Each endpoint has its own cooldown; we wait it out client-side.
 
+import { parseHistoryStream } from "./stream";
 import type { OddsPapiHistory, OddsPapiMarketMeta } from "./transform";
 
 export const ODDSPAPI_NFL_TOURNAMENT_ID = 31;
@@ -59,7 +60,11 @@ export function createOddsPapiClient(options: OddsPapiClientOptions) {
   } = options;
   const lastCall = new Map<string, number>();
 
-  async function request<T>(path: string, params: Record<string, string | number>): Promise<T> {
+  async function request<T>(
+    path: string,
+    params: Record<string, string | number>,
+    parse: (res: Response) => Promise<T> = async (res) => (await res.json()) as T,
+  ): Promise<T> {
     for (let attempt = 1; attempt <= 3; attempt++) {
       const wait = (lastCall.get(path) ?? -Infinity) + (COOLDOWN_MS[path] ?? 1_000) - now();
       if (wait > 0) await sleep(wait);
@@ -75,7 +80,7 @@ export function createOddsPapiClient(options: OddsPapiClientOptions) {
         if (attempt === 3) throw new OddsPapiError(`GET ${path} failed: network error`, null);
         continue;
       }
-      if (res.ok) return (await res.json()) as T;
+      if (res.ok) return parse(res);
       // 429 can mean a cooldown hit (retry) or an exhausted quota (stop).
       const body = (await res.text()).split(apiKey).join("[REDACTED]").slice(0, 200);
       if (res.status === 429 && !body.includes("REQUEST_LIMIT_EXCEEDED") && attempt < 3) {
@@ -105,13 +110,22 @@ export function createOddsPapiClient(options: OddsPapiClientOptions) {
       return request<OddsPapiMarketMeta[]>("/v4/markets", {});
     },
     /** Free. Full line-move history for up to 3 bookmakers of one fixture. */
-    historicalOdds(fixtureId: string, bookmakers: readonly string[]) {
+    historicalOdds(
+      fixtureId: string,
+      bookmakers: readonly string[],
+      options: { markets?: ReadonlySet<number> } = {},
+    ) {
       if (bookmakers.length > 3)
         throw new RangeError("OddsPapi allows at most 3 bookmakers per call");
-      return request<OddsPapiHistory>("/v4/historical-odds", {
-        fixtureId,
-        bookmakers: bookmakers.join(","),
-      });
+      const params = { fixtureId, bookmakers: bookmakers.join(",") };
+      // With a market filter the body is parsed as a stream and other markets are dropped, so no
+      // response has to fit in one string (ADR-076).
+      const { markets } = options;
+      return markets
+        ? request<OddsPapiHistory>("/v4/historical-odds", params, (res) =>
+            parseHistoryStream(res.body!, markets),
+          )
+        : request<OddsPapiHistory>("/v4/historical-odds", params);
     },
   };
 }
