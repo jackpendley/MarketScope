@@ -106,6 +106,21 @@ The full column reference is in `DATA_DICTIONARY.md`. Hot queries and their EXPL
   - filtered snapshots that don't change when later games are added
 - **Health vs history:** run-health queries count only live runs, so historical imports never make collection look healthy (ADR-027).
 
+## Research data, provenance and recovery (Phase 13–14)
+
+- **Research lake** (`research/.../lake`, ADR-061, ADR-070):
+  - full OddsPapi ladders as Parquet (one file per game) plus DuckDB views;
+  - local and gitignored;
+  - a manifest records each file's SHA-256, the catalog it was built with, schema and transform versions, and books missing;
+  - the dataset ID is a content hash, so the same inputs give the same ID.
+- **Durable copy:** the private `lake-snapshots` bucket in Supabase Storage (ADR-073), content-addressed (`objects/<sha256>`, `snapshots/<dataset id>.json`). `lake pull` verifies every hash before use.
+- **Run records:** each study report has a `<report>.run.json` beside it (dataset ID, input table hashes, parameter hashes, commit). Reports that feed `/research` also write `apps/web/lib/generated/study-results.json`, which the cards read (ADR-072).
+- **Model provenance:** each `model_predictions` row carries the parameters, feature-schema and input hashes and the code commit (ADR-074).
+- **Health and recovery:**
+  - `/api/health/data` reports gaps by dataset, not only job success (ADR-071);
+  - partial imports are retryable, and the importer streams oversized responses (ADR-076);
+  - `scripts/db-backup.sh` and `scripts/db-restore-check.sh` back up the serving database and prove the backup restores (ADR-075).
+
 ## Security model
 
 - **Site:** reachable on the public internet, but every page and `/api/*` route requires a signed-in account (Better Auth sessions in Postgres, invite-only; `apps/web/proxy.ts`, ADR-049). Only `/login`, `/api/auth/*` and `/api/health/live` are open. The Odds API terms forbid redistributing its data through our own API, so `/api/*` needs a session too.

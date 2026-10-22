@@ -4,7 +4,7 @@ _A full-stack NFL market-intelligence platform with its own football model, buil
 
 ## The problem
 
-Sportsbook odds change constantly. Public sites show only the current price, and nothing shows _how_ a line moved or _whether_ the moves follow the football. MarketScope set out to do three things, all without becoming a picks service:
+Sportsbook odds change constantly. Public sites show only the current price, and nothing shows _how_ a line moved or _whether_ the moves follow the football. MarketScope set out to do four things, all without becoming a picks service:
 
 1. **Record the market faithfully.** Store every observation from five books, and replay any game's line history exactly.
 2. **Model the football independently.** Build KenPom-style team ratings from play-by-play data, so there is a view of each game that doesn't come from the market.
@@ -16,9 +16,63 @@ Sportsbook odds change constantly. Public sites show only the current price, and
 - **Writers:** a TypeScript collector (GitHub Actions, 4 times a day) writes append-only odds observations to PostgreSQL. A Python pipeline (daily) ingests nflverse play-by-play, injuries, snaps and Open-Meteo forecasts, then rebuilds the ratings, the forward-test estimates and 10,000-season playoff simulations.
 - **Readers:** a Next.js 16 site on Vercel reads the same database through one query layer. A read-only Python research package runs the studies.
 - **Market microstructure (Phase 12):** a nightly job turns a provider's change logs into minute-level `line_moves` for the market makers (Pinnacle, Circa, Bookmaker.eu), four retail books and three exchanges (Novig, ProphetX, Kalshi). A paper-portfolio job places hypothetical positions from every pre-registered system before kickoff and grades them afterwards.
-- **Database:** one schema (Drizzle migrations, RLS on all 26 tables) serves both languages. Every job is idempotent per job key.
+- **Database:** one schema (Drizzle migrations, RLS on all 27 tables) serves both languages. Every job is idempotent per job key.
 
 Details and diagram: [ARCHITECTURE.md](ARCHITECTURE.md).
+
+## Three engineering stories
+
+Each covers the problem, the decision, an alternative considered, the measured outcome and the limitation. The ADRs in [DECISIONS.md](DECISIONS.md) have the full reasoning.
+
+### 1. Ingestion that cannot quietly lose data
+
+- **Problem.** Jobs run unattended on a schedule against providers with quotas, size limits and outages. A job that finishes is not proof that the data arrived.
+- **Decision:**
+  - Every run claims a job key first (idempotent re-runs), checks the credit budget before spending, and writes in one transaction after the network fetch.
+  - When a provider response could not be parsed (a book's history larger than V8's maximum string), the run is now recorded as `partial`, not `completed`. Health is judged by gaps (final games without line moves, games without scores) rather than by whether a job ran (ADR-071).
+  - The importer then learned to stream its JSON, keeping only the markets it uses (ADR-076).
+  - The serving database has a backup proven by a restore check (ADR-075).
+- **Alternative considered:** raising Node's heap limit. Rejected: the limit was the string, not the heap.
+- **Measured:**
+  - 5 production imports had silently skipped a book. Once visible, they were re-imported with the streaming client: 14,940 exchange moves, 0 partial imports left.
+  - A synthetic 598 MB response streams with a 14 MB heap.
+  - The 186 MB database backs up to 11.2 MB in 22 s and restores, with every table's count checked (27 tables, 626,813 rows), in under 5 s.
+- **Limitation:** collection is scheduled polling (4 snapshots a day), not streaming. Minute-level history comes from a provider's change log after the fact. Streaming removed the string limit, not the work: the busiest exchange games still peaked at 2.7 GB of memory, because their main-market entries are kept in memory to derive the lines.
+
+### 2. Two measurement errors that made the market look beatable
+
+- **Problem.** Two pre-registered studies came back positive: retail prices above the sharp consensus (+3.6%) and retail alternate lines (+4.3%). Before believing them, the checks looked for ways the measurement itself could produce value.
+- **What the checks found:**
+  - **Ghost markets.** The feed kept dead sportsbook markets "active"; a Caesars −10 last updated on 1 September was still listed at kickoff on 18 October, when the real line was −7. The main-line rule picked such markets.
+  - **Engine tails.** The fair-value engine moved a probability to another line by adding the same shift at every line. That overstated the tails, which the same engine then "confirmed" at the close.
+- **Decisions:**
+  - **Ghost markets:** a ghost rule, validated against our _own_ independently collected snapshots rather than the feed itself (95.5% agreement, no misses of 2 points or more). Corrections are stored beside the registered data, never over it, so pre-registered studies still read what they were registered on (ADR-065).
+  - **Engine tails:** engine v3 converts lines on the logit scale, fitted to the sharp books' own alternate prices, a target that uses no game outcomes (ADR-066).
+  - **Confirmation:** confirmation now counts only prices our collector also observed (Addendum S).
+- **Alternative considered:** a cross-book outlier filter for ghosts. Rejected: it would also erase the real off-market numbers the studies look for.
+- **Measured:**
+  - The alternate-line result was withdrawn: against the sharp books' own prices it is −3.6%.
+  - v3 cut the engine's error against those prices by 19% for spreads and 46% for totals, and narrowed the gap between engine and direct scoring from 7.9 to 3.4 points.
+- **Limitation:** agreement between two transformations of one provider's feed is not independent verification. Only prices our own collector saw count as that.
+
+### 3. Reproducible modelling with honest evaluation
+
+- **Problem.** "Trust me, I ran it" is not evidence. A result has to say exactly which data, code and parameters produced it, and the evaluation has to say what each period may and may not claim.
+- **Decisions:**
+  - **Identity and provenance:**
+    - The research lake has a content-based dataset ID (`lake-2d40bfbafd04b8f2`) independent of build time. It has atomic, resumable builds, a `verify` command, and a private, content-addressed copy in Supabase Storage (ADRs 070, 073).
+    - Every report writes a run record (dataset ID, table hashes, parameter hashes, commit, dirty flag).
+    - The `/research` numbers are generated from those runs, not copied (ADR-072).
+  - **The ratings model end to end (ADR-074):**
+    - frozen parameters with a pinned hash, a feature schema generated from them, and a test that the reloaded model computes exactly what the schema describes;
+    - provenance hashes on every forecast;
+    - a model card generated from one structured result.
+  - **Evaluation:** confirmation reports add a "frozen-first" subset (decisions after the rule was committed), week-block intervals and a Holm adjustment across a declared family of primaries (Addenda V and W).
+- **Alternative considered:** an experiment tracker such as MLflow. Rejected at this scale: hashes, run records and git cover one frozen model and a dozen studies.
+- **Measured:**
+  - **The one positive discovery claim was stress-tested.** "The market moves toward the model early in the week" shares its early line between both sides of the regression. Shuffling the model's lines gives +0.020 against the observed +0.116. Against the market's own earlier closes, the model's coefficient is +0.100 (−0.008 to +0.238): suggestive, not established.
+  - **A flaw in my own check was caught in time.** A planted-data test showed the first version of that check would have credited a model with no information, so the rule was corrected before it ever ran on real data (Addendum W).
+- **Limitation:** 2023–24 shaped the model and 2025 was tested once. Only the 2026 forward test is prospective, and it has few games so far.
 
 ## Engineering decisions worth calling out
 
@@ -39,18 +93,7 @@ Details and diagram: [ARCHITECTURE.md](ARCHITECTURE.md).
   - RLS everywhere, invite-only accounts (hashed passwords, rate-limited sign-in, CSRF and open-redirect guards), `/api/*` protected because of the provider's terms.
   - API keys stripped from logged errors.
   - A history scan shows no secret was ever committed ([SECURITY.md](SECURITY.md)).
-- **Testing at every layer:**
-
-  | Layer                                                        | Tests |
-  | ------------------------------------------------------------ | ----- |
-  | `packages/shared` unit                                       | 192   |
-  | `packages/db` integration                                    | 47    |
-  | collector                                                    | 51    |
-  | web view models                                              | 108   |
-  | Playwright e2e, including axe-core WCAG checks on every page | 49    |
-  | football pytest                                              | 110   |
-  | research pytest                                              | 40    |
-
+- **Testing at every layer.** Unit tests for the pure domain logic; integration tests for every SQL query against a migrated database; view-model tests; Playwright end-to-end tests with axe-core WCAG checks on every page; pytest for the football pipeline and the research studies, including planted-signal and leakage tests. CI runs them all on every pull request. Current counts are in [PROJECT_STATUS.md](PROJECT_STATUS.md#tests), not repeated here, so they cannot go stale.
   Synthetic fixtures are labelled in their file names and on screen.
 
 ## The football model
@@ -151,9 +194,9 @@ A spot check by the project owner found a play-caller error. Instead of patching
 
 ## What I'd do next
 
-- **Confirmation (December 2026):** re-run every Sharp-Market study once on weeks 7–14 with unchanged code, and publish every result.
-- **Near-real-time data:** the provider's history endpoint is effectively live for upcoming games. With permission, a 30-minute poller would let the paper portfolio track the market-signal strategies before kickoff.
-- **Practice-report timing:** the live injury snapshots (since October 18) could show when practice participation moves the line, which is where the injury study found the market reacts.
+- **Confirmation (after 2026-12-16; MS-056 after week 18):** re-run every registered study once on the held-out weeks with unchanged code, with the frozen-first, week-block and Holm sensitivities, and publish every result.
+- **The paid-data gate:** buy one month of The Odds API's history ($59) only if MS-057's confirmation is positive but too uncertain on one season, as registered. Not to add rows.
+- **Generated numbers everywhere:** move the older `/research` cards onto generated results as their runners next run.
 - **A screen-reader pass** on the newer pages.
 
 ## Skills demonstrated
@@ -161,5 +204,6 @@ A spot check by the project owner found a play-caller error. Instead of patching
 - **Backend data pipelines:** idempotent jobs, transactional ingestion, schema design with database-enforced invariants, query performance work.
 - **Full-stack TypeScript:** Next.js server components, typed query layer, view-model testing, e2e and accessibility testing.
 - **Python data engineering and statistical modelling:** state-space models, maximum-likelihood fitting, simulation, walk-forward evaluation, bootstrap inference.
-- **Research discipline:** pre-registration, discovery and confirmation splits, leakage audits, published nulls, withdrawn claims, and honest uncertainty in every user-facing number.
-- **Quantitative market analysis:** event studies on minute-level order flow across books and exchanges, price-aware closing-line value, fee modelling, and immutable paper trading.
+- **Research discipline:** pre-registration, discovery and confirmation splits, leakage audits, published nulls, withdrawn claims, permutation nulls for my own checks, and honest uncertainty in every user-facing number.
+- **Data engineering for reproducibility:** content-addressed datasets, atomic and resumable builds, bounded-memory streaming parsers, run records, and backups proven by restore checks.
+- **Quantitative market analysis:** event studies on minute-level price changes across books and exchanges (posted prices, not anyone's bets), price-aware closing-line value, fee modelling, and immutable paper trading.

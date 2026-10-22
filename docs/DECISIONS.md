@@ -1568,4 +1568,4 @@ OddsPapi's terms need checking for private storage of history before any upload.
 
 **Alternative rejected.** Asking OddsPapi for narrower time windows: the history endpoint has no time filter. A larger `--max-old-space-size` would not help, because the limit is the string, not the heap.
 
-**Follow-up.** `import:line-moves --profile exchanges --retry-partial` re-imports the 5 partial games once this is deployed.
+**Follow-up (done 2026-10-22).** `import:line-moves --profile exchanges --retry-partial` re-imported all 5 partial games: 14,940 exchange moves, 1 billable request, and 0 partial imports left. Peak memory was 2.7 GB. The busiest exchange games' main-market entries (millions) are held in memory to derive the lines, so reducing state per entry is the next step if more books are added.
