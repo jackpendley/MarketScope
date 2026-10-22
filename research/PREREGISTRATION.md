@@ -1135,3 +1135,21 @@ and weeks. This is a sensitivity only; the game bootstrap decides.
   - realized (paper results, hypothetical).
 - A quote in a provider's historical feed is not proof that the price was available to us. Price
   ordering in a feed says nothing about who bet.
+
+## Addendum W (2026-10-22): correction to Addendum V's MS-057 criterion, before its first run
+
+Committed before any Addendum V analysis has been run on real data. A planted-data test of the code
+showed that Addendum V's joint regression is not enough by itself. When the market baseline B is
+noisy, x = model − L still carries the part of the early line's noise that B misses. A model with no
+information then gets a small positive coefficient, and its interval can exclude 0. In the test, 400
+games gave a coefficient of +0.006 (+0.001 to +0.012) for a model that was pure noise.
+
+- **Corrected rule.** "The ratings add information beyond the market's own earlier closes" is
+  claimed only if both of these hold:
+  - the joint regression's model coefficient has its interval above 0 (Addendum V);
+  - that coefficient exceeds the 97.5th percentile of the same coefficient with model lines
+    shuffled across games within each week (1,000 permutations, seed 2026).
+- Shuffling keeps each week's spread of model lines and the shared early line, but removes any link
+  between the model and the game. So the permutation distribution measures exactly the bias the test
+  exposed.
+- Everything else in Addendum V is unchanged.
