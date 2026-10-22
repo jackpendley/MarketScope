@@ -77,6 +77,29 @@ def pick_main(cands: list[Candidate], t: pd.Timestamp):
     return best
 
 
+def coherent(cands: list[Candidate], t: pd.Timestamp, market_type: str) -> list[Candidate]:
+    """Drop ghost markets (Addendum R): markets the feed still shows as active after the book stopped
+    updating them. Freshest first, a market is kept only if its no-vig price is monotone with every
+    market already kept: P(home covers) rises with the home handicap; P(over) falls with the total.
+    Ties are allowed. For sportsbooks only; an exchange's resting orders could be traded."""
+    if market_type == "moneyline":
+        return cands
+    sign = 1 if market_type == "spreads" else -1
+    live = []
+    for c in cands:
+        i, j = c.side1.at(t), c.side2.at(t)
+        if i < 0 or j < 0 or not c.side1.active[i] or not c.side2.active[j]:
+            continue
+        q1, q2 = 1 / c.side1.prices[i], 1 / c.side2.prices[j]
+        live.append((max(c.side1.times[i], c.side2.times[j]), q1 / (q1 + q2), c))
+    live.sort(key=lambda x: x[0], reverse=True)
+    kept: list[tuple[float, Candidate]] = []
+    for _, p, c in live:
+        if all(sign * (c.handicap - kc.handicap) * (p - kp) >= 0 for kp, kc in kept):
+            kept.append((p, c))
+    return [c for _, c in kept]
+
+
 def timeline(cands: list[Candidate], market: str, kickoff: pd.Timestamp, keep_limits: bool,
              window_days: float = 14, settle_ms: int = 1000, min_suspension_ms: int = 60_000) -> list[dict]:
     times = sorted({t for c in cands for t in c.side1.times + c.side2.times if t < kickoff})
