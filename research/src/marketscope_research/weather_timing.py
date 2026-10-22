@@ -70,10 +70,10 @@ def fair_total(engine: fv.Engine, cands: dict, side: str, line: float, t: pd.Tim
 
 
 def positions(ladder: pd.DataFrame, kickoff: pd.Timestamp, revs: pd.DataFrame, engine: fv.Engine,
-              offset: pd.Timedelta = DECISION_DELAY) -> pd.DataFrame:
+              offset: pd.Timedelta = DECISION_DELAY, cands: dict | None = None) -> pd.DataFrame:
     """The forecast's side of each book's main total at each event's availability + offset, valued at
-    the sharp-consensus close."""
-    cands = cm.book_candidates(ladder)
+    the sharp-consensus close. `cands`: cm.book_candidates(ladder), if already built."""
+    cands = cands if cands is not None else cm.book_candidates(ladder)
     close_t = kickoff - pd.Timedelta(microseconds=1)
     rows = []
     for e in revs[revs["event"]].itertuples():
@@ -97,10 +97,11 @@ def positions(ladder: pd.DataFrame, kickoff: pd.Timestamp, revs: pd.DataFrame, e
     return pd.DataFrame(rows, columns=["run", "dw", "book", "side", "line", "price", "value"])
 
 
-def reaction(ladder: pd.DataFrame, kickoff: pd.Timestamp, revs: pd.DataFrame) -> pd.DataFrame:
+def reaction(ladder: pd.DataFrame, kickoff: pd.Timestamp, revs: pd.DataFrame,
+             cands: dict | None = None) -> pd.DataFrame:
     """Pinnacle's main-total change from each in-window run's availability to 6 h later (capped at the
     close) and to the close."""
-    cands = cm.book_candidates(ladder)
+    cands = cands if cands is not None else cm.book_candidates(ladder)
     close_t = kickoff - pd.Timedelta(microseconds=1)
     rows = []
     for e in revs[revs["in_window"]].itertuples():
@@ -114,10 +115,11 @@ def reaction(ladder: pd.DataFrame, kickoff: pd.Timestamp, revs: pd.DataFrame) ->
     return pd.DataFrame(rows, columns=["run", "dw", "event", "move_6h", "move_close"])
 
 
-def minutes_to_first_move(ladder: pd.DataFrame, kickoff: pd.Timestamp, revs: pd.DataFrame) -> pd.DataFrame:
+def minutes_to_first_move(ladder: pd.DataFrame, kickoff: pd.Timestamp, revs: pd.DataFrame,
+                          cands: dict | None = None) -> pd.DataFrame:
     """Exploratory: minutes from each in-window run's availability to Pinnacle's next main-total point
     change (NaN if none before the close)."""
-    cands = cm.book_candidates(ladder)
+    cands = cands if cands is not None else cm.book_candidates(ladder)
     close_t = kickoff - pd.Timedelta(microseconds=1)
     cs = cands.get(("pinnacle", "totals"), [])
     times = sorted({t for c in cs for s in (c.side1, c.side2) for t in s.times if t < close_t})
