@@ -1,6 +1,6 @@
 # Does the market move toward the model? discovery (MS-057)
 
-_Generated 2026-10-22 20:19 UTC · commit `ae63e06` · reproduce with `research/src/marketscope_research/run_model_open.py --phase discovery`._
+_Generated 2026-10-22 20:54 UTC · commit `103e2bc` · reproduce with `research/src/marketscope_research/run_model_open.py --phase discovery`._
 
 Design pre-registered in `research/PREREGISTRATION.md` (Addendum O, committed before this code). Decision time 6 days before kickoff; the model line is ratings-only (AdjEM gap plus 1.6 home advantage) from the latest snapshot usable then. Game bootstrap (5,000, seed 2026). **Analysis, not betting advice.**
 
@@ -31,10 +31,10 @@ Engine v3 (Addendum T secondary; MS-059 line conversion, logit scale): -1.0% (-2
 ## Exploratory: value by size of the disagreement (added after the first run)
 
 | Disagreement size (points) | Positions | Value at Pinnacle's close |
-| -------------------------- | --------- | ------------------------- |
-| 1.5–2.5                    | 15        | -1.6% (-4.6 to +1.0)      |
-| 2.5–3.5                    | 10        | +0.4% (-2.9 to +3.3)      |
-| 3.5–+                      | 9         | -1.4% (-4.8 to +2.0)      |
+|---|---|---|
+| 1.5–2.5 | 15 | -1.6% (-4.6 to +1.0) |
+| 2.5–3.5 | 10 | +0.4% (-2.9 to +3.3) |
+| 3.5–+ | 9 | -1.4% (-4.8 to +2.0) |
 
 ## What this can't see
 

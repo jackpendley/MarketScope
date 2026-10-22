@@ -1,0 +1,83 @@
+{
+  "corrections": [
+    "MS-058 ghost rule",
+    "engine v3 totals conversion (ADR-066)"
+  ],
+  "generated_at": "2026-10-22T21:00:49+00:00",
+  "git_commit": "103e2bc515b9bce93cc47eb6be33cbad4d9ca398",
+  "git_dirty": false,
+  "inputs": [
+    {
+      "books_missing": {
+        "id1400003171451946": "bookmaker.eu",
+        "id1400003171466824": "bookmaker.eu",
+        "id1400003171515778": "bookmaker.eu",
+        "id1400003171515780": "bookmaker.eu",
+        "id1400003171515782": "bookmaker.eu",
+        "id1400003171515784": "bookmaker.eu",
+        "id1400003171515786": "bookmaker.eu",
+        "id1400003171515788": "bookmaker.eu",
+        "id1400003171515790": "bookmaker.eu",
+        "id1400003171515792": "bookmaker.eu",
+        "id1400003171515794": "bookmaker.eu",
+        "id1400003171515798": "bookmaker.eu",
+        "id1400003171515800": "bookmaker.eu",
+        "id1400003171515802": "bookmaker.eu",
+        "id1400003171515804": "bookmaker.eu",
+        "id1400003171515808": "bookmaker.eu",
+        "id1400003171515810": "bookmaker.eu",
+        "id1400003171515812": "bookmaker.eu",
+        "id1400003171515820": "bookmaker.eu",
+        "id1400003171515822": "bookmaker.eu",
+        "id1400003171515824": "bookmaker.eu",
+        "id1400003171515826": "bookmaker.eu",
+        "id1400003171515828": "bookmaker.eu",
+        "id1400003171515830": "bookmaker.eu",
+        "id1400003171515832": "bookmaker.eu",
+        "id1400003171515834": "bookmaker.eu"
+      },
+      "catalogs": [
+        "f65e3f16b4e77359908455725ea1d6ec7e41c7a98b8ea97bdc0d2b53f559c823"
+      ],
+      "dataset_id": "lake-315a013853065fc9",
+      "fixtures": 77,
+      "kind": "lake",
+      "rows": 30094179,
+      "transform_versions": [
+        1
+      ]
+    },
+    {
+      "kind": "open-meteo single runs",
+      "models": [
+        "ecmwf_ifs",
+        "gfs_global",
+        "ncep_hrrr_conus"
+      ],
+      "rows": {
+        "ecmwf_ifs": 985,
+        "gfs_global": 950,
+        "ncep_hrrr_conus": 183
+      },
+      "sha256": {
+        "ecmwf_ifs": "5da63e0da6eab644289c02345e14b8c0cbc2a9af4156782fc59b56891f82583b",
+        "gfs_global": "ebdfba4a229fdacd19d7725ea90b491ae8c67851e6c431bf15112a69b0e53ddf",
+        "ncep_hrrr_conus": "3e6474413d2a09482d3e2b614d9f86c06018298cf1026b2671c9cedd9b9d6ebb"
+      }
+    }
+  ],
+  "packages": {
+    "duckdb": "2.0.0",
+    "ijson": "3.6.0",
+    "numpy": "2.4.6",
+    "pandas": "3.0.6",
+    "pyarrow": "26.0.0",
+    "scipy": "1.16.3"
+  },
+  "params": {
+    "fair_value_params.json": "801d8878f1ec9bb8b5f9ccdb1a10403f45d0d329ec16359e9b0190294c0dc709"
+  },
+  "phase": "discovery",
+  "python": "3.11.6",
+  "study": "MS-056 weather timing"
+}

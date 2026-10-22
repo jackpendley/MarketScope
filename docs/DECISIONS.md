@@ -1456,4 +1456,6 @@ These run on a better fair-value engine: a joint margin–total distribution and
 
 OddsPapi's terms need checking for private storage of history before any upload. Until then, snapshots go to a local directory.
 
+**Merging.** PRs that commit run records are merged with a merge commit, not squashed or rebased. Both of those rewrite commit hashes, which would leave each record's `git_commit` pointing at a commit that is not on `main`. A merge commit keeps the recorded commit in `main`'s history unchanged.
+
 **What this does not do.** It does not verify the provider. Agreement between the lake and `line_moves` is two transformations of one feed. Independent verification means a price our own collector observed (Addendum S).

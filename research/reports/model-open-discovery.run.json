@@ -1,0 +1,37 @@
+{
+  "corrections": [
+    "sorted before the seeded bootstrap (ADR-066)",
+    "Addenda V and W sensitivities"
+  ],
+  "generated_at": "2026-10-22T20:54:41+00:00",
+  "git_commit": "103e2bc515b9bce93cc47eb6be33cbad4d9ca398",
+  "git_dirty": false,
+  "inputs": [
+    {
+      "kind": "db",
+      "rows": 5811,
+      "sha256": "e9b5e86f92565382e1c2f6f2192890446f06382c15e56238d56fdbc25c79547a",
+      "table": "line_moves (pinnacle spreads)"
+    },
+    {
+      "kind": "db",
+      "rows": 224,
+      "sha256": "08fea97e0cbf076edffeb9adf554f91b47cf5e5b8a2951ce4803bde46a63ba3d",
+      "table": "rating_snapshots"
+    }
+  ],
+  "packages": {
+    "duckdb": "2.0.0",
+    "ijson": "3.6.0",
+    "numpy": "2.4.6",
+    "pandas": "3.0.6",
+    "pyarrow": "26.0.0",
+    "scipy": "1.16.3"
+  },
+  "params": {
+    "fair_value_params.json": "801d8878f1ec9bb8b5f9ccdb1a10403f45d0d329ec16359e9b0190294c0dc709"
+  },
+  "phase": "discovery",
+  "python": "3.11.6",
+  "study": "MS-057 model and the open"
+}
