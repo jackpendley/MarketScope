@@ -140,8 +140,11 @@ def main() -> None:
         f"{vci(joint[1] if joint else None)}. "
         + ("**The ratings add information beyond the market's earlier closes.**"
            if joint and joint[0].low > 0 and beats_null else
-           "The market moves toward the model, but no more than toward its own earlier lines."
-           if joint and e1 is not None and e1.low > 0 else "No claim."),
+           # Addendum V suggested "no more than toward its own earlier lines" here; that overstates when the
+           # baseline coefficient is itself near 0 and the model's interval is merely wide (ADR-069).
+           "Not established beyond the market's own earlier closes: the model coefficient's interval includes 0 "
+           "or it does not beat the permutation null."
+           if joint else "No claim."),
         f"- Addendum W null, the model coefficient with model lines shuffled within weeks (1,000 permutations): "
         f"97.5th percentile {np.nanquantile(null, 0.975):+.3f}; the observed coefficient "
         f"{'exceeds' if beats_null else 'does not exceed'} it." if null is not None else "- Addendum W null: –",
