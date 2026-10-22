@@ -7,6 +7,9 @@
     python -m marketscope_research.lake manifest-upgrade  # fill manifest v2 fields for older fixtures
     python -m marketscope_research.lake snapshot --to DIR # self-describing archive (refuses if not verified)
     python -m marketscope_research.lake restore --from TAR --to DIR
+    SUPABASE_URL=... SUPABASE_STORAGE_KEY=... python -m marketscope_research.lake push   # private bucket (ADR-073)
+    SUPABASE_URL=... SUPABASE_STORAGE_KEY=... python -m marketscope_research.lake pull --dataset ID --to DIR
+    SUPABASE_URL=... SUPABASE_STORAGE_KEY=... python -m marketscope_research.lake snapshots
 
 build: 1 billable request (the fixture list; +1 for the market catalog if not cached). History calls are
 free (6 per game, 5 s apart). Finished fixtures are skipped, so a rerun only fetches what is missing.
@@ -26,6 +29,7 @@ import pandas as pd
 
 from ..data import _frame, connect as db_connect
 from . import check as lake_check
+from . import remote as lake_remote
 from . import store
 from .oddspapi import Client, OddsPapiError
 from .parse import stream_entries
@@ -129,7 +133,24 @@ def main() -> None:
     rs = sub.add_parser("restore")
     rs.add_argument("--from", dest="frm", required=True)
     rs.add_argument("--to", required=True)
+    sub.add_parser("push")
+    sub.add_parser("snapshots")
+    pl = sub.add_parser("pull")
+    pl.add_argument("--dataset", required=True)
+    pl.add_argument("--to", required=True)
     args = ap.parse_args()
+    if args.command in ("push", "pull", "snapshots"):
+        url, key = os.environ.get("SUPABASE_URL"), os.environ.get("SUPABASE_STORAGE_KEY")
+        if not url or not key:
+            raise SystemExit("Set SUPABASE_URL and SUPABASE_STORAGE_KEY (a secret key; keep it in research/.env.local).")
+        client = lake_remote.StorageClient(url, key)
+        if args.command == "push":
+            print(json.dumps(lake_remote.push(client)))
+        elif args.command == "snapshots":
+            print("\n".join(lake_remote.snapshots(client)) or "no snapshots")
+        else:
+            print(f"pulled and verified {lake_remote.pull(client, args.dataset, Path(args.to))}")
+        return
     if args.command == "build":
         sys.exit(build(args))
     if args.command == "check":
