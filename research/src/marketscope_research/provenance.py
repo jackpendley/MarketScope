@@ -28,11 +28,16 @@ from .lake import store
 PACKAGES = ("numpy", "pandas", "pyarrow", "duckdb", "scipy", "ijson")
 
 
+OUTPUT_DIRS = ("research/reports/", "apps/web/lib/generated/")  # what runners write; not "code changed"
+
+
 def git_state(repo: Path = store.REPO) -> tuple[str, bool]:
-    """(commit, dirty). Dirty means tracked files differ from the commit; untracked files are ignored."""
+    """(commit, dirty). Dirty means a tracked file other than a generated output (reports, generated JSON)
+    differs from the commit: the code or parameters that ran are not exactly the commit's."""
     sha = subprocess.check_output(["git", "-C", str(repo), "rev-parse", "HEAD"], text=True).strip()
-    dirty = bool(subprocess.check_output(["git", "-C", str(repo), "status", "--porcelain", "--untracked-files=no"],
-                                         text=True).strip())
+    changed = subprocess.check_output(["git", "-C", str(repo), "status", "--porcelain", "--untracked-files=no"],
+                                      text=True).splitlines()
+    dirty = any(not line[3:].startswith(OUTPUT_DIRS) for line in changed)
     return sha, dirty
 
 

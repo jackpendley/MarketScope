@@ -147,3 +147,16 @@ def test_streamed_batches_write_the_same_bytes_as_one_list(tmp_path, monkeypatch
     a, b = (store.sha256_file(tmp_path / d / "entries" / "fixture=one.parquet") for d in "ab")
     assert a == b
     assert store.write_fixture("empty", iter([]), tmp_path / "c") == 0
+
+
+def test_generated_outputs_do_not_make_the_tree_dirty(tmp_path, monkeypatch):
+    out = {"status": " M research/reports/x.md\n M apps/web/lib/generated/y.json\n", "code": " M research/src/a.py\n"}
+
+    def fake(cmd, text=True):
+        return "abc\n" if "rev-parse" in cmd else out[mode]
+
+    monkeypatch.setattr(provenance.subprocess, "check_output", fake)
+    mode = "status"
+    assert provenance.git_state() == ("abc", False)
+    mode = "code"
+    assert provenance.git_state() == ("abc", True)
