@@ -1,6 +1,9 @@
 // The pre-registered football studies (MS-035, ADR-043), summarised from the committed reports in
-// research/reports/. Static on purpose: each number is copied from a generated report, and the
-// study code, not this page, is the source of truth. Re-running a study means updating this file.
+// research/reports/. The study code, not this page, is the source of truth. Cards whose runners record
+// results (ADR-072) read their numbers from generated/study-results.json; the rest are still copied
+// from the committed reports by hand.
+
+import results from "./generated/study-results.json";
 
 export const REPO = "https://github.com/jackpendley/MarketScope/blob/main";
 export const PREREGISTRATION = `${REPO}/research/PREREGISTRATION.md`;
@@ -22,6 +25,37 @@ export type Study = {
   exploratory: string[];
   report: string | null;
 };
+
+type GeneratedResult = {
+  value: number;
+  low: number;
+  high: number;
+  digits: number;
+  positions: number | null;
+  games: number | null;
+  weeks: number | null;
+  commit: string;
+  dirty: boolean;
+  dataset: string | null;
+  report: string | null;
+};
+
+/** Results written by the research runners (`research/.../results.py`, ADR-072). */
+export const GENERATED_RESULTS = results as Record<string, GeneratedResult>;
+
+const signed = (x: number, digits: number) =>
+  `${x < 0 ? "−" : "+"}${Math.abs(x).toFixed(digits)}`;
+
+/** A card's primary estimate and interval, taken from the runner's output instead of copied by hand. */
+export function generatedPrimary(id: string, label: string): NonNullable<Study["primary"]> {
+  const r = GENERATED_RESULTS[id];
+  if (!r) throw new Error(`No generated result for study ${id}`);
+  return {
+    label,
+    estimate: signed(r.value, r.digits),
+    interval: `${signed(r.low, r.digits)} to ${signed(r.high, r.digits)}`,
+  };
+}
 
 export const STUDIES: Study[] = [
   {
@@ -395,11 +429,7 @@ export const MARKET_STUDIES: Study[] = [
       "Six days before kickoff, when MarketScope's ratings disagree with Pinnacle's line, does Pinnacle move toward the ratings by the close?",
     window: "2026 weeks 1–6, 66 games",
     status: "discovery claim",
-    primary: {
-      label: "Pinnacle's move to the close per point of disagreement (points)",
-      estimate: "+0.116",
-      interval: "+0.048 to +0.189",
-    },
+    primary: generatedPrimary("M3", "Pinnacle's move to the close per point of disagreement (points)"),
     finding:
       "Yes: for each point the ratings disagreed, Pinnacle's line moved about an eighth of a point their way by kickoff. The ratings hold information early-week lines have not yet absorbed. Not enough to pay yet: taking the model's side at Pinnacle's early line averaged −1.0% (−2.8% to +0.8%) against its close.",
     exploratory: [
@@ -436,11 +466,7 @@ export const MARKET_STUDIES: Study[] = [
       "When a retail book's moneyline is worth more than its own spread implies, is it worth more than the sharp books' closing moneyline?",
     window: "2026 weeks 1–6, 51 positions",
     status: "no claim",
-    primary: {
-      label: "Mean value per unit at the sharp-consensus close",
-      estimate: "−0.049",
-      interval: "−0.063 to −0.035",
-    },
+    primary: generatedPrimary("C1", "Mean value per unit at the sharp-consensus close"),
     finding:
       "No, the opposite. When a book's moneyline and spread disagreed, the sharp books sided with the moneyline's price, not the spread's: the spread was the number out of line. Every retail book was below zero.",
     exploratory: [],
@@ -453,11 +479,7 @@ export const MARKET_STUDIES: Study[] = [
       "When a retail book's spread, total or moneyline is worth more than the sharp-consensus fair price at the same line (Pinnacle, Circa, Bookmaker.eu, Novig), is it still worth more at the close?",
     window: "2026 weeks 1–6, 131 positions",
     status: "inconclusive",
-    primary: {
-      label: "Mean value per unit at the sharp-consensus close (as registered)",
-      estimate: "+0.036",
-      interval: "+0.023 to +0.048",
-    },
+    primary: generatedPrimary("C2", "Mean value per unit at the sharp-consensus close (as registered)"),
     finding:
       "Positive as registered, but checks after the run weakened it. The odds feed sometimes shows a dead sportsbook market as live: a Caesars −10 last updated on 1 September was still listed at kickoff on 18 October, when the real line was −7. The strongest positions sat on prices unchanged for days. With dead markets removed and prices scored against the sharp books' own numbers at the same line, the value is +2.2% (−0.1% to +4.3%). The held-out weeks decide, counting only prices our own collector also saw.",
     exploratory: [
@@ -472,11 +494,7 @@ export const MARKET_STUDIES: Study[] = [
       "Are retail alternate spreads and totals priced better than the sharp-consensus fair price at their exact line worth more at the close?",
     window: "2026 weeks 1–6, 6,278 alternates",
     status: "no claim",
-    primary: {
-      label: "Mean value per unit at the sharp-consensus close (as registered)",
-      estimate: "+0.043",
-      interval: "+0.035 to +0.051",
-    },
+    primary: generatedPrimary("A1", "Mean value per unit at the sharp-consensus close (as registered)"),
     finding:
       "Withdrawn: a measurement artifact. Our fair-value engine moves a sharp price to another line by adding the same probability shift at every line, which overstates the chances far from the main line, so the same model found the same value at the close. Scored against Pinnacle's, Circa's and Bookmaker.eu's own prices at the same alternate line, these candidates are worth −3.6% (−4.9% to −2.3%), and −5.1% beyond 3 points from the main line.",
     exploratory: [
@@ -492,12 +510,7 @@ export const MARKET_STUDIES: Study[] = [
       "When a new weather-model run raises or lowers a game's wind forecast, do totals lag a forecast that is already public?",
     window: "2026 weeks 1–6, 77 outdoor games; 2 games with a qualifying revision, 15 positions",
     status: "no claim",
-    primary: {
-      label:
-        "Mean value per unit at the sharp-consensus close, forecast side taken 10 minutes after the run is public",
-      estimate: "−0.055",
-      interval: "−0.083 to −0.040",
-    },
+    primary: generatedPrimary("F1", "Mean value per unit at the sharp-consensus close, forecast side taken 10 minutes after the run is public"),
     finding:
       "Inconclusive despite the interval: only 2 games had a qualifying revision (early-season wind was calm), and a game bootstrap over 2 games cannot support a conclusion. The same positions 3 hours before the run existed were just as negative, so those lines moved for other reasons. Across all 908 model runs, Pinnacle's total did not visibly react to ECMWF wind revisions (+0.004 points per mph within 6 hours, −0.008 to +0.016). Confirmation covers weeks 7–18, where more wind is expected.",
     exploratory: [

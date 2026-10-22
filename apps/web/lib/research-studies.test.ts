@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { MARKET_STUDIES, STUDIES } from "./research-studies";
+import {
+  GENERATED_RESULTS,
+  generatedPrimary,
+  MARKET_STUDIES,
+  STUDIES,
+} from "./research-studies";
 
 const num = (s: string) => Number(s.replace("−", "-"));
 
@@ -53,6 +58,16 @@ describe("research studies", () => {
       const t = s.primary!.threshold ?? 0;
       if (s.status === "claim" || s.status === "discovery claim")
         expect(lo > t || hi < t, s.id).toBe(true);
+    }
+  });
+
+  it("takes every runner-recorded result onto its card, linked to the same report", () => {
+    for (const [id, r] of Object.entries(GENERATED_RESULTS)) {
+      const card = MARKET_STUDIES.find((s) => s.id === id);
+      expect(card, id).toBeDefined();
+      expect(card!.primary).toEqual(generatedPrimary(id, card!.primary!.label));
+      if (r.report) expect(card!.report, id).toContain(r.report.replace(/^reports\//, "research/reports/"));
+      expect(r.dirty, id).toBe(false);
     }
   });
 

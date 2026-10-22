@@ -161,3 +161,14 @@ def test_generated_outputs_do_not_make_the_tree_dirty(tmp_path, monkeypatch):
     assert provenance.git_state() == ("abc", False)
     mode = "code"
     assert provenance.git_state() == ("abc", True)
+
+
+def test_record_result_upserts_cards(tmp_path):
+    from marketscope_research import results
+    path = tmp_path / "study-results.json"
+    results.record_result("M3", 0.11612345, 0.0511, 0.189, positions=66, games=66, weeks=6, path=path)
+    results.record_result("C1", -0.049, -0.063, -0.035, positions=51, games=20, path=path)
+    results.record_result("M3", 0.2, 0.1, 0.3, path=path)
+    data = json.loads(path.read_text())
+    assert list(data) == ["C1", "M3"] and data["M3"]["value"] == 0.2 and data["C1"]["digits"] == 3
+    assert len(data["C1"]["commit"]) == 7

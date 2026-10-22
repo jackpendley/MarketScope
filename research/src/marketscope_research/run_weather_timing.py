@@ -20,6 +20,7 @@ from pathlib import Path
 import pandas as pd
 
 from . import provenance
+from . import results
 from . import cross_market as cm
 from . import fair_value as fv
 from . import injury_windows as iw
@@ -175,6 +176,11 @@ def main() -> None:
     ]
     with open(args.out, "w") as fh:
         fh.write("\n".join(parts))
+    if e1 is not None:
+        results.record_result("F1", e1.value, e1.low, e1.high, positions=len(pos),
+                              games=int(pos["event_id"].nunique()), weeks=int(pos["week"].nunique()),
+                              dataset=provenance.lake_dataset([fixture_of[e] for e in in_lake["event_id"]])["dataset_id"],
+                              report=args.out)
     provenance.write_run_record(args.out, provenance.run_record(
         "MS-056 weather timing", [provenance.lake_dataset([fixture_of[e] for e in in_lake["event_id"]]), {"kind": "open-meteo single runs", "models": sorted(runs), "rows": {m: len(r) for m, r in runs.items()}, "sha256": {m: provenance.frame_sha256(r) for m, r in runs.items()}}],
         [Path(fv.__file__).with_name("fair_value_params.json")], ["MS-058 ghost rule", "engine v3 totals conversion (ADR-066)"], {"phase": getattr(args, "phase", None)}))
