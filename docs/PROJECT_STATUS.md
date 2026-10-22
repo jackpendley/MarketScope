@@ -1,10 +1,19 @@
 # Project Status
 
-_Rewrite this file at the end of every session. Last updated: 2026-10-22 (session 1, continued; MS-058, MS-059, MS-056 discovery, Phase 14 items 1–2)._
+_Rewrite this file at the end of every session. Last updated: 2026-10-22 (session 1, continued; MS-058, MS-059, MS-056 discovery, Phase 14 items 1–5 and 7)._
 
 ## Current milestone
 
-**Phase 14 (ROADMAP): evidence, reproducibility and operations**, from an external review reconciled against the local state. Done: timestamp correctness (ADR-067; no impact on existing data) and evaluation boundaries (Addenda V and W, ADR-069). Next: dataset identity and reproducible runs.
+**Phase 14 (ROADMAP): evidence, reproducibility and operations**, from an external review reconciled against the local state. Done:
+
+- timestamp correctness (ADR-067; no impact on existing data);
+- evaluation boundaries (Addenda V and W, ADR-069);
+- lake dataset identity, snapshots and run records (ADR-070);
+- partial imports and gap-based freshness (ADR-071; production shows 5 partial imports, 0 finals without moves);
+- generated `/research` numbers (ADR-072);
+- data gap analysis (`docs/DATA_SOURCES.md`).
+
+Next: the ratings-v1 ML workflow.
 
 **Phase 13 (ADR-061): finding real value on NFL spreads, totals and moneylines.** Phase 12 discovery is complete, with no value against the close (its confirmation runs after 2026-12-16).
 
@@ -291,8 +300,8 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-22 (sessio
 ## Tests
 
 - **Football pytest:** 114 (unit tests, plus integration against the migrated test DB; includes validation of the committed coaching CSV and the 2016–24 seeding reproduction).
-- **Research pytest:** 206.
-- **TS:** db 55, shared 192, collector 83, web 148 (unit + integration), e2e 63.
+- **Research pytest:** 219.
+- **TS:** db 59, shared 192, collector 85, web 149 (unit + integration), e2e 63.
 
 ## Quotas
 
@@ -301,8 +310,9 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-22 (sessio
 
 ## Data (production, Supabase)
 
-- **Size:** 181 MB of Supabase's 500 MB: `line_moves` 69 MB (books 23 MB, exchanges about 46 MB), the other odds tables ≈ 75 MB, football tables ≈ 20 MB, auth and the rest small.
-- **Migrations:** 0000–0018 (0017/0018 apply on merge of MS-045b).
+- **Size:** 186 MB of Supabase's 500 MB (2026-10-22: `line_moves` 69 MB, `odds_observations` 57 MB); earlier breakdown: 181 MB: `line_moves` 69 MB (books 23 MB, exchanges about 46 MB), the other odds tables ≈ 75 MB, football tables ≈ 20 MB, auth and the rest small.
+- **Migrations:** 0000–0020 (0020 adds the `partial` ingestion status; applied 2026-10-22).
+- **Research lake (local):** dataset `lake-2d40bfbafd04b8f2`, 93 fixtures, 37.3M rows, 154 MB; `lake verify` checks every file hash.
 
 ## Waiting on Jack
 
@@ -326,29 +336,28 @@ Nothing blocking.
 
 ## Next task
 
-**Phase 14, item 3: dataset identity and reproducible runs** (the plan: `~/.claude/plans/pasted-content-id-32f6-marketscope-zany-stonebraker.md`, mirrored in ROADMAP Phase 14).
+**Phase 14, item 6: one complete ML workflow on ratings-v1** (the plan: `~/.claude/plans/pasted-content-id-32f6-marketscope-zany-stonebraker.md`; ROADMAP Phase 14).
 
-- **Lake manifest v2:**
-  - schema and transform versions;
-  - request groups and books present or missing;
-  - first and last entry;
-  - file SHA-256 and market-catalog SHA-256.
-- **Dataset ID:** a hash of the sorted (fixture, file hash) pairs plus the catalog hash and versions, independent of `built_at`.
-- **Builds:** the manifest is written atomically (temp file plus rename), and a resumed build skips matching hashes.
-- **Run records:** each runner writes `reports/<name>.run.json` (dataset ID, fixtures, parameter hash, git SHA and dirty flag, package versions, corrections applied).
-- **Memory:** measure peak RSS while building the largest fixture. The MS-056 runner peaked at 2.0 GB, mostly from lake candidates.
-- **Snapshot:** a `lake snapshot` / `restore --verify` command against a local target; then ask Jack about a private Supabase Storage bucket.
-- **Accept:** the ID is stable across rebuilds; a kill-mid-build test resumes to the same ID; run records exist for MS-054, 055b, 056, 057 and 059.
+- A versioned training dataset (ID and hash) built from the nflverse tables.
+- A feature schema saved beside `apps/football/.../ratings/params.json`.
+- A reload-and-predict test.
+- `model_runs` and `model_predictions` gain `dataset_id`, `feature_schema_sha` and `code_sha` (a migration, with RLS kept).
+- Chronological evaluation and calibration as structured JSON, with `MODEL_CARD.md` and the report generated from it.
+- A synthetic demo that needs no production credentials.
+- Keep the evaluation history honest: 2023–24 validation has already shaped the model, 2025 was evaluated once, and the 2026 forward test is the prospective evidence.
 
-**Then (Phase 14):**
+**Then:**
 
-- generated `/research` numbers;
-- partial imports (`too_large` books currently end in `completed`) and freshness per dataset;
-- the ratings-v1 ML workflow;
-- the data-gap analysis;
-- reviewer docs.
+- serving-database backup and restore (`pg_dump` of serving tables into the local test DB, plus `lake restore`);
+- streaming JSON in the TypeScript importer;
+- reviewer docs (README, case study, architecture: three stories plus a synthetic walkthrough).
 
-**Confirmation runners** must add Addendum V's frozen-first subset, week-block interval and the Holm summary (`evaluation.py`) before the 2026-12-16 runbook.
+**Before the 2026-12-16 confirmation runbook:**
+
+- every confirmation runner adds Addendum V's frozen-first subset, week-block interval and Holm summary (`evaluation.py`), plus `results.record_result` and a run record;
+- PRs that commit run records are merged with a merge commit (ADR-070).
+
+**Waiting on Jack (approval):** a private Supabase Storage bucket for `lake snapshot` archives (161 MB, free tier, existing project), after checking OddsPapi's terms on private storage.
 
 **Pre-registration default from now on:** confirm on weeks 7–18 (plus playoffs where the question allows), not 7–14.
 
