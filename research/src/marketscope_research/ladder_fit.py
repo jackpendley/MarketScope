@@ -26,9 +26,11 @@ def decision_time(kickoff: pd.Timestamp, h: int) -> pd.Timestamp:
 
 
 def main_line(cands: dict, book: str, market: str, t: pd.Timestamp) -> cm.Line | None:
-    """The book's main line under the MS-058 rule (ghost markets removed before pickMain)."""
+    """The book's main line under the MS-058 rule (ghost markets removed before pickMain; exchanges and
+    moneylines exempt)."""
     cs = cands.get((book, market), [])
-    best = mainline.pick_main(mainline.without_ghosts(cs, t) if market != "moneyline" else cs, t)
+    ghosts = market != "moneyline" and book not in cm.EXCHANGES
+    best = mainline.pick_main(mainline.without_ghosts(cs, t) if ghosts else cs, t)
     if best is None:
         return None
     _, c, i, j = best
