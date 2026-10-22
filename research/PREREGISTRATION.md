@@ -831,3 +831,34 @@ already seen cannot support any claim; this addendum fixes the rules confirmatio
   detectable.
 - **Phase 12 confirmations** run on `line_moves` as it stands at confirmation. If MS-058 has
   re-derived it with the coherence rule by then, the reports say so.
+
+## Addendum S (2026-10-22): MS-054 B confirmation requires an independently seen price
+
+Written after Addendum R and its corrected discovery run (commit `0f5b772`), and before the first
+confirmation kickoff (2026-10-23 00:15 UTC). The corrected run showed that the coherence rule misses
+ghosts priced almost level with the real line. Caesars' dead −10 (−115/−115, last updated on
+1 September) sits at 50.0% beside the real −7 at 50.2%. That is monotone, so the rule kept it, and
+it stayed among the B positions at all four horizons. A minimum-slope version was tried and rejected
+without using any outcome: Hard Rock prices adjacent lines in equal pairs and real ladders flatten in
+the tails, so it would drop genuine markets. A feed-independent check replaces it.
+
+- **Corroborated price.** A B position at DraftKings, FanDuel or Hard Rock counts as corroborated
+  when our own collector (The Odds API, `odds_observations.source = 'the-odds-api'`, four snapshots a
+  day) observed the same event, book, market, selection, point and American price at a snapshot inside
+  the interval the lake price was in effect. That interval runs from the later of the two sides'
+  latest entries to the next entry on either side, or to kickoff. Caesars cannot be corroborated (it
+  is paid-plan-only on The Odds API) and is excluded from the primary.
+- **Primary for MS-054 B (replaces Addendum R's B primary).** Corroborated B positions, coherence rule
+  applied. A claim requires the engine-scored mean and the direct-scored mean (over corroborated
+  positions with a direct price) both to have intervals above 0 (game bootstrap, 5,000 draws, seed
+  2026). All other B variants are reported as secondary.
+- **MS-054 A and MS-055b** are unchanged from Addendum R. The collector stores main lines only, so
+  alternates cannot be corroborated.
+- **Power, stated honestly.** Discovery cannot measure the corroborated share, because the collector
+  only started on 2026-10-16. If about 70% of the roughly 100 DraftKings, FanDuel and Hard Rock
+  positions in weeks 7–14 are corroborated, about half of those have a direct price: roughly 35
+  positions over 25 games. Only a mean of about 3% or more per unit is detectable. An inconclusive
+  result is "no claim".
+- **If B holds or is inconclusive but positive:** The Odds API's historical snapshots (retail books
+  plus Pinnacle, 2020–25) would test it over about 1,400 games with independently observed prices.
+  That joins MS-057 as the second reason for the paid-data decision.
