@@ -42,3 +42,4 @@ __pycache__/
 /apps/web/playwright/.cache/
 /apps/web/e2e/.auth/
 /apps/web/blob-report/
+backups/
