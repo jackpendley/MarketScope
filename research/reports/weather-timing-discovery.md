@@ -1,6 +1,6 @@
 # Weather-forecast revisions and totals timing: discovery (MS-056)
 
-_Generated 2026-10-22 21:00 UTC · commit `103e2bc` · reproduce with `research/src/marketscope_research/run_weather_timing.py --phase discovery`._
+_Generated 2026-10-22 21:35 UTC · commit `08edb64` · reproduce with `research/src/marketscope_research/run_weather_timing.py --phase discovery`._
 
 Design pre-registered in `research/PREREGISTRATION.md` (Addendum U, committed before this code). Archived ECMWF IFS runs (Open-Meteo Single Runs API; weather data by Open-Meteo.com, CC BY 4.0), available 6 hours after initialisation. An event is a game-window wind revision of at least 4 mph (either run at least 12 mph), public 72 to 1 hours before kickoff. Positions take the forecast's side of each book's main total 10 minutes after availability; value at the sharp-consensus close (engine v3, MS-058 ghost rule). Game bootstrap (5,000, seed 2026). **Analysis, not betting advice.**
 

@@ -1,10 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  GENERATED_RESULTS,
-  generatedPrimary,
-  MARKET_STUDIES,
-  STUDIES,
-} from "./research-studies";
+import { GENERATED_RESULTS, generatedPrimary, MARKET_STUDIES, STUDIES } from "./research-studies";
 
 const num = (s: string) => Number(s.replace("−", "-"));
 
@@ -66,7 +61,8 @@ describe("research studies", () => {
       const card = MARKET_STUDIES.find((s) => s.id === id);
       expect(card, id).toBeDefined();
       expect(card!.primary).toEqual(generatedPrimary(id, card!.primary!.label));
-      if (r.report) expect(card!.report, id).toContain(r.report.replace(/^reports\//, "research/reports/"));
+      if (r.report)
+        expect(card!.report, id).toContain(r.report.replace(/^reports\//, "research/reports/"));
       expect(r.dirty, id).toBe(false);
     }
   });

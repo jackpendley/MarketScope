@@ -1,7 +1,7 @@
 {
   "corrections": ["sorted before the seeded bootstrap (ADR-066)", "Addenda V and W sensitivities"],
-  "generated_at": "2026-10-22T20:54:41+00:00",
-  "git_commit": "103e2bc515b9bce93cc47eb6be33cbad4d9ca398",
+  "generated_at": "2026-10-22T21:31:30+00:00",
+  "git_commit": "60b7473c1b5df2db4bb5e55a1f5cc9d301426273",
   "git_dirty": false,
   "inputs": [
     {
