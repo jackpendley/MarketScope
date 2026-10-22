@@ -42,7 +42,7 @@ def main() -> None:
               AND nflverse_close_home_spread IS NOT NULL AND nflverse_close_total IS NOT NULL""")
     engine = fv.load_engine(history)
     con = store.connect()
-    manifest = con.execute("SELECT fixture_id, kickoff FROM manifest").df()
+    manifest = con.execute("SELECT fixture_id, event_id, kickoff FROM manifest").df()
     manifest["kickoff"] = pd.to_datetime(manifest["kickoff"], utc=True)
     lo, hi = ((pd.Timestamp("2026-09-01", tz="UTC"), sm.DISCOVERY_END) if args.phase == "discovery"
               else (sm.DISCOVERY_END, sm.CONFIRMATION_END))
@@ -84,6 +84,24 @@ def main() -> None:
 
     a, b = runs[False]
     ca, cb = runs[True]
+    # Addendum S: was the price also seen by our own collector (The Odds API) while it was in effect?
+    with connect(dsn) as conn:
+        obs = _frame(conn, """
+            SELECT event_id::text, bookmaker_key, market_type::text, selection::text, point::float8 AS point,
+                   american_price, observed_at
+            FROM odds_observations WHERE source = 'the-odds-api' AND event_id = ANY(%s::uuid[])
+              AND bookmaker_key IN ('draftkings', 'fanduel', 'hardrockbet')""", (list(manifest["event_id"]),))
+    obs["observed_at"] = pd.to_datetime(obs["observed_at"], utc=True)
+    if len(cb):
+        ev = manifest.set_index("fixture_id")["event_id"]
+        cb = cb.assign(fixture_id=cb["event_id"], event_id=cb["event_id"].map(ev))
+        cb["corroborated"] = cm.corroborated(cb, obs)
+        cb["event_id"] = cb["fixture_id"]
+        seen = cb[cb["corroborated"].fillna(False).astype(bool)]
+    else:
+        seen = cb
+    eseen, eseen_d = boot(seen), boot(seen, "value_direct")
+    checkable = int(cb["corroborated"].notna().sum()) if len(cb) else 0
     ea, eb = boot(a), boot(b)
     a_book = [[NAMES[k], len(d), f"{100 * d['value_d'].mean():+.2f}%", pct(boot(d))] for k, d in a.groupby("book")] \
         if len(a) else []
@@ -95,18 +113,20 @@ def main() -> None:
               for label, d in [("All", cb)] + ([(m, d) for m, d in cb.groupby("market")] if len(cb) else [])
               + ([(NAMES[k], d) for k, d in cb.groupby("book")] if len(cb) else [])]
     eca, ecb, ecd = boot(ca), boot(cb), boot(cb, "value_direct")
-    both = ecb is not None and ecd is not None and ecb.low > 0 and ecd.low > 0
+    both = eseen is not None and eseen_d is not None and eseen.low > 0 and eseen_d.low > 0
+    c_rows.append(["Corroborated (Addendum S primary)", len(seen), pct(eseen), n_direct(seen), pct(eseen_d)])
 
     commit = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], text=True).strip()
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     if args.phase == "confirmation":
-        primary_b = (f"**Primary result (Addendum R):** "
-                     + ("**same-line prices above the sharp consensus carry positive value** (engine- and "
-                        "direct-scored intervals both above 0)" if both else "no claim (both intervals must lie "
-                                                                             "above 0)") + ".")
+        primary_b = (f"**Primary result (Addendum S):** "
+                     + ("**same-line prices above the sharp consensus carry positive value** (corroborated "
+                        "positions; engine- and direct-scored intervals both above 0)" if both else
+                        "no claim (on corroborated positions, both intervals must lie above 0)") + ".")
     else:
-        primary_b = ("Under Addendum R a claim needs both intervals above 0; these discovery numbers were computed "
-                     "after the problems were found, so they are descriptive only.")
+        primary_b = ("Under Addenda R and S a claim needs corroborated positions with both intervals above 0. These "
+                     "discovery numbers were computed after the problems were found, so they are descriptive only, "
+                     "and our collector only started on 2026-10-16, so few discovery prices can be corroborated.")
     parts = [
         f"# Cross-market value on main markets: {args.phase} (MS-054)", "",
         f"_Generated {now} · commit `{commit}` · reproduce with "
@@ -136,7 +156,8 @@ def main() -> None:
         "conversion.", "",
         f"A: {len(ca)} positions, {pct(eca)}: {verdict(eca, 'positive', registered=False)}. "
         f"B: {len(cb)} positions, engine-scored {pct(ecb)}; direct-scored {pct(ecd)} on {n_direct(cb)} positions "
-        "with a direct price.", "",
+        f"with a direct price. Corroborated by our own collector: {len(seen)} of {checkable} checkable positions "
+        "(DraftKings, FanDuel, Hard Rock).", "",
         primary_b, "",
         table(c_rows, ["Positions", "Count", "Engine-scored value", "With a direct price", "Direct-scored value"]), "",
         "## What this can't see", "",

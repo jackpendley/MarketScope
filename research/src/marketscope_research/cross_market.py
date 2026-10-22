@@ -69,6 +69,40 @@ def line_at(cands: dict, book: str, market: str, t: pd.Timestamp, coherent: bool
     return Line(0.0 if market == "moneyline" else c.handicap, c.side1.prices[i], c.side2.prices[j])
 
 
+def in_effect(cands: dict, book: str, market: str, t: pd.Timestamp, kickoff: pd.Timestamp,
+              coherent: bool = False) -> tuple[pd.Timestamp, pd.Timestamp]:
+    """When the book's main-line prices at t were set and when either side next changed (or kickoff):
+    the window in which an independent snapshot should show the same prices (Addendum S)."""
+    _, c, i, j = mainline.pick_main(markets(cands, book, market, t, coherent), t)
+    nxt = [s.times[k + 1] for s, k in ((c.side1, i), (c.side2, j)) if k + 1 < len(s.times)]
+    return max(c.side1.times[i], c.side2.times[j]), min(nxt + [kickoff])
+
+
+CORROBORATE = {"draftkings": "draftkings", "fanduel": "fanduel", "hardrockbet": "hardrockbet"}
+OBS_MARKET = {"spreads": "spreads", "totals": "totals", "moneyline": "h2h"}
+
+
+def corroborated(b: pd.DataFrame, obs: pd.DataFrame) -> pd.Series:
+    """Addendum S: True where our own collector saw the same book, market, selection, point and price
+    inside the window the lake price was in effect; False where it did not; NA for books it cannot
+    see. b: B rows with event_id, since, until. obs: odds_observations rows (event_id, bookmaker_key,
+    market_type, selection, point, american_price, observed_at)."""
+    out = pd.Series(pd.NA, index=b.index, dtype="boolean")
+    for idx, r in b.iterrows():
+        key = CORROBORATE.get(r["book"])
+        if key is None:
+            continue
+        point = (None if r["market"] == "moneyline" else
+                 -r["line"] if r["side"] == "away" else r["line"])
+        o = obs[(obs["event_id"] == r["event_id"]) & (obs["bookmaker_key"] == key)
+                & (obs["market_type"] == OBS_MARKET[r["market"]]) & (obs["selection"] == r["side"].upper())
+                & (obs["observed_at"] >= r["since"]) & (obs["observed_at"] < r["until"])
+                & (obs["american_price"] == r["price"])]
+        o = o[o["point"].isna()] if point is None else o[o["point"] == point]
+        out[idx] = len(o) > 0
+    return out
+
+
 def shin(line: Line) -> float:
     """Fair probability of side 1 (Shin devig)."""
     return fv.devig(1 / line.d1, 1 / line.d2, "shin")
@@ -189,13 +223,15 @@ def fixture_positions(ladder: pd.DataFrame, kickoff: pd.Timestamp, engine: fv.En
                         continue
                     close = cons(market, side, q.point, close_t, c_tot, c_spr)
                     if close is not None:
+                        since, until = in_effect(cands, book, market, d, kickoff, coherent)
                         b_rows.append({"h": h, "book": book, "market": market, "side": side, "line": q.point,
+                                       "since": since, "until": until,
                                        "price": american(dec), "value_d": value(*fair, dec),
                                        "value": value(*close, dec),
                                        "value_direct": value_direct(cands, market, side, q.point, close_t, dec,
                                                                     coherent)})
     cols_a = ["h", "book", "side", "price", "spread", "value_d", "value"]
-    cols_b = ["h", "book", "market", "side", "line", "price", "value_d", "value", "value_direct"]
+    cols_b = ["h", "book", "market", "side", "line", "since", "until", "price", "value_d", "value", "value_direct"]
     return pd.DataFrame(a_rows, columns=cols_a), pd.DataFrame(b_rows, columns=cols_b)
 
 

@@ -121,3 +121,33 @@ def test_value_direct_uses_the_sharp_books_own_price_at_that_line():
     assert cm.value_direct(cands, "spreads", "home", -7.0, KICK, 2.8) is None  # integer line
     assert cm.value_direct(cands, "spreads", "home", -9.5, KICK, 2.8) is None  # no sharp price there
     assert cm.value_direct(cands, "moneyline", "home", 0.0, KICK, 2.0) is None
+
+
+def test_b_rows_carry_the_window_the_price_was_in_effect():
+    lad = ladder(rows("pinnacle", "spreads", -3.0, 1.85, 1.98), rows("fanduel", "spreads", -3.0, 2.0, 1.83),
+                 rows("fanduel", "spreads", -3.0, 1.95, 1.87, at="2026-10-18T10:00Z"))
+    _a, b = cm.fixture_positions(lad, KICK, ENGINE, horizons=(24,))
+    r = b[b["book"] == "fanduel"].iloc[0]
+    assert r["since"] == pd.Timestamp("2026-10-16T12:00Z") and r["until"] == pd.Timestamp("2026-10-18T10:00Z")
+
+
+def test_corroborated_matches_book_line_side_price_and_window():
+    b = pd.DataFrame([
+        {"event_id": "e1", "book": "fanduel", "market": "spreads", "side": "away", "line": -3.0, "price": -120,
+         "since": pd.Timestamp("2026-10-16T12:00Z"), "until": pd.Timestamp("2026-10-18T10:00Z")},
+        {"event_id": "e1", "book": "fanduel", "market": "spreads", "side": "away", "line": -3.0, "price": -115,
+         "since": pd.Timestamp("2026-10-16T12:00Z"), "until": pd.Timestamp("2026-10-18T10:00Z")},
+        {"event_id": "e1", "book": "caesars", "market": "spreads", "side": "home", "line": -3.0, "price": -110,
+         "since": pd.Timestamp("2026-10-16T12:00Z"), "until": pd.Timestamp("2026-10-18T10:00Z")},
+        {"event_id": "e1", "book": "draftkings", "market": "moneyline", "side": "home", "line": 0.0, "price": -150,
+         "since": pd.Timestamp("2026-10-16T12:00Z"), "until": pd.Timestamp("2026-10-17T00:00Z")},
+    ])
+    obs = pd.DataFrame([
+        # FanDuel away +3 at -120 seen inside the window (away point is posted from the away side)
+        {"event_id": "e1", "bookmaker_key": "fanduel", "market_type": "spreads", "selection": "AWAY", "point": 3.0,
+         "american_price": -120, "observed_at": pd.Timestamp("2026-10-17T12:00Z")},
+        # DraftKings moneyline at -150, but after the window closed
+        {"event_id": "e1", "bookmaker_key": "draftkings", "market_type": "h2h", "selection": "HOME", "point": None,
+         "american_price": -150, "observed_at": pd.Timestamp("2026-10-17T06:00Z")},
+    ])
+    assert cm.corroborated(b, obs).tolist() == [True, False, pd.NA, False]
