@@ -100,8 +100,32 @@ def coherent(cands: list[Candidate], t: pd.Timestamp, market_type: str) -> list[
     return [c for _, c in kept]
 
 
+GHOST_NEAR_EVEN, GHOST_MAX_OVERROUND, GHOST_MIN_GAP, GHOST_MIN_SLOPE = 0.3, 1.12, 2, 0.005
+
+
+def without_ghosts(cands: list[Candidate], t: pd.Timestamp) -> list[Candidate]:
+    """The collector's ghost rule (MS-058, ADR-065; transform.ts withoutGhosts): a main line is near
+    even with a normal margin, and of two near-even lines at least 2 points apart whose probabilities
+    differ by less than 0.005 per point, the one updated less recently is a ghost."""
+    live = []
+    for c in cands:
+        i, j = c.side1.at(t), c.side2.at(t)
+        if i < 0 or j < 0 or not c.side1.active[i] or not c.side2.active[j]:
+            continue
+        over = 1 / c.side1.prices[i] + 1 / c.side2.prices[j]
+        p = 1 / c.side1.prices[i] / over
+        if over > GHOST_MAX_OVERROUND or not GHOST_NEAR_EVEN <= p <= 1 - GHOST_NEAR_EVEN:
+            continue
+        live.append((c, p, max(c.side1.times[i], c.side2.times[j])))
+    return [c for c, p, last in live
+            if not any(abs(c2.handicap - c.handicap) >= GHOST_MIN_GAP
+                       and abs(p2 - p) / abs(c2.handicap - c.handicap) < GHOST_MIN_SLOPE and last < l2
+                       for c2, p2, l2 in live)]
+
+
 def timeline(cands: list[Candidate], market: str, kickoff: pd.Timestamp, keep_limits: bool,
-             window_days: float = 14, settle_ms: int = 1000, min_suspension_ms: int = 60_000) -> list[dict]:
+             window_days: float = 14, settle_ms: int = 1000, min_suspension_ms: int = 60_000,
+             ghost_rule: bool = False) -> list[dict]:
     times = sorted({t for c in cands for t in c.side1.times + c.side2.times if t < kickoff})
     rows, last_key, off_since = [], None, None
     settle, min_off = pd.Timedelta(milliseconds=settle_ms), pd.Timedelta(milliseconds=min_suspension_ms)
@@ -117,7 +141,7 @@ def timeline(cands: list[Candidate], market: str, kickoff: pd.Timestamp, keep_li
     for k, t in enumerate(times):
         if k + 1 < len(times) and times[k + 1] - t < settle:
             continue
-        best = pick_main(cands, t)
+        best = pick_main(without_ghosts(cands, t) if ghost_rule and market != "h2h" else cands, t)
         if best is None:
             off_since = off_since or t
             continue
@@ -142,9 +166,10 @@ def timeline(cands: list[Candidate], market: str, kickoff: pd.Timestamp, keep_li
     return rows[-1:] if first is None else rows[max(0, first - 1):]
 
 
-def derive(book_rows: pd.DataFrame, kickoff: pd.Timestamp, keep_limits: bool = False) -> pd.DataFrame:
+def derive(book_rows: pd.DataFrame, kickoff: pd.Timestamp, keep_limits: bool = False,
+           ghost_rule: bool = False) -> pd.DataFrame:
     """All three markets for one book's ladder rows."""
     out = []
     for mt, market in MARKET_OF.items():
-        out += timeline(candidates(book_rows, mt), market, kickoff, keep_limits)
+        out += timeline(candidates(book_rows, mt), market, kickoff, keep_limits, ghost_rule=ghost_rule)
     return pd.DataFrame(out, columns=["market", "changed_at", "point", "price1", "price2", "limit1", "limit2"])

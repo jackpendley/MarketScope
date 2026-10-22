@@ -1,6 +1,6 @@
 # Project Status
 
-_Rewrite this file at the end of every session. Last updated: 2026-10-22 (session 1, continued; MS-054/055b)._
+_Rewrite this file at the end of every session. Last updated: 2026-10-22 (session 1, continued; MS-058)._
 
 ## Current milestone
 
@@ -10,7 +10,8 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-22 (sessio
   - MS-052 research lake (93 games, 37.3M entries, 151 MB; 100% agreement with `line_moves`);
   - MS-053 engine v2; MS-055a Wong 2.0 (break-even);
   - MS-057 (**the market moves toward the ratings early in the week, +0.116 per point: a discovery claim**);
-  - MS-054 and MS-055b discovery (ADR-064).
+  - MS-054 and MS-055b discovery (ADR-064);
+  - MS-058 ghost markets in the collector (ADR-065): corrections in `line_move_fixes`, shown on the replay page; `line_moves` unchanged for the registered studies.
 - **ADR-064 in one paragraph:**
   - **The positives:** both lake studies had positive primaries as registered: B +3.6% and alternates +4.3%.
   - **The checks found two measurement problems:**
@@ -18,7 +19,7 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-22 (sessio
     - OddsPapi keeps some dead sportsbook markets "active" (ghost markets), and the main-line rule picks them.
   - **Alternates:** withdrawn. Against the sharp books' own same-line prices they are −3.6%.
   - **B:** after corrections +2.2% (−0.1 to +4.3), inconclusive. Confirmation counts only prices our own collector also saw (Addenda R and S, registered before week 7).
-- **Next:** MS-058 (ghost markets in the collector and replay), then MS-059 (engine v3 calibrated on sharp alternate ladders), then MS-056 (information timing).
+- **Next:** MS-059 (engine v3 calibrated on sharp alternate ladders), then MS-056 (information timing).
 
 - **Site:** live at https://marketscope-delta.vercel.app behind invite-only accounts (ADR-049). Jack's account is `jackpendley` / jackpendley9@gmail.com.
 
@@ -285,8 +286,8 @@ _Rewrite this file at the end of every session. Last updated: 2026-10-22 (sessio
 ## Tests
 
 - **Football pytest:** 114 (unit tests, plus integration against the migrated test DB; includes validation of the committed coaching CSV and the 2016–24 seeding reproduction).
-- **Research pytest:** 139.
-- **TS:** db 54, shared 192, collector 71, web 148 (unit + integration), e2e 63.
+- **Research pytest:** 141.
+- **TS:** db 55, shared 192, collector 80, web 148 (unit + integration), e2e 63.
 
 ## Quotas
 
@@ -320,16 +321,11 @@ Nothing blocking.
 
 ## Next task
 
-**MS-058: ghost markets in the collector** (ADR-064, `docs/PROVIDER_COVERAGE.md`).
+**MS-059: fair-value engine v3** (ADR-064 follow-up). Calibrate line conversion against the sharp books' own alternate ladders in the lake (Pinnacle, Circa, Bookmaker.eu), an outcome-free target, instead of the additive shift in `market_ml.side_probabilities` and `openers_totals.total_side_probabilities`. Pre-register it; because the target uses no game outcomes it can use every 2026 game. Any study that adopts v3 registers that before its confirmation run.
 
-1. **Choose a rule** for `pickMain` (`apps/collector/src/providers/oddspapi/transform.ts`) that removes dead sportsbook markets. The research coherence rule (`research/.../lake/mainline.coherent`) misses ghosts priced level with the real line. Candidates:
-   - corroboration against our own snapshots;
-   - a staleness cap relative to the book's own activity;
-   - both, measured with the lake.
-2. **Mirror it** in `lake/mainline.py`, keeping the TS and Python versions identical (shared test cases).
-3. **Re-derive `line_moves`** (books profile v3; history calls are free) and check the replay page on the Caesars example (fixture `id1400003171515908`).
+**Pre-registration default from now on:** confirm on weeks 7–18 (plus playoffs where the question allows), not 7–14.
 
-**Then:** MS-059 engine v3 (calibrate line conversion against sharp alternate ladders in the lake), then MS-056 information timing (Open-Meteo forecast revisions; ESPN injury JSON only if its terms allow).
+**Then:** MS-056 information timing (Open-Meteo forecast revisions; ESPN injury JSON only if its terms allow).
 
 **Lake upkeep:** `lake build` appends new finals (about 1.5 min a game). Confirmation needs weeks 7–14 in the lake before 2026-12-16.
 

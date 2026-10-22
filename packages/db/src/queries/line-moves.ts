@@ -2,7 +2,7 @@
 
 import { and, asc, eq } from "drizzle-orm";
 import type { Database } from "../client";
-import { lineMoves, type marketType } from "../schema";
+import { lineMoveFixes, lineMoves, type marketType } from "../schema";
 
 export interface LineMoveRow {
   bookmakerKey: string;
@@ -17,23 +17,34 @@ export interface LineMoveRow {
   limit2: number | null;
 }
 
-/** Every stored move for one game and market, oldest first (primary-key order). */
+/**
+ * Every stored move for one game and market, by book and oldest first, with ghost-market
+ * corrections applied (ADR-065): a book with rows in line_move_fixes shows those instead.
+ */
 export async function lineMoveHistory(
   db: Database,
   eventId: string,
   market: (typeof marketType.enumValues)[number],
 ): Promise<LineMoveRow[]> {
-  return db
-    .select({
-      bookmakerKey: lineMoves.bookmakerKey,
-      changedAt: lineMoves.changedAt,
-      point: lineMoves.point,
-      price1: lineMoves.price1,
-      price2: lineMoves.price2,
-      limit1: lineMoves.limit1,
-      limit2: lineMoves.limit2,
-    })
-    .from(lineMoves)
-    .where(and(eq(lineMoves.eventId, eventId), eq(lineMoves.marketType, market)))
-    .orderBy(asc(lineMoves.bookmakerKey), asc(lineMoves.changedAt));
+  const read = (t: typeof lineMoves | typeof lineMoveFixes) =>
+    db
+      .select({
+        bookmakerKey: t.bookmakerKey,
+        changedAt: t.changedAt,
+        point: t.point,
+        price1: t.price1,
+        price2: t.price2,
+        limit1: t.limit1,
+        limit2: t.limit2,
+      })
+      .from(t)
+      .where(and(eq(t.eventId, eventId), eq(t.marketType, market)))
+      .orderBy(asc(t.bookmakerKey), asc(t.changedAt));
+  const [moves, fixes] = await Promise.all([read(lineMoves), read(lineMoveFixes)]);
+  const fixed = new Set(fixes.map((r) => r.bookmakerKey));
+  return [...moves.filter((r) => !fixed.has(r.bookmakerKey)), ...fixes].sort(
+    (a, b) =>
+      a.bookmakerKey.localeCompare(b.bookmakerKey) ||
+      Date.parse(a.changedAt) - Date.parse(b.changedAt),
+  );
 }

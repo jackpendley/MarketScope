@@ -263,6 +263,46 @@ export const lineMoves = pgTable(
 ).enableRLS();
 
 /**
+ * Ghost-market corrections to line_moves (MS-058, ADR-065): for a book and market whose main line
+ * the feed's dead markets distorted, the whole corrected timeline. line_moves stays as derived
+ * (pre-registered studies read it); the replay page reads line_moves with these applied.
+ */
+export const lineMoveFixes = pgTable(
+  "line_move_fixes",
+  {
+    eventId: uuid()
+      .notNull()
+      .references(() => events.id, { onDelete: "cascade" }),
+    bookmakerKey: text()
+      .notNull()
+      .references(() => bookmakers.key),
+    marketType: marketType().notNull(),
+    changedAt: tstz().notNull(),
+    point: numeric({ precision: 5, scale: 1, mode: "number" }),
+    price1: integer(),
+    price2: integer(),
+    limit1: integer(),
+    limit2: integer(),
+    source: text().notNull(),
+    ingestedAt: tstz().notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.eventId, t.bookmakerKey, t.marketType, t.changedAt] }),
+    check("line_move_fixes_prices_paired", sql`(${t.price1} IS NULL) = (${t.price2} IS NULL)`),
+    check(
+      "line_move_fixes_point_matches_market",
+      sql`CASE WHEN ${t.price1} IS NULL OR ${t.marketType} = 'h2h' THEN ${t.point} IS NULL
+        ELSE ${t.point} IS NOT NULL END`,
+    ),
+    check(
+      "line_move_fixes_valid_american_prices",
+      sql`${t.price1} IS NULL OR ((${t.price1} <= -100 OR ${t.price1} >= 100)
+        AND (${t.price2} <= -100 OR ${t.price2} >= 100))`,
+    ),
+  ],
+).enableRLS();
+
+/**
  * Paper portfolio (MS-045b, ADR-056): hypothetical positions from pre-registered systems, placed
  * before kickoff at a real book's posted line and graded after the game. Hypothetical only: nothing
  * here is a wager. Placement columns are immutable (trigger in migration 0018); only the grading

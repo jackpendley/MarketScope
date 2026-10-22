@@ -200,6 +200,54 @@ export function pickMain(candidates: readonly Candidate[], t: number): MainLine 
   return best && { handicap: best.handicap, side1: best.side1, side2: best.side2 };
 }
 
+/** Near-even band for a main line: no-vig probability of side 1 within [0.3, 0.7]. */
+export const GHOST_NEAR_EVEN = 0.3;
+/** A main line carries a normal margin: implied probabilities summing to at most 1.12. */
+export const GHOST_MAX_OVERROUND = 1.12;
+/** Two near-even lines at least this far apart must differ in probability... */
+export const GHOST_MIN_GAP = 2;
+/** ...by at least this much per point. */
+export const GHOST_MIN_SLOPE = 0.005;
+
+/**
+ * Sportsbook spread and total markets with ghosts removed (MS-058, ADR-065). The feed sometimes
+ * keeps a market "active" after the book stopped updating it, and pickMain can take it:
+ *   - near even, normal margin: a main line is priced near even with a normal margin, so a market
+ *     outside that never is (a book that suspends its board can leave two far-tail markets active,
+ *     e.g. a 64.5 total at 13/1; junk markets can carry a 70% margin);
+ *   - flat pair: two near-even lines at least 2 points apart whose probabilities barely differ
+ *     cannot both be live (Caesars' −10 at 50.0% beside its real −7 at 50.2%); the one updated
+ *     less recently is the ghost. Only flatness counts, not direction: a feed can label a whole
+ *     ladder the other way round.
+ * Staleness alone is not a rule: FanDuel's real main line can sit unchanged for days while its
+ * alternates are repriced (checked against The Odds API's main lines). Not for exchanges, whose
+ * resting orders are real.
+ */
+export function withoutGhosts(candidates: readonly Candidate[], t: number): Candidate[] {
+  const live: { c: Candidate; p: number; last: number }[] = [];
+  for (const c of candidates) {
+    const a = latestAt(c.side1, t);
+    const b = latestAt(c.side2, t);
+    if (!a?.active || !b?.active) continue;
+    const overround = 1 / a.price + 1 / b.price;
+    const p = 1 / a.price / overround;
+    if (overround > GHOST_MAX_OVERROUND) continue;
+    if (p < GHOST_NEAR_EVEN || p > 1 - GHOST_NEAR_EVEN) continue;
+    live.push({ c, p, last: Math.max(Date.parse(a.createdAt), Date.parse(b.createdAt)) });
+  }
+  return live
+    .filter(
+      (x) =>
+        !live.some((y) => {
+          const gap = Math.abs(y.c.handicap - x.c.handicap);
+          return (
+            gap >= GHOST_MIN_GAP && Math.abs(y.p - x.p) / gap < GHOST_MIN_SLOPE && x.last < y.last
+          );
+        }),
+    )
+    .map((x) => x.c);
+}
+
 export function deriveObservations(
   history: OddsPapiHistory,
   markets: ReadonlyMap<number, OddsPapiMarketMeta>,

@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   deriveObservations,
   snapshotTimes,
+  withoutGhosts,
+  type Candidate,
   type OddsPapiEntry,
   type OddsPapiHistory,
   type OddsPapiMarketMeta,
@@ -203,5 +205,50 @@ describe("deriveObservations", () => {
   it("never produces two rows for one book/market/selection/snapshot", () => {
     const keys = rows.map((r) => `${r.bookmakerKey}|${r.market}|${r.selection}|${r.observedAt}`);
     expect(new Set(keys).size).toBe(keys.length);
+  });
+});
+
+describe("withoutGhosts", () => {
+  const T = Date.parse("2026-10-18T16:00:00Z");
+  const line = (handicap: number, price1: number, price2: number, at: string, active = true) => {
+    const series = (price: number) => ({
+      times: [Date.parse(at)],
+      entries: [e(at, price, active)],
+    });
+    return { handicap, side1: series(price1), side2: series(price2) } satisfies Candidate;
+  };
+  const handicaps = (cs: Candidate[]) => cs.map((c) => c.handicap);
+
+  it("drops the staler of two near-even lines whose prices barely differ (Caesars' -10 ghost)", () => {
+    const ghost = line(-10, 1.87, 1.87, "2026-09-01T02:24:00Z");
+    const real = line(-7, 1.909, 1.926, "2026-10-18T13:30:00Z");
+    expect(handicaps(withoutGhosts([ghost, real], T))).toEqual([-7]);
+  });
+
+  it("keeps a real main line that has sat unchanged for days beside repriced alternates", () => {
+    // FanDuel: +1.5 untouched since Oct 13 is still the main line; -1.5 is 5.7 points away.
+    const main = line(1.5, 1.82, 2.0, "2026-10-13T10:59:00Z");
+    const alt = line(-1.5, 2.02, 1.77, "2026-10-17T22:17:00Z");
+    const far = line(-6.5, 3.4, 1.3, "2026-10-17T14:45:00Z");
+    expect(handicaps(withoutGhosts([main, alt, far], T))).toEqual([1.5, -1.5]);
+  });
+
+  it("drops far-tail and junk markets, so a suspended board has no main line", () => {
+    const tail = line(64.5, 13.4, 1.01, "2026-10-15T17:07:00Z");
+    const junk = line(25, 1.077, 1.286, "2026-10-18T15:00:00Z"); // a 70% margin
+    const suspended = line(39.5, 1.893, 1.926, "2026-10-18T04:14:00Z", false);
+    expect(withoutGhosts([tail, junk, suspended], T)).toEqual([]);
+  });
+
+  it("ignores direction: a ladder labelled the other way round is not a ghost", () => {
+    const a = line(-3.5, 1.95, 1.87, "2026-09-02T09:02:00Z");
+    const b = line(-5.5, 1.74, 2.06, "2026-09-02T10:10:00Z");
+    expect(handicaps(withoutGhosts([a, b], T))).toEqual([-3.5, -5.5]);
+  });
+
+  it("keeps equal prices on adjacent half points (less than 2 points apart)", () => {
+    const a = line(-6.5, 1.909, 1.909, "2026-10-17T10:00:00Z");
+    const b = line(-7, 1.909, 1.909, "2026-10-18T10:00:00Z");
+    expect(handicaps(withoutGhosts([a, b], T))).toEqual([-6.5, -7]);
   });
 });

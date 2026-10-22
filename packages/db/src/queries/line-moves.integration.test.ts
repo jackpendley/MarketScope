@@ -1,6 +1,6 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { createDb } from "../client";
-import { bookmakers, events, lineMoves } from "../schema";
+import { bookmakers, events, lineMoveFixes, lineMoves } from "../schema";
 import { resetDatabase, TEST_DATABASE_URL } from "../testing";
 import { lineMoveHistory } from "./line-moves";
 
@@ -64,6 +64,26 @@ describe("lineMoveHistory", () => {
       ["pinnacle", -3.5, -105],
     ]);
     expect(await lineMoveHistory(db, eventId, "totals")).toEqual([]);
+  });
+
+  it("shows a book's ghost-market correction instead of its registered rows", async () => {
+    await db.insert(lineMoveFixes).values({
+      eventId,
+      bookmakerKey: "draftkings",
+      marketType: "spreads",
+      changedAt: "2026-10-17T09:30:00Z",
+      point: -2.5,
+      price1: -115,
+      price2: -105,
+      source: "oddspapi",
+    });
+    const rows = await lineMoveHistory(db, eventId, "spreads");
+    expect(rows.map((r) => [r.bookmakerKey, r.point, r.price1])).toEqual([
+      ["draftkings", -2.5, -115],
+      ["pinnacle", -3, -110],
+      ["pinnacle", null, null],
+      ["pinnacle", -3.5, -105],
+    ]);
   });
 
   it("enforces paired prices and a point only on available spread/total rows", async () => {

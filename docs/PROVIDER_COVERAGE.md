@@ -171,4 +171,5 @@ nflverse publishes one closing spread, total and moneyline per game. Its `spread
 - **What it misses:** a ghost priced almost level with the real line passes the rule.
 - **What we do about it:**
   - Studies use the coherence rule plus corroboration against our own The Odds API snapshots (Addenda R and S).
-  - MS-058 will fix the collector.
+  - The collector (MS-058, ADR-065) applies two rules: a main line is near even with a normal margin, and of two near-even lines 2+ points apart with almost the same probability, the staler one is a ghost. Corrections go to `line_move_fixes`, and the replay page shows them; `line_moves` stays as registered.
+  - Checked against The Odds API: no regressions, and every 2-point-or-more miss removed. It cannot see a ghost that is the book's only near-even market.

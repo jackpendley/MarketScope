@@ -1,9 +1,10 @@
-import { createDb, events, ingestionRuns, lineMoves } from "@marketscope/db";
+import { createDb, events, ingestionRuns, lineMoveFixes, lineMoves } from "@marketscope/db";
 import { resetDatabase, TEST_DATABASE_URL } from "@marketscope/db/testing";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   crossCheckSnapshots,
   EXCHANGES_PROFILE,
+  FIXES_PROFILE,
   importLineMoves,
   lineMovesJobKey,
 } from "./line-moves-import";
@@ -190,6 +191,74 @@ describe("exchange profile", () => {
     await sql`DELETE FROM ingestion_runs WHERE job_key = ${lineMovesJobKey("id1")}`;
     await importLineMoves({ db, client: fakeClient(), markets }, fixture);
     expect(await db.$count(lineMoves)).toBe(books + 3);
+  });
+});
+
+describe("ghost-market fixes", () => {
+  it("writes corrected timelines for the books a ghost distorted, and never touches line_moves", async () => {
+    const ghostMarkets = new Map(markets).set(110, {
+      ...markets.get(100)!,
+      marketId: 110,
+      handicap: -6,
+      outcomes: [
+        { outcomeId: 110, outcomeName: "1" },
+        { outcomeId: 111, outcomeName: "2" },
+      ],
+    });
+    // Caesars' real line is -3 at -115/-105; a -6 left "active" since Oct 1 sits at even money,
+    // so the registered rule picks it.
+    const caesars = () => {
+      const b = book();
+      return {
+        markets: {
+          ...b.markets,
+          "100": {
+            outcomes: {
+              "100": { players: { "0": [entry("2026-10-10T08:00:00Z", 1.87)] } },
+              "101": { players: { "0": [entry("2026-10-10T08:00:00Z", 1.95)] } },
+            },
+          },
+          "110": {
+            outcomes: {
+              "110": { players: { "0": [entry("2026-10-01T08:00:00Z", 1.91)] } },
+              "111": { players: { "0": [entry("2026-10-01T08:00:00Z", 1.91)] } },
+            },
+          },
+        },
+      };
+    };
+    const client = {
+      historicalOdds: vi.fn(
+        async (_id: string, books: readonly string[]): Promise<OddsPapiHistory> => ({
+          bookmakers: Object.fromEntries(
+            books.map((b) => [b, b === "caesars" ? caesars() : book()]),
+          ),
+        }),
+      ),
+    };
+    await importLineMoves({ db, client, markets: ghostMarkets }, fixture);
+    const registered = await sql`SELECT bookmaker_key, point FROM line_moves
+      WHERE market_type = 'spreads' ORDER BY bookmaker_key, changed_at`;
+    expect(registered.find((r) => r.bookmaker_key === "williamhill_us")).toMatchObject({
+      point: "-6.0",
+    });
+
+    const outcome = await importLineMoves(
+      { db, client, markets: ghostMarkets },
+      fixture,
+      FIXES_PROFILE,
+    );
+    // The -6 was the only line until -3 appeared on Oct 10; from then on, -3 is the main line.
+    expect(outcome).toMatchObject({ status: "imported", moves: 2 });
+    const fixes = await db.select().from(lineMoveFixes).orderBy(lineMoveFixes.changedAt);
+    expect(fixes).toMatchObject([
+      { bookmakerKey: "williamhill_us", marketType: "spreads", point: -6 },
+      { bookmakerKey: "williamhill_us", point: -3, price1: -115, price2: -105 },
+    ]);
+    expect(
+      await sql`SELECT bookmaker_key, point FROM line_moves
+      WHERE market_type = 'spreads' ORDER BY bookmaker_key, changed_at`,
+    ).toEqual(registered);
   });
 });
 

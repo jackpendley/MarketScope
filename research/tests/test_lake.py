@@ -160,3 +160,35 @@ def test_coherence_rule_keeps_a_monotone_ladder_and_ties():
     cands = mainline.candidates(lad, "totals")
     kept = mainline.coherent(cands, pd.Timestamp("2026-10-18T16:00Z"), "totals")
     assert sorted(c.handicap for c in kept) == [44, 44.5, 47]
+
+
+def test_ghost_rule_matches_the_collector_cases():
+    """Mirrors transform.test.ts withoutGhosts (MS-058, ADR-065)."""
+    t = pd.Timestamp("2026-10-18T16:00Z")
+
+    def hs(*rows):
+        lad = ladder(*[r for k, (h, p1, p2, at, *act) in enumerate(rows) for r in (
+            (300 + k, "spreads", h, "1", at, p1, act[0] if act else True, None),
+            (300 + k, "spreads", h, "2", at, p2, act[0] if act else True, None))])
+        return sorted(c.handicap for c in mainline.without_ghosts(mainline.candidates(lad, "spreads"), t))
+
+    # Caesars' -10 ghost beside its real -7.
+    assert hs((-10, 1.87, 1.87, "2026-09-01T02:24:00Z"), (-7, 1.909, 1.926, "2026-10-18T13:30:00Z")) == [-7]
+    # A real main line unchanged for days beside repriced alternates is kept; a far alternate is not near even.
+    assert hs((1.5, 1.82, 2.0, "2026-10-13T10:59:00Z"), (-1.5, 2.02, 1.77, "2026-10-17T22:17:00Z"),
+              (-6.5, 3.4, 1.3, "2026-10-17T14:45:00Z")) == [-1.5, 1.5]
+    # Far tails, junk margins and suspended markets: no main line.
+    assert hs((14.5, 13.4, 1.01, "2026-10-15T17:07:00Z"), (25, 1.077, 1.286, "2026-10-18T15:00:00Z"),
+              (3.5, 1.893, 1.926, "2026-10-18T04:14:00Z", False)) == []
+    # Direction is ignored; adjacent half points at equal prices are kept.
+    assert hs((-3.5, 1.95, 1.87, "2026-09-02T09:02:00Z"), (-5.5, 1.74, 2.06, "2026-09-02T10:10:00Z")) == [-5.5, -3.5]
+    assert hs((-6.5, 1.909, 1.909, "2026-10-17T10:00:00Z"), (-7, 1.909, 1.909, "2026-10-18T10:00:00Z")) == [-7, -6.5]
+
+
+def test_ghost_rule_in_the_timeline():
+    cands = mainline.candidates(ghost_ladder(), "spreads")
+    kick = pd.Timestamp("2026-10-18T17:00Z")
+    registered = mainline.timeline(cands, "spreads", kick, False)
+    fixed = mainline.timeline(cands, "spreads", kick, False, ghost_rule=True)
+    assert registered[-1]["point"] == -10
+    assert fixed[-1]["point"] == -7
